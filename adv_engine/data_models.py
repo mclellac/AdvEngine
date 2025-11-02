@@ -1,0 +1,60 @@
+from dataclasses import dataclass, field
+from typing import List, Optional, Any, Dict
+
+# Schema for ItemData.csv
+@dataclass
+class Item:
+    id: str
+    name: str
+    type: str
+    buy_price: int
+    sell_price: int
+
+# Schema for Attributes.csv
+@dataclass
+class Attribute:
+    id: str
+    name: str
+    initial_value: int
+    max_value: int
+
+# Schema for CharacterData.csv
+@dataclass
+class Character:
+    id: str
+    default_animation: str
+    dialogue_start_id: str
+    is_merchant: bool
+    shop_id: Optional[str]
+
+# --- Interaction Matrix Schemas (InteractionMatrix.json) ---
+
+@dataclass
+class Condition:
+    # Using a generic dict-like structure for now, as it's quite variable.
+    # A more robust implementation could use subclasses for different condition types.
+    raw_data: Dict[str, Any]
+
+@dataclass
+class Action:
+    command: str
+    parameters: Dict[str, Any]
+
+@dataclass
+class Interaction:
+    scene_id: str
+    target_hotspot_id: str
+    used_item_id: Optional[str]
+    priority: int
+    conditions: List[Condition] = field(default_factory=list)
+    actions_on_success: List[Action] = field(default_factory=list)
+    fallback_dialogue_id: Optional[str] = None
+
+# A container for all project data
+@dataclass
+class ProjectData:
+    items: List[Item] = field(default_factory=list)
+    attributes: List[Attribute] = field(default_factory=list)
+    characters: List[Character] = field(default_factory=list)
+    interaction_matrix: List[Interaction] = field(default_factory=list)
+    # Dialogue graphs and UI layouts would also be added here.
