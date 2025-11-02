@@ -1,131 +1,80 @@
-## agents.md: AdvEngine Project Documentation (Complete)
+## agents.md: AdvEngine Project Documentation (Exhaustive Detail)
 
 ---
 ## 1. Project Overview & Context
 
 * Project Name (Tool): **AdvEngine**
-* Purpose: A modern adventure game editor focused on **rapid creation and iteration** of atmospheric 2.5D cyberpunk detective/noir adventure games.
+* Purpose: A modern adventure game editor focused on **rapid creation and iteration** of atmospheric 2.5D cyberpunk detective/noir adventure games by a one-man team.
 * Function: AdvEngine is a **Data and Configuration Manager**. It provides a superior, cross-platform UI/UX for design and exports structured data files for the target game engine to consume at runtime.
 * Target Game Engine: **Unreal Engine 5.6**
+* Core Principle: Abstraction—hide all UE complexity behind a clean, data-driven Python interface.
+* Output Goal: Game must support modern resolutions (2K, 4K, Ultrawide) via intelligent scaling and UI anchoring.
 
 ---
 ## 2. Technology Stack & Dependencies
 
 ### A. Core Tool Stack (AdvEngine Application)
 
-| Component | Role | Notes |
-|---|---|---|
-| Language | Front-end logic, data management, and export scripting. | Python 3.10+ |
-| GUI Framework | Cross-platform UI toolkit. | GTK4 (via PyGObject) |
-| Design Library | Modern, responsive UI/UX components. | Libadwaita |
-| Operating Systems| Linux, macOS, and Windows | Packaging via PyInstaller. |
+| Component | Role | Required Version | Notes |
+|---|---|---|---|
+| **Language** | Front-end logic, data management, and export scripting. | **Python 3.10+** | |
+| **GUI Framework** | Cross-platform UI toolkit. | **GTK4 (via PyGObject)** | Provides the core application structure and widgets. |
+| **Design Library** | Modern, responsive UI/UX components. | **Libadwaita** | Ensures a clean, polished aesthetic on all platforms. |
+| **Packaging** | Bundling the Python app into standalone executables. | **PyInstaller** | Critical for Windows/macOS distribution. Must bundle all GTK/Libadwaita dependencies. |
+| **Graphing** | Node drawing and connection management. | **Custom GTK Widget** | Will use **cairo** or similar library for canvas rendering (Logic Editor). |
+| **Serialization** | Data processing. | **json**, **csv**, **os** | Standard Python libraries for project I/O and export contract files. |
 
 ### B. Target Game Engine & API Contract (The Connection)
 
 | Component | Role | Critical Detail |
 |---|---|---|
-| Engine | Unreal Engine 5.6 | Requires a dedicated **AdvEngine UE Template** project. |
-| Data Contract| Schema Alignment | JSON/CSV structures must match the **UE Custom Structs** and **Data Table Blueprints** exactly. |
-| Export Method | Filesystem Write | Python tool writes data files directly into the UE project's Content/ExternalData/ directory. |
-| Runtime Data Load | UE Game Instance | All data loading and parsing is handled by the UE **Game Instance Blueprint** during game startup. |
+| **Engine Project** | **AdvEngine UE Template** | Pre-built UE project with fixed Blueprints/C++ for movement, inventory, and scene loading. |
+| **Data Contract**| **Schema Alignment** | Exported JSON/CSV structures **must** match the **UE Custom Structs** (e.g., FS_InteractionRule) and **Data Table Blueprints** exactly. |
+| **Data Location** | Filesystem Write | Python tool writes data files directly into the UE project's Content/ExternalData/ directory. |
+| **Runtime Data Load** | **AdvEngine Game Instance** | All parsing is handled by the UE **Game Instance Blueprint** or dedicated C++ service during game startup. |
+| **Visuals** | **Modern Rendering** | Template must leverage UE5's **Lumen** (GI) and **Control Rig/Animation Blueprints** for fluid character movement/lighting. |
 
 ---
-## 3. AdvEngine Architectural Workflow
+## 3. AdvEngine Internal Tool Architecture (Python Source)
 
-The tool facilitates a data-driven pipeline:
+The architecture is strictly modular to isolate UI logic from data logic.
 
-1.  **Input:** Designer places entities and defines logic in AdvEngine (Python/GTK4).
-2.  **Serialization:** Python tool serializes changes (e.g., entity placement, dialogue graphs).
-3.  **Export:** User hits **Run Game**, and ue_exporter.py writes the updated JSON/CSV files to the target UE project.
-4.  **UE Startup:** The custom **AdvEngine Game Instance** reads all exported files.
-5.  **Instantiation:** The engine uses the parsed data (e.g., InteractionMatrix) to set up scene logic and dynamically instance objects.
+### A. Directory Structure
 
----
-## 4. File Structure & Export Paths (API Contract)
-
-### A. Project Export Directory (Data for UE 5.6)
-
-| Path | Purpose | Format | Notes (UE Consumer) |
-|---|---|---|---|
-| [ProjectName]/Data/ItemData.csv | List of all items, prices, and properties. | **CSV** | Loaded into the **BP_ItemData** Data Table. |
-| [ProjectName]/Data/CharacterData.csv| Defines all NPCs, initial dialogue points, and merchant status. | **CSV** | Loaded into the **BP_CharacterData** Data Table. |
-| [ProjectName]/Data/Attributes.csv | Defines all trackable character stats (e.g., Charisma). | **CSV** | Loaded into the **BP_AttributeData** Data Table. |
-| [ProjectName]/Logic/InteractionMatrix.json| **CRITICAL:** Full list of all puzzle logic. | **JSON** | Parsed by the **BP_InteractionComponent**. |
-| [ProjectName]/Dialogues/Graph_[ID].json| The exported node-graph for a specific conversation. | **JSON** | Parsed by the **BP_DialogueManager**. |
-| [ProjectName]/UI/WindowLayout.json | Defines the anchoring and contents of all custom menus (Inventory, Stats, Shop). | **JSON** | Used by the **BP_UIManager**. |
-
----
-## 5. Database Schema Documentation
-
-### A. Item Database Schema (Export: ItemData.csv)
-
-| Field Name | Data Type | Description |
-|---|---|---|
-| id | String | Unique identifier for inventory and logic checks. |
-| name | String | Display name for the player. |
-| type | String | Categorization: Key Item, Consumable, Currency, Equip. |
-| buy_price | Integer | Price to buy the item (set to -1 if non-purchasable). |
-| sell_price | Integer | Price to sell the item (set to -1 if unsellable). |
-
-### B. Character Attribute (Stat) Schema (Export: Attributes.csv)
-
-| Field Name | Data Type | Description |
-|---|---|---|
-| id | String | Unique stat identifier. |
-| name | String | Display name on the player stat screen. |
-| initial_value | Integer | Starting value for the player. |
-| max_value | Integer | Upper limit for the attribute. |
-
-### C. NPC Schema (Export: CharacterData.csv)
-
-| Field Name | Data Type | Description |
-|---|---|---|
-| id | String | Unique character identifier. |
-| default_animation | String | Animation to play when character is idle. |
-| dialogue_start_id | String | The ID of the first node in the Logic Graph for conversation start. |
-| is_merchant | Boolean | If True, this NPC can open the shop interface. |
-| shop_id | String/Null | If a merchant, the ID of the specific shop inventory they sell. |
-
----
-## 6. Interaction Matrix Structure (InteractionMatrix.json)
-
-The Interaction Matrix is an array of objects, where each object defines a possible interaction in the game. The UE Interaction Component iterates through these until it finds a match.
-
-### A. Interaction Object Schema
-
-```json
-{
-  "scene_id": "String",                 // The scene where this rule applies ("*" for global)
-  "target_hotspot_id": "String",        // The object being clicked (e.g., "Door_Office")
-  "used_item_id": "String/Null",        // The item dragged onto the hotspot (e.g., "itm_rusty_key", Null if direct click)
-  "priority": "Integer",                // Higher number means checked first (used for overrides)
-  "conditions": [                       // LIST of Conditions that MUST be TRUE
-    {
-      "variable_id": "String",          // Global variable/flag (e.g., "Door_State")
-      "required_value": "String/Integer"// The required value (e.g., "Locked")
-    },
-    {
-      "check_type": "AttributeCheck",   // Special condition for stats
-      "attribute_id": "attr_tech_skill",
-      "required_level": "Integer",      // e.g., 5
-      "comparison": "String"            // "GE" (Greater than or Equal to)
-    }
-  ],
-  "actions_on_success": [               // LIST of Actions to execute if all conditions are met
-    {
-      "command": "String",              // See Core Action Commands below
-      "parameters": {}                  // Key-value arguments for the command
-    }
-  ],
-  "fallback_dialogue_id": "String/Null" // Dialogue to play if conditions fail (e.g., "dia_door_locked_fail")
-}
-
-B. Core Action Commands (Mapped to UE Blueprint Functions)
-
-CommandPurposeExample Parameters (JSON)
-SET_VARIABLE Update a global game state variable:{"VarName": "Door_State", "Value": "Unlocked"}
-INVENTORY_ADD Gives the player an item:{"ItemID": "itm_wrench", "Quantity": 1}
-SCENE_TRANSITION Warps the player to a new scene: {"SceneID": "map_alley_exit", "SpawnPoint": "ExitDoor"}
-PLAY_SFX Triggers a sound effect event: {"SoundID": "sfx_door_click", "Volume": 0.8}
-SHOP_OPEN Triggers the Shop UI: {"ShopID": "shop_ricky_wares"}
-MODIFY_ATTRIBUTE Changes a character's attribute value: {"Attribute": "attr_charisma", "Value": 1, "Operation": "Add"}
+```text
+/AdvEngine/
+|-- src/
+|   |-- core/
+|   |   |-- __init__.py
+|   |   |-- project_manager.py     # Handles native project serialization (AdvEngine format)
+|   |   |-- data_schemas.py        # Python dataclass definitions for all game data
+|   |   |-- ue_exporter.py         # **CRITICAL:** Handles CSV/JSON formatting and filesystem write
+|   |-- ui/
+|   |   |-- __init__.py
+|   |   |-- main_window.py         # Main Adw.ApplicationWindow setup and navigation
+|   |   |-- module_scene.py        # Custom widget and logic for the Scene Editor canvas
+|   |   |-- module_logic.py        # Custom node graph widget for Dialogue/Interaction
+|   |   |-- module_database.py     # Spreadsheet-like editor for Items/Stats/NPCs
+|   |   |-- widgets/               # Reusable GTK components (e.g., Trace Log Panel)
+|   |-- resources/                 # Libadwaita UI/CSS files and icons
+|   |-- main.py                    # Application entry point
+|-- build/                         # PyInstaller output directories
+|-- data/                          # Runtime project files and configuration
+B. Module Responsibilitiescore/project_manager.py: Manages the native .adv file format, ensuring version control and integrity across saves.core/ue_exporter.py: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.ui/module_logic.py: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.4. AdvEngine Feature SpecificationA. Core Editor Modules (Tabs)Module NameFunctionality FocusKey FeatureScenesWorld DesignWalk Mesh drawing, Hotspot placement, Camera Safe Area preview. Animated Prop Template placement.LogicPuzzle & NarrativeNode-graph editor, Condition/Action definition, Dialogue/Quest branching, Live Variable Watcher.AssetsMedia ManagementSprite import, Animation sequence definition, Normal Map texture pairing (for UE lighting).Verbs & ItemsDatabaseEditing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens.AudioSound & AmbianceAssignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters.B. Rapid Development & Debugging FeaturesFeature NameIntegration PointPurposeBatch ProcessingAsset & Logic ModulesCSV import for dialogue scripts; Template system for repetitive animated environment assets.Interaction Trace LogDebug WindowStreams puzzle failure/success conditions from the UE game back to the AdvEngine UI.Contextual FallbacksLogic EditorGlobal or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here.").Task/Note AttachmentAll EditorsAllows attaching simple to-do items directly to Hotspots or Logic Nodes.C. Window/Menu Manager DetailsUI Anchoring: Provides a visual editor to define how UI elements (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios (16:9, 21:9).Layout Definition: Defines the grid size (e.g., 5x4 inventory grid) and sprite key for currency indicators.5. Export Contract Data (API Specification)A. File Structure & PathsPathPurposeFormatNotes (UE Consumer)[ProjectName]/Data/ItemData.csvList of all items, prices, and properties.CSVLoaded into the BP_ItemData Data Table.[ProjectName]/Logic/InteractionMatrix.jsonCRITICAL: Full puzzle logic file.JSONParsed by the BP_InteractionComponent at runtime.[ProjectName]/UI/WindowLayout.jsonDefines the anchoring and contents of all custom menus.JSONUsed by the BP_UIManager to dynamically build the UI.B. Core Action Commands (Mapped to UE Blueprint Functions)These commands are the fixed API contract between AdvEngine and the UE runtime.CommandPurposeSET_VARIABLEUpdate a global game state variable or quest flag.INVENTORY_ADD/REMOVEModifies the player's inventory and updates the UE Inventory UI Widget.SCENE_TRANSITIONWarps the player to a new scene and spawn point.SHOP_OPENTriggers the Shop UI, referencing a specific Shop ID for inventory population.MODIFY_ATTRIBUTEChanges a character's attribute value (e.g., Tech Skill +1).PLAY_CINEMATICTriggers a pre-built UE Sequencer asset for cutscenes.PLAY_SFXTriggers a sound effect event defined in the Audio Manifest.C. Interaction Matrix Structure (InteractionMatrix.json)The central logic file, an array of Interaction Objects.JSON[
+  // Array of Interaction Objects
+  {
+    "scene_id": "String",                 // Scene ID or "*"
+    "target_hotspot_id": "String",        // The object being clicked
+    "used_item_id": "String/Null",        // The item dragged onto the hotspot (Null if direct click)
+    "priority": "Integer",                // Used to check complex overrides first
+    "conditions": [                       // LIST of Conditions that MUST be TRUE
+      // { "variable_id": "Door_State", "required_value": "Locked" },
+      // { "check_type": "AttributeCheck", "attribute_id": "attr_tech_skill", "required_level": 5, "comparison": "GE" }
+    ],
+    "actions_on_success": [               // LIST of Core Actions to execute
+      // { "command": "SET_VARIABLE", "parameters": {"VarName": "Quest_Started", "Value": true} }
+    ],
+    "fallback_dialogue_id": "String/Null" // Dialogue played if conditions fail
+  }
+]
+6. Database Schema DocumentationA. Item Database Schema (Export: ItemData.csv)Field NameData TypeDescriptionidStringUnique identifier for inventory and logic checks.nameStringDisplay name for the player.descriptionStringFlavor text for the Look action.typeStringCategorization: Key Item, Consumable, Currency, Equip.buy_priceIntegerPrice to buy the item (-1 if non-purchasable).sell_priceIntegerPrice to sell the item (-1 if unsellable).B. Character Attribute (Stat) Schema (Export: Attributes.csv)Field NameData TypeDescriptionidStringUnique stat identifier.nameStringDisplay name on the player stat screen.initial_valueIntegerStarting value for the player.max_valueIntegerUpper limit for the attribute.C. NPC Schema (Export: CharacterData.csv)Field NameData TypeDescriptionidStringUnique character identifier.display_nameStringThe name shown in dialogue boxes.dialogue_start_idStringThe ID of the first node in the Logic Graph for conversation start.is_merchantBooleanIf True, this NPC can open the shop interface.shop_idString/NullThe ID of the specific shop inventory they sell.D. Shop Database Schema (Implicit in CharacterData/ItemData)Definition: Defined by the shop_id in the NPC schema and the buy_price/sell_price in the Item schema.Stock Data: An additional simple table/list is required
