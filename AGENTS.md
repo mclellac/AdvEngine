@@ -1,4 +1,4 @@
-## agents.md: AdvEngine Project Documentation (Exhaustive Detail)
+## AGENTS.md: AdvEngine Project Documentation (Exhaustive Detail)
 
 ---
 ## 1. Project Overview & Context
@@ -77,4 +77,39 @@ B. Module Responsibilitiescore/project_manager.py: Manages the native .adv file 
     "fallback_dialogue_id": "String/Null" // Dialogue played if conditions fail
   }
 ]
-6. Database Schema DocumentationA. Item Database Schema (Export: ItemData.csv)Field NameData TypeDescriptionidStringUnique identifier for inventory and logic checks.nameStringDisplay name for the player.descriptionStringFlavor text for the Look action.typeStringCategorization: Key Item, Consumable, Currency, Equip.buy_priceIntegerPrice to buy the item (-1 if non-purchasable).sell_priceIntegerPrice to sell the item (-1 if unsellable).B. Character Attribute (Stat) Schema (Export: Attributes.csv)Field NameData TypeDescriptionidStringUnique stat identifier.nameStringDisplay name on the player stat screen.initial_valueIntegerStarting value for the player.max_valueIntegerUpper limit for the attribute.C. NPC Schema (Export: CharacterData.csv)Field NameData TypeDescriptionidStringUnique character identifier.display_nameStringThe name shown in dialogue boxes.dialogue_start_idStringThe ID of the first node in the Logic Graph for conversation start.is_merchantBooleanIf True, this NPC can open the shop interface.shop_idString/NullThe ID of the specific shop inventory they sell.D. Shop Database Schema (Implicit in CharacterData/ItemData)Definition: Defined by the shop_id in the NPC schema and the buy_price/sell_price in the Item schema.Stock Data: An additional simple table/list is required
+### 6. Database Schema Documentation
+
+#### A. Item Database Schema (Export: ItemData.csv)
+
+| Field Name  | Data Type | Description                                           |
+|-------------|-----------|-------------------------------------------------------|
+| id          | String    | Unique identifier for inventory and logic checks.     |
+| name        | String    | Display name for the player.                          |
+| description | String    | Flavor text for the Look action.                      |
+| type        | String    | Categorization: Key Item, Consumable, Currency, Equip.|
+| buy_price   | Integer   | Price to buy the item (-1 if non-purchasable).        |
+| sell_price  | Integer   | Price to sell the item (-1 if unsellable).            |
+
+#### B. Character Attribute (Stat) Schema (Export: Attributes.csv)
+
+| Field Name    | Data Type | Description                               |
+|---------------|-----------|-------------------------------------------|
+| id            | String    | Unique stat identifier.                   |
+| name          | String    | Display name on the player stat screen.   |
+| initial_value | Integer   | Starting value for the player.            |
+| max_value     | Integer   | Upper limit for the attribute.            |
+
+#### C. NPC Schema (Export: CharacterData.csv)
+
+| Field Name        | Data Type   | Description                                                      |
+|-------------------|-------------|------------------------------------------------------------------|
+| id                | String      | Unique character identifier.                                     |
+| display_name      | String      | The name shown in dialogue boxes.                                |
+| dialogue_start_id | String      | The ID of the first node in the Logic Graph for conversation start.|
+| is_merchant       | Boolean     | If True, this NPC can open the shop interface.                   |
+| shop_id           | String/Null | The ID of the specific shop inventory they sell.                 |
+
+#### D. Shop Database Schema (Implicit in CharacterData/ItemData)
+
+*   **Definition**: Defined by the `shop_id` in the NPC schema and the `buy_price`/`sell_price` in the Item schema.
+*   **Stock Data**: An additional simple table/list is required
