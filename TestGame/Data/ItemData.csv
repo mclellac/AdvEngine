@@ -1,1 +1,4 @@
 id,name,type,buy_price,sell_price
+itm_key_office,Office Key,Key Item,-1,-1
+itm_health_pack,Health Pack,Consumable,50,25
+itm_credits,Credits,Currency,1,1
