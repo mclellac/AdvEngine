@@ -77,28 +77,106 @@ class CharacterGObject(GObject.Object):
         self.is_merchant = character.is_merchant
         self.shop_id = character.shop_id
 
-# --- Interaction Matrix Schemas (InteractionMatrix.json) ---
+# --- Scene Schemas ---
 
 @dataclass
-class Condition:
-    # Using a generic dict-like structure for now, as it's quite variable.
-    # A more robust implementation could use subclasses for different condition types.
-    raw_data: Dict[str, Any]
+class Hotspot:
+    id: str
+    name: str
+    x: int
+    y: int
+    width: int
+    height: int
+
+class HotspotGObject(GObject.Object):
+    __gtype_name__ = 'HotspotGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    x = GObject.Property(type=int)
+    y = GObject.Property(type=int)
+    width = GObject.Property(type=int)
+    height = GObject.Property(type=int)
+
+    def __init__(self, hotspot: Hotspot):
+        super().__init__()
+        self.id = hotspot.id
+        self.name = hotspot.name
+        self.x = hotspot.x
+        self.y = hotspot.y
+        self.width = hotspot.width
+        self.height = hotspot.height
 
 @dataclass
-class Action:
-    command: str
+class Scene:
+    id: str
+    name: str
+    background_image: Optional[str] = None
+    hotspots: List[Hotspot] = field(default_factory=list)
+
+class SceneGObject(GObject.Object):
+    __gtype_name__ = 'SceneGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    background_image = GObject.Property(type=str)
+
+    def __init__(self, scene: Scene):
+        super().__init__()
+        self.id = scene.id
+        self.name = scene.name
+        self.background_image = scene.background_image
+        self.scene_data = scene # Store the original dataclass for access to hotspots
+
+# --- Logic Editor Schemas (Node-Based) ---
+
+@dataclass
+class LogicNode:
+    id: str
+    node_type: str
+    x: int
+    y: int
+    inputs: List[str] = field(default_factory=list)  # List of connected node IDs
+    outputs: List[str] = field(default_factory=list) # List of connected node IDs
+
+@dataclass
+class DialogueNode(LogicNode):
+    character_id: str
+    dialogue_text: str
+
+@dataclass
+class ConditionNode(LogicNode):
+    # e.g., "check_variable", "check_attribute"
+    condition_type: str
     parameters: Dict[str, Any]
 
 @dataclass
-class Interaction:
-    scene_id: str
-    target_hotspot_id: str
-    used_item_id: Optional[str]
-    priority: int
-    conditions: List[Condition] = field(default_factory=list)
-    actions_on_success: List[Action] = field(default_factory=list)
-    fallback_dialogue_id: Optional[str] = None
+class ActionNode(LogicNode):
+    # e.g., "SET_VARIABLE", "INVENTORY_ADD"
+    action_command: str
+    parameters: Dict[str, Any]
+
+@dataclass
+class LogicGraph:
+    id: str
+    name: str
+    nodes: List[LogicNode] = field(default_factory=list)
+
+# --- Asset Schemas ---
+@dataclass
+class Asset:
+    id: str
+    name: str
+    asset_type: str # "sprite", "animation", "sound"
+    file_path: str
+
+@dataclass
+class Animation(Asset):
+    frame_count: int
+    frame_rate: int
+
+# --- Audio Schemas ---
+@dataclass
+class Audio(Asset):
+    duration: float # in seconds
 
 # A container for all project data
 @dataclass
@@ -106,5 +184,8 @@ class ProjectData:
     items: List[Item] = field(default_factory=list)
     attributes: List[Attribute] = field(default_factory=list)
     characters: List[Character] = field(default_factory=list)
-    interaction_matrix: List[Interaction] = field(default_factory=list)
+    scenes: List[Scene] = field(default_factory=list)
+    logic_graphs: List[LogicGraph] = field(default_factory=list)
+    assets: List[Asset] = field(default_factory=list)
+    audio_files: List[Audio] = field(default_factory=list)
     # Dialogue graphs and UI layouts would also be added here.

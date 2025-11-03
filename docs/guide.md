@@ -10,10 +10,18 @@ The core philosophy of AdvEngine is to separate the creative design process from
 
 ## 2. Getting Started: Your First Project
 
-When you first launch AdvEngine, you'll be prompted to either create a new project or open an existing one. An AdvEngine project is a directory that contains all your game's data.
+When you first launch AdvEngine, it will automatically load the `TestGame` project included in the repository. The application's core logic is managed by a `ProjectManager` that handles loading all data from the project's subdirectories.
 
--   **Creating a New Project:** Simply choose a name and a location for your project folder. AdvEngine will create the necessary subdirectories for you.
--   **Opening a Project:** Navigate to your existing project folder and select it.
+The project is structured as follows:
+-   `TestGame/Data/`: Contains all `.csv` files for items, characters, and attributes.
+-   `TestGame/Logic/`: Contains `.json` files for game logic, such as the interaction matrix.
+-   `TestGame/UI/`: Contains `.json` files for UI layouts.
+
+The application itself is located in the `adv_engine/src` directory. To run it, you'll need to use the following command from the root of the repository:
+
+```bash
+python3 -m adv_engine.src.main
+```
 
 ## 3. The AdvEngine Interface
 
