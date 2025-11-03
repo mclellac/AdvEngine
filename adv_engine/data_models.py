@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
+from gi.repository import GObject
 
 # Schema for ItemData.csv
 @dataclass
@@ -9,6 +10,23 @@ class Item:
     type: str
     buy_price: int
     sell_price: int
+
+class ItemGObject(GObject.Object):
+    __gtype_name__ = 'ItemGObject'
+
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    type = GObject.Property(type=str)
+    buy_price = GObject.Property(type=int)
+    sell_price = GObject.Property(type=int)
+
+    def __init__(self, item: Item):
+        super().__init__()
+        self.id = item.id
+        self.name = item.name
+        self.type = item.type
+        self.buy_price = item.buy_price
+        self.sell_price = item.sell_price
 
 # Schema for Attributes.csv
 @dataclass

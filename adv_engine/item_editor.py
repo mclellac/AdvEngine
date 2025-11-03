@@ -1,23 +1,8 @@
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, Gio
 
-from .data_models import Item
-
-class ItemListModel(GObject.Object, Gtk.ListModel):
-    """A Gtk.ListModel implementation for a simple Python list of Item objects."""
-    def __init__(self, items):
-        super().__init__()
-        self.items = items if items is not None else []
-
-    def do_get_item_type(self):
-        return Item
-
-    def do_get_n_items(self):
-        return len(self.items)
-
-    def do_get_item(self, position):
-        return self.items[position]
+from .data_models import Item, ItemGObject
 
 class ItemEditor(Gtk.Box):
     def __init__(self, items):
@@ -37,7 +22,10 @@ class ItemEditor(Gtk.Box):
         self.column_view.set_vexpand(True)
 
         # Use the provided item data to create the model
-        self.model = ItemListModel(items=items)
+        self.model = Gio.ListStore(item_type=ItemGObject)
+        for item in items:
+            self.model.append(ItemGObject(item))
+
         self.selection = Gtk.SingleSelection(model=self.model)
         self.column_view.set_model(self.selection)
 

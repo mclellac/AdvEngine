@@ -43,9 +43,6 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.item_editor = ItemEditor(self.items)
         self.character_editor = CharacterEditor()
         self.attribute_editor = AttributeEditor()
-        self.content_stack.add_named(self.item_editor, "items")
-        self.content_stack.add_named(self.character_editor, "characters")
-        self.content_stack.add_named(self.attribute_editor, "attributes")
 
 
         self.split_view.set_content(Adw.NavigationPage.new(content_container, "Content"))
@@ -54,21 +51,40 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.sidebar_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
 
-        self.sidebar_list.append(self.create_nav_row("Project", "welcome"))
-        self.sidebar_list.append(self.create_nav_row("Items", "items"))
-        self.sidebar_list.append(self.create_nav_row("Characters", "characters"))
-        self.sidebar_list.append(self.create_nav_row("Attributes", "attributes"))
+        # --- Sidebar ---
+        self.sidebar_list = Gtk.ListBox()
+        self.sidebar_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
+        self.split_view.set_sidebar(Adw.NavigationPage.new(self.sidebar_list, "Editors"))
 
-        self.split_view.set_sidebar(Adw.NavigationPage.new(self.sidebar_list, "Navigation"))
+        # --- Add editors to sidebar and stack ---
+        self.add_editor("Scenes", "scenes_editor", Gtk.Label(label="This is the Scenes editor."))
+        self.add_editor("Logic", "logic_editor", Gtk.Label(label="This is the Logic editor."))
+        self.add_editor("Assets", "assets_editor", Gtk.Label(label="This is the Assets editor."))
+
+        # Create a container for the Verbs & Items editors
+        verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        verbs_items_stack = Adw.ViewStack()
+        verbs_items_switcher = Adw.ViewSwitcher(stack=verbs_items_stack)
+        verbs_items_container.append(verbs_items_switcher)
+        verbs_items_container.append(verbs_items_stack)
+
+        verbs_items_stack.add_titled(self.item_editor, "items", "Items")
+        verbs_items_stack.add_titled(self.character_editor, "characters", "Characters")
+        verbs_items_stack.add_titled(self.attribute_editor, "attributes", "Attributes")
+
+        self.add_editor("Verbs & Items", "verbs_items_editor", verbs_items_container)
+        self.add_editor("Audio", "audio_editor", Gtk.Label(label="This is the Audio editor."))
+
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
-        self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
 
 
-    def create_nav_row(self, label, view_name):
+    def add_editor(self, name, view_name, widget):
         row = Gtk.ListBoxRow()
-        row.set_child(Gtk.Label(label=label))
+        row.set_child(Gtk.Label(label=name))
         row.view_name = view_name
-        return row
+        self.sidebar_list.append(row)
+        self.content_stack.add_named(widget, view_name)
 
     def on_sidebar_activated(self, listbox, row):
         if row:
