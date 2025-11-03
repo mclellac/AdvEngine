@@ -58,10 +58,18 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         content_container = Adw.ToolbarView()
         content_container.set_content(self.content_stack)
 
-        self.split_view.set_content(Adw.NavigationPage.new(content_container, "Content"))
+        self.split_view.set_content(
+            Adw.NavigationPage.new(content_container, "Content")
+        )
 
-        welcome_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
-        welcome_box.append(Gtk.Label(label="Select an editor from the sidebar.", css_classes=["title-1"]))
+        welcome_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER
+        )
+        welcome_box.append(
+            Gtk.Label(
+                label="Select an editor from the sidebar.", css_classes=["title-1"]
+            )
+        )
         self.content_stack.add_named(welcome_box, "welcome")
 
         # --- Instantiate editors with project_manager ---
@@ -93,38 +101,58 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         verbs_items_container.append(verbs_items_stack)
 
         verbs_items_stack.add_titled(ItemEditor(self.project_manager), "items", "Items")
-        verbs_items_stack.add_titled(CharacterEditor(self.project_manager), "characters", "Characters")
-        verbs_items_stack.add_titled(AttributeEditor(self.project_manager), "attributes", "Attributes")
+        verbs_items_stack.add_titled(
+            CharacterEditor(self.project_manager), "characters", "Characters"
+        )
+        verbs_items_stack.add_titled(
+            AttributeEditor(self.project_manager), "attributes", "Attributes"
+        )
 
-        self.add_editor("Verbs &amp; Items", "verbs_items_editor", verbs_items_container)
+        self.add_editor(
+            "Verbs &amp; Items", "verbs_items_editor", verbs_items_container
+        )
         self.add_editor("Audio", "audio_editor", self.audio_editor)
 
         # Set initial state
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
-        self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
+        self.on_sidebar_activated(
+            self.sidebar_list, self.sidebar_list.get_selected_row()
+        )
 
         self.setup_logic_editor_actions()
 
-
     def setup_logic_editor_actions(self):
         add_dialogue_action = Gio.SimpleAction.new("add-dialogue-node", None)
-        add_dialogue_action.connect("activate", lambda a, p: self.logic_editor.on_add_dialogue_node(None))
+        add_dialogue_action.connect(
+            "activate", lambda a, p: self.logic_editor.on_add_dialogue_node(None)
+        )
         self.add_action(add_dialogue_action)
 
         add_condition_action = Gio.SimpleAction.new("add-condition-node", None)
-        add_condition_action.connect("activate", lambda a, p: self.logic_editor.on_add_condition_node(None))
+        add_condition_action.connect(
+            "activate", lambda a, p: self.logic_editor.on_add_condition_node(None)
+        )
         self.add_action(add_condition_action)
 
         add_action_action = Gio.SimpleAction.new("add-action-node", None)
-        add_action_action.connect("activate", lambda a, p: self.logic_editor.on_add_action_node(None))
+        add_action_action.connect(
+            "activate", lambda a, p: self.logic_editor.on_add_action_node(None)
+        )
         self.add_action(add_action_action)
 
         edit_node_action = Gio.SimpleAction.new("edit-node", None)
-        edit_node_action.connect("activate", lambda a, p: self.logic_editor.edit_node_dialog(self.logic_editor.selected_nodes[0]))
+        edit_node_action.connect(
+            "activate",
+            lambda a, p: self.logic_editor.edit_node_dialog(
+                self.logic_editor.selected_nodes[0]
+            ),
+        )
         self.add_action(edit_node_action)
 
         delete_node_action = Gio.SimpleAction.new("delete-node", None)
-        delete_node_action.connect("activate", lambda a, p: self.logic_editor.on_delete_node(None))
+        delete_node_action.connect(
+            "activate", lambda a, p: self.logic_editor.on_delete_node(None)
+        )
         self.add_action(delete_node_action)
 
     def add_editor(self, name, view_name, widget):
@@ -152,13 +180,12 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.get_application().save_project()
 
 
-
 class AdvEngine(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.project_manager = None
         self.win = None
-        self.connect('activate', self.on_activate)
+        self.connect("activate", self.on_activate)
 
     def on_activate(self, app):
         # This is called when the application is first launched
@@ -196,7 +223,9 @@ class AdvEngine(Adw.Application):
         self.project_manager.load_project()
 
         # Create a new window for the project
-        new_win = AdvEngineWindow(application=self, project_manager=self.project_manager)
+        new_win = AdvEngineWindow(
+            application=self, project_manager=self.project_manager
+        )
         new_win.present()
 
         # If there was an old window, close it.
@@ -211,7 +240,9 @@ class AdvEngine(Adw.Application):
             parent=self.win,
             action=Gtk.FileChooserAction.SELECT_FOLDER,
         )
-        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK)
+        dialog.add_buttons(
+            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+        )
 
         def on_dialog_response(dialog, response):
             if response == Gtk.ResponseType.OK:
@@ -239,16 +270,18 @@ class AdvEngine(Adw.Application):
         dialog = Adw.AboutWindow(
             transient_for=self.win,
             application_name="AdvEngine",
-            developer_name="Your Name",
+            developer_name="Carey McLelland",
             version="0.1.0",
             comments="A modern adventure game editor.",
             website="https://example.com",
         )
         dialog.present()
 
+
 def main():
     app = AdvEngine(application_id="com.example.advengine")
     app.run(sys.argv)
+
 
 if __name__ == "__main__":
     main()
