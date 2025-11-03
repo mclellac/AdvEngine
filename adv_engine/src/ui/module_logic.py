@@ -159,6 +159,7 @@ class LogicEditor(Gtk.Box):
 
         dialogue_row = Adw.ActionRow(title="Add Dialogue Node")
         dialogue_button = Gtk.Button(label="Add")
+        dialogue_button.set_tooltip_text("Create a new dialogue node")
         dialogue_button.connect("clicked", self.on_add_dialogue_node)
         dialogue_row.add_suffix(dialogue_button)
         dialogue_row.set_activatable_widget(dialogue_button)
@@ -166,6 +167,7 @@ class LogicEditor(Gtk.Box):
 
         condition_row = Adw.ActionRow(title="Add Condition Node")
         condition_button = Gtk.Button(label="Add")
+        condition_button.set_tooltip_text("Create a new condition node")
         condition_button.connect("clicked", self.on_add_condition_node)
         condition_row.add_suffix(condition_button)
         condition_row.set_activatable_widget(condition_button)
@@ -173,6 +175,7 @@ class LogicEditor(Gtk.Box):
 
         action_row = Adw.ActionRow(title="Add Action Node")
         action_button = Gtk.Button(label="Add")
+        action_button.set_tooltip_text("Create a new action node")
         action_button.connect("clicked", self.on_add_action_node)
         action_row.add_suffix(action_button)
         action_row.set_activatable_widget(action_button)
@@ -180,6 +183,7 @@ class LogicEditor(Gtk.Box):
 
         self.delete_node_row = Adw.ActionRow(title="Delete Selected Node(s)")
         self.delete_node_button = Gtk.Button(label="Delete")
+        self.delete_node_button.set_tooltip_text("Delete the selected node(s) (Del)")
         self.delete_node_button.set_sensitive(False)
         self.delete_node_button.connect("clicked", self.on_delete_node)
         self.delete_node_row.add_suffix(self.delete_node_button)
