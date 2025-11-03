@@ -187,6 +187,8 @@ class LogicEditor(Gtk.Box):
         self.connecting_line_x = 0
         self.connecting_line_y = 0
         self.resizing_node = None
+        self.initial_node_width = 0
+        self.initial_node_height = 0
 
         self.set_margin_top(10)
         self.set_margin_bottom(10)
@@ -293,14 +295,15 @@ class LogicEditor(Gtk.Box):
                 if (x >= node.x + node.width - 10 and x <= node.x + node.width and
                         y >= node.y + node.height - 10 and y <= node.y + node.height):
                     self.resizing_node = node
+                    self.initial_node_width = node.width
+                    self.initial_node_height = node.height
                     gesture.set_state(Gtk.EventSequenceState.CLAIMED)
                     return
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
-            success, start_x, start_y = gesture.get_start_point()
-            self.resizing_node.width = max(100, self.resizing_node.width + x)
-            self.resizing_node.height = max(50, self.resizing_node.height + y)
+            self.resizing_node.width = max(150, self.initial_node_width + x)
+            self.resizing_node.height = max(80, self.initial_node_height + y)
             self.canvas.queue_draw()
 
     def on_resize_drag_end(self, gesture, x, y):
@@ -383,15 +386,19 @@ class LogicEditor(Gtk.Box):
 
         body_text = ""
         if isinstance(node, DialogueNode):
-            body_text = f"Character: {node.character_id}\n\"{node.dialogue_text}\""
+            char_id = Pango.markup_escape_text(node.character_id)
+            dialogue = Pango.markup_escape_text(node.dialogue_text)
+            body_text = f"<b>Character:</b> {char_id}\n<i>&quot;{dialogue}&quot;</i>"
         elif isinstance(node, ConditionNode):
-            params_str = "\n".join([f"- {k}: {v}" for k, v in node.parameters.items()])
-            body_text = f"Type: {node.condition_type}\nParams:\n{params_str}"
+            command = Pango.markup_escape_text(node.condition_type)
+            params_str = "\n".join([f"• <b>{Pango.markup_escape_text(k)}:</b> {Pango.markup_escape_text(str(v))}" for k, v in node.parameters.items()])
+            body_text = f"<b>IF:</b> {command}\n<small>Parameters:</small>\n{params_str}"
         elif isinstance(node, ActionNode):
-            params_str = "\n".join([f"- {k}: {v}" for k, v in node.parameters.items()])
-            body_text = f"Command: {node.action_command}\nParams:\n{params_str}"
+            command = Pango.markup_escape_text(node.action_command)
+            params_str = "\n".join([f"• <b>{Pango.markup_escape_text(k)}:</b> {Pango.markup_escape_text(str(v))}" for k, v in node.parameters.items()])
+            body_text = f"<b>DO:</b> {command}\n<small>Parameters:</small>\n{params_str}"
 
-        layout.set_text(body_text, -1)
+        layout.set_markup(body_text if body_text else "", -1)
         PangoCairo.show_layout(cr, layout)
 
 

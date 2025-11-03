@@ -393,3 +393,28 @@ class StringGObject(GObject.Object):
     def __init__(self, value):
         super().__init__()
         self.value = value
+
+@dataclass
+class SearchResult:
+    """A unified container for displaying search results from different parts of the project."""
+    id: str
+    name: str
+    type: str  # e.g., "Item", "Character", "Logic Node"
+    location: str  # e.g., "Scene: main_street", "Graph: puzzle_1"
+    original_object: Any  # Reference to the original data object
+
+class SearchResultGObject(GObject.Object):
+    __gtype_name__ = 'SearchResultGObject'
+
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    type = GObject.Property(type=str)
+    location = GObject.Property(type=str)
+
+    def __init__(self, result: SearchResult):
+        super().__init__()
+        self.result_data = result
+        self.id = result.id
+        self.name = result.name
+        self.type = result.type
+        self.location = result.location

@@ -9,7 +9,8 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction
+    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction,
+    SearchResult
 )
 
 class ProjectManager:
@@ -679,6 +680,53 @@ class ProjectManager:
                 if hotspot.id == hotspot_id:
                     return i * 1000 + j # A bit of a hack to get a unique index
         return -1
+
+    def search(self, term):
+        """Searches all project data for a given term."""
+        results = []
+        term_lower = term.lower()
+
+        # Search Items
+        for item in self.data.items:
+            if term_lower in item.id.lower() or term_lower in item.name.lower():
+                results.append(SearchResult(id=item.id, name=item.name, type="Item", location="Database", original_object=item))
+
+        # Search Characters
+        for char in self.data.characters:
+            if term_lower in char.id.lower() or term_lower in char.display_name.lower():
+                results.append(SearchResult(id=char.id, name=char.display_name, type="Character", location="Database", original_object=char))
+
+        # Search Scenes and Hotspots
+        for scene in self.data.scenes:
+            if term_lower in scene.id.lower() or term_lower in scene.name.lower():
+                results.append(SearchResult(id=scene.id, name=scene.name, type="Scene", location="Scenes", original_object=scene))
+            for hotspot in scene.hotspots:
+                if term_lower in hotspot.id.lower() or term_lower in hotspot.name.lower():
+                    results.append(SearchResult(id=hotspot.id, name=hotspot.name, type="Hotspot", location=f"Scene: {scene.name}", original_object=hotspot))
+
+        # Search Logic Graphs and Nodes
+        for graph in self.data.logic_graphs + self.data.dialogue_graphs:
+            if term_lower in graph.id.lower() or term_lower in graph.name.lower():
+                 results.append(SearchResult(id=graph.id, name=graph.name, type="Logic Graph", location="Logic", original_object=graph))
+            for node in graph.nodes:
+                # Basic node search
+                if term_lower in node.id.lower():
+                    results.append(SearchResult(id=node.id, name=node.id, type=node.node_type, location=f"Graph: {graph.name}", original_object=node))
+                # Deeper search for specific node types
+                if isinstance(node, DialogueNode) and term_lower in node.dialogue_text.lower():
+                    results.append(SearchResult(id=node.id, name=f'"{node.dialogue_text[:30]}..."', type="Dialogue Node", location=f"Graph: {graph.name}", original_object=node))
+                if isinstance(node, (ActionNode, ConditionNode)):
+                    command = node.action_command if isinstance(node, ActionNode) else node.condition_type
+                    if term_lower in command.lower():
+                        results.append(SearchResult(id=node.id, name=command, type=node.node_type, location=f"Graph: {graph.name}", original_object=node))
+
+
+        # Search Assets
+        for asset in self.data.assets:
+            if term_lower in asset.id.lower() or term_lower in asset.name.lower():
+                results.append(SearchResult(id=asset.id, name=asset.name, type="Asset", location="Assets", original_object=asset))
+
+        return results
 
     @staticmethod
     def get_templates():

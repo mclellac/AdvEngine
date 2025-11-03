@@ -25,6 +25,46 @@ from .ui.module_state import GlobalStateEditor
 from .ui.module_interaction import InteractionEditor
 from .ui.preferences import PreferencesDialog
 from .ui.shortcuts import ShortcutsDialog
+from .core.data_schemas import SearchResult, SearchResultGObject
+
+
+class SearchResultsView(Gtk.Box):
+    def __init__(self, project_manager):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.project_manager = project_manager
+        self.set_margin_top(10)
+        self.set_margin_bottom(10)
+        self.set_margin_start(10)
+        self.set_margin_end(10)
+
+        self.model = Gio.ListStore(item_type=SearchResultGObject)
+        self.selection = Gtk.SingleSelection(model=self.model)
+
+        self.column_view = Gtk.ColumnView(model=self.selection)
+        self.column_view.set_vexpand(True)
+
+        # Define columns
+        self._create_column("Name", lambda item: item.name)
+        self._create_column("Type", lambda item: item.type)
+        self._create_column("Location", lambda item: item.location)
+
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_child(self.column_view)
+        self.append(scrolled_window)
+
+    def _create_column(self, title, expression_func):
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
+        col = Gtk.ColumnViewColumn(title=title, factory=factory)
+        self.column_view.append_column(col)
+
+    def update_results(self, search_term):
+        self.model.remove_all()
+        if search_term:
+            results = self.project_manager.search(search_term)
+            for result in results:
+                self.model.append(SearchResultGObject(result))
 
 
 class AdvEngineWindow(Adw.ApplicationWindow):
@@ -52,6 +92,11 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         play_button.set_tooltip_text("Launch game (Ctrl+P)")
         play_button.connect("clicked", self._on_play_clicked)
         self.header.pack_start(play_button)
+
+        search_entry = Gtk.SearchEntry()
+        search_entry.set_placeholder_text("Search Project...")
+        search_entry.connect("search-changed", self._on_search_changed)
+        self.header.pack_start(search_entry)
 
         # Add a menu button to the header
         menu = Gio.Menu.new()
@@ -108,6 +153,11 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         sidebar_page = Adw.NavigationPage.new(sidebar_content, "Editors")
         self.split_view.set_sidebar(sidebar_page)
         self.split_view.set_property("collapsed", False)
+
+        # --- Add Search View to the stack ---
+        self.search_results_view = SearchResultsView(self.project_manager)
+        self.content_stack.add_named(self.search_results_view, "search_results")
+
         # --- Add actual editor widgets to sidebar and stack ---
         self.add_editor("Scenes", "scenes_editor", self.scene_editor)
         self.add_editor("Logic", "logic_editor", self.logic_editor)
@@ -234,6 +284,19 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.get_application().save_project()
         # This is a placeholder for running the Unreal Engine project
         print(f"Running command: /path/to/unreal/engine/bin/editor {self.project_manager.project_path}/AdvEngine.uproject")
+
+    def _on_search_changed(self, search_entry):
+        search_term = search_entry.get_text()
+        if search_term:
+            self.content_stack.set_visible_child_name("search_results")
+            self.search_results_view.update_results(search_term)
+        else:
+            # Return to the previously selected editor or welcome screen
+            selected_row = self.sidebar_list.get_selected_row()
+            if selected_row:
+                self.content_stack.set_visible_child_name(selected_row.get_name())
+            else:
+                self.content_stack.set_visible_child_name("welcome")
 
 
 class AdvEngine(Adw.Application):

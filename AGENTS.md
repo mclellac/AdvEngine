@@ -118,6 +118,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | **Contextual Fallbacks** | Logic Editor            | Global or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here."). |
 | **Task/Note Attachment** | All Editors             | Allows attaching simple to-do items directly to Hotspots or Logic Nodes.                                |
 | **Save Status Indicator**| Main Window             | The window title displays an asterisk (*) when there are unsaved changes. Project saving is handled manually via a "Save" button or `Ctrl+S`. |
+| **Project-Wide Search**  | Main Window Header      | A search bar in the header allows for quickly finding any asset, item, character, or logic node by its ID or name across the entire project. |
 
 ### C. Window/Menu Manager Details
 

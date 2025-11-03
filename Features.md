@@ -82,3 +82,7 @@ point-and-click adventure games.
     - Ability to create new projects from a template (e.g., "Sierra Style",
       "Modern Minimalist") that comes with pre-configured UI, verbs, and example
       structures.
+
+- [x] **Project-Wide Search**
+    - A global search bar to quickly find any asset, item, character, or logic
+      node by its ID or name across the entire project.
