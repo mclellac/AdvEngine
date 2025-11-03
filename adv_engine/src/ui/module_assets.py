@@ -37,7 +37,9 @@ class AssetEditor(Gtk.Box):
         self.refresh_asset_list()
 
         self.asset_list_view = Gtk.ColumnView()
-        self.asset_list_view.set_model(Gtk.SingleSelection(model=self.model))
+        selection_model = Gtk.SingleSelection(model=self.model)
+        selection_model.connect("selection-changed", self.on_asset_selected)
+        self.asset_list_view.set_model(selection_model)
         self._create_column("ID", lambda asset: asset.id)
         self._create_column("Name", lambda asset: asset.name)
         self._create_column("Type", lambda asset: asset.asset_type)
@@ -57,7 +59,22 @@ class AssetEditor(Gtk.Box):
         preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         preview_pane.set_hexpand(True)
 
+        self.preview_image = Gtk.Picture()
+        self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
+        preview_pane.append(self.preview_image)
+
         self.append(preview_pane)
+
+    def on_asset_selected(self, selection_model, position, n_items):
+        selected_asset_gobject = selection_model.get_selected_item()
+        if selected_asset_gobject:
+            asset = selected_asset_gobject.asset_data
+            if asset.asset_type in ["sprite", "texture"] and os.path.exists(asset.file_path):
+                self.preview_image.set_filename(asset.file_path)
+            else:
+                self.preview_image.set_filename(None) # Clear preview if not an image or not found
+        else:
+            self.preview_image.set_filename(None)
 
     def _create_column(self, title, expression_func):
         factory = Gtk.SignalListItemFactory()

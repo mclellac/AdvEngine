@@ -219,6 +219,14 @@ class LogicEditor(Gtk.Box):
         key_controller.connect("key-pressed", self.on_key_pressed)
         self.canvas.add_controller(key_controller)
 
+        right_click_gesture = Gtk.GestureClick.new()
+        right_click_gesture.set_button(Gdk.BUTTON_SECONDARY)
+        right_click_gesture.connect("pressed", self.on_right_click)
+        self.canvas.add_controller(right_click_gesture)
+
+        self.create_canvas_context_menu()
+        self.create_node_context_menu()
+
     def on_canvas_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
@@ -239,6 +247,11 @@ class LogicEditor(Gtk.Box):
 
     def draw_node(self, cr, node):
         # Node body
+        cr.set_source_rgb(0.2, 0.2, 0.2)
+        cr.rectangle(node.x, node.y, 150, 80)
+        cr.fill()
+
+        # Node Header
         if isinstance(node, DialogueNode):
             cr.set_source_rgb(0.4, 0.6, 0.4)  # Greenish
         elif isinstance(node, ConditionNode):
@@ -247,7 +260,7 @@ class LogicEditor(Gtk.Box):
             cr.set_source_rgb(0.4, 0.4, 0.6)  # Bluish
         else:
             cr.set_source_rgb(0.5, 0.5, 0.5)  # Grey
-        cr.rectangle(node.x, node.y, 150, 80)
+        cr.rectangle(node.x, node.y, 150, 25)
         cr.fill()
 
         if node in self.selected_nodes:
@@ -258,10 +271,8 @@ class LogicEditor(Gtk.Box):
 
         # Node text
         cr.set_source_rgb(1, 1, 1)
-        cr.move_to(node.x + 10, node.y + 20)
-        cr.show_text(f"ID: {node.id}")
-        cr.move_to(node.x + 10, node.y + 40)
-        cr.show_text(f"Type: {node.node_type}")
+        cr.move_to(node.x + 10, node.y + 18)
+        cr.show_text(f"{node.node_type}: {node.id}")
 
         # Connectors
         cr.set_source_rgb(0.8, 0.8, 0.2)
@@ -396,3 +407,34 @@ class LogicEditor(Gtk.Box):
             self.on_delete_node(None)
             return True
         return False
+
+    def on_right_click(self, gesture, n_press, x, y):
+        node_clicked = None
+        if self.active_graph:
+            for node in self.active_graph.nodes:
+                if x >= node.x and x <= node.x + 150 and y >= node.y and y <= node.y + 80:
+                    node_clicked = node
+                    break
+
+        if node_clicked:
+            self.selected_nodes = [node_clicked]
+            self.node_context_menu.set_pointing_to(Gdk.Rectangle(x, y, 1, 1))
+            self.node_context_menu.popup()
+        else:
+            self.canvas_context_menu.set_pointing_to(Gdk.Rectangle(x, y, 1, 1))
+            self.canvas_context_menu.popup()
+
+    def create_canvas_context_menu(self):
+        menu = Gio.Menu.new()
+        menu.append("Add Dialogue Node", "win.add-dialogue-node")
+        menu.append("Add Condition Node", "win.add-condition-node")
+        menu.append("Add Action Node", "win.add-action-node")
+        self.canvas_context_menu = Gtk.PopoverMenu.new_from_model(menu)
+        self.canvas_context_menu.set_parent(self.canvas)
+
+    def create_node_context_menu(self):
+        menu = Gio.Menu.new()
+        menu.append("Edit Node", "win.edit-node")
+        menu.append("Delete Node", "win.delete-node")
+        self.node_context_menu = Gtk.PopoverMenu.new_from_model(menu)
+        self.node_context_menu.set_parent(self.canvas)

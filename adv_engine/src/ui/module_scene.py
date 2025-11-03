@@ -11,6 +11,9 @@ class SceneEditor(Gtk.Box):
         self.selected_hotspot = None
         self.hotspot_mode = False
         self.show_grid = True
+        self.zoom_level = 1.0
+        self.pan_x = 0
+        self.pan_y = 0
 
         self.set_margin_top(10)
         self.set_margin_bottom(10)
@@ -66,6 +69,17 @@ class SceneEditor(Gtk.Box):
         click_gesture.connect("pressed", self.on_canvas_click)
         self.canvas.add_controller(click_gesture)
 
+        scroll_controller = Gtk.EventControllerScroll.new()
+        scroll_controller.set_flags(Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll_controller.connect("scroll", self.on_scroll)
+        self.canvas.add_controller(scroll_controller)
+
+        pan_gesture = Gtk.GestureDrag.new()
+        pan_gesture.set_button(Gdk.BUTTON_MIDDLE)
+        pan_gesture.connect("drag-begin", self.on_pan_begin)
+        pan_gesture.connect("drag-update", self.on_pan_update)
+        self.canvas.add_controller(pan_gesture)
+
         self.append(self.canvas)
 
         # --- Properties Panel ---
@@ -116,17 +130,22 @@ class SceneEditor(Gtk.Box):
         cr.set_source_rgb(0.1, 0.1, 0.1)
         cr.paint()
 
+        cr.save()
+        cr.translate(self.pan_x, self.pan_y)
+        cr.scale(self.zoom_level, self.zoom_level)
+
         if self.show_grid:
             cr.set_source_rgb(0.3, 0.3, 0.3)
-            cr.set_line_width(1)
+            cr.set_line_width(1 / self.zoom_level)
             grid_size = 50
-            for i in range(0, int(width), grid_size):
-                cr.move_to(i, 0)
-                cr.line_to(i, height)
+            # TODO: Only draw grid for the visible area
+            for i in range(-10, 40):
+                cr.move_to(i * grid_size, -10 * grid_size)
+                cr.line_to(i * grid_size, 40 * grid_size)
                 cr.stroke()
-            for i in range(0, int(height), grid_size):
-                cr.move_to(0, i)
-                cr.line_to(width, i)
+            for i in range(-10, 40):
+                cr.move_to(-10 * grid_size, i * grid_size)
+                cr.line_to(40 * grid_size, i * grid_size)
                 cr.stroke()
 
         if self.selected_scene:
@@ -139,12 +158,14 @@ class SceneEditor(Gtk.Box):
                 cr.rectangle(hotspot.x, hotspot.y, hotspot.width, hotspot.height)
                 cr.fill()
 
-            cr.set_source_rgb(0.9, 0.9, 0.9)
-            cr.select_font_face("Sans", 0, 1)
-            cr.set_font_size(24)
-            text = f"Editing: {self.selected_scene.name}"
-            cr.move_to(10, 30)
-            cr.show_text(text)
+        cr.restore()
+
+        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.select_font_face("Sans", 0, 1)
+        cr.set_font_size(14)
+        text = f"Zoom: {self.zoom_level:.2f}"
+        cr.move_to(10, 20)
+        cr.show_text(text)
 
     def on_grid_toggled(self, button):
         self.show_grid = button.get_active()
@@ -154,21 +175,24 @@ class SceneEditor(Gtk.Box):
         self.hotspot_mode = button.get_active()
 
     def on_canvas_click(self, gesture, n_press, x, y):
+        world_x = (x - self.pan_x) / self.zoom_level
+        world_y = (y - self.pan_y) / self.zoom_level
+
         if self.hotspot_mode and self.selected_scene:
             grid_size = 50
             hotspot_width = 50
             hotspot_height = 50
 
             # Snap to grid and center on cursor
-            snapped_x = round((x - hotspot_width / 2) / grid_size) * grid_size
-            snapped_y = round((y - hotspot_height / 2) / grid_size) * grid_size
+            snapped_x = round((world_x - hotspot_width / 2) / grid_size) * grid_size
+            snapped_y = round((world_y - hotspot_height / 2) / grid_size) * grid_size
 
             self.project_manager.add_hotspot_to_scene(self.selected_scene.id, "New Hotspot", int(snapped_x), int(snapped_y), hotspot_width, hotspot_height)
             self.canvas.queue_draw()
         elif self.selected_scene:
             # Check if a hotspot was clicked
             for hotspot in reversed(self.selected_scene.hotspots):
-                if x >= hotspot.x and x <= hotspot.x + hotspot.width and y >= hotspot.y and y <= hotspot.y + hotspot.height:
+                if world_x >= hotspot.x and world_x <= hotspot.x + hotspot.width and world_y >= hotspot.y and world_y <= hotspot.y + hotspot.height:
                     self.selected_hotspot = hotspot
                     self.update_props_panel()
                     self.canvas.queue_draw()
@@ -178,6 +202,25 @@ class SceneEditor(Gtk.Box):
             self.selected_hotspot = None
             self.props_panel.set_visible(False)
             self.canvas.queue_draw()
+
+    def on_scroll(self, controller, dx, dy):
+        if controller.get_current_event_state() & Gdk.ModifierType.CONTROL_MASK:
+            # Zoom
+            self.zoom_level *= 1.1 if dy < 0 else 1 / 1.1
+            self.zoom_level = max(0.1, min(self.zoom_level, 5.0)) # Clamp zoom
+            self.canvas.queue_draw()
+            return True
+        return False
+
+    def on_pan_begin(self, gesture, x, y):
+        self.pan_start_x = self.pan_x
+        self.pan_start_y = self.pan_y
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    def on_pan_update(self, gesture, x, y):
+        self.pan_x = self.pan_start_x + x
+        self.pan_y = self.pan_start_y + y
+        self.canvas.queue_draw()
 
     def update_props_panel(self):
         if self.selected_hotspot:
