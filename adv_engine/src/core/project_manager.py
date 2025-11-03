@@ -27,10 +27,14 @@ class ProjectManager:
         self._load_audio()
 
     def save_project(self):
-        self._save_scenes()
-        self._save_logic_graphs()
-        self._save_assets()
-        self._save_audio()
+        if self.data.scenes:
+            self._save_scenes()
+        if self.data.logic_graphs:
+            self._save_logic_graphs()
+        if self.data.assets:
+            self._save_assets()
+        if self.data.audio_files:
+            self._save_audio()
 
     def _load_csv(self, filename, dataclass_type, target_list):
         file_path = os.path.join(self.project_path, "Data", filename)
