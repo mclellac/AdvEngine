@@ -6,6 +6,48 @@ import json
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
 
+class MiniMap(Gtk.DrawingArea):
+    def __init__(self, logic_editor_canvas, active_graph):
+        super().__init__()
+        self.logic_editor_canvas = logic_editor_canvas
+        self.active_graph = active_graph
+        self.set_draw_func(self.on_draw, None)
+        self.set_size_request(200, 150)
+
+    def on_draw(self, drawing_area, cr, width, height, data):
+        cr.set_source_rgb(0.1, 0.1, 0.1)
+        cr.paint()
+
+        if not self.active_graph or not self.active_graph.nodes:
+            return
+
+        # Calculate bounding box of all nodes
+        min_x = min(node.x for node in self.active_graph.nodes)
+        min_y = min(node.y for node in self.active_graph.nodes)
+        max_x = max(node.x + 150 for node in self.active_graph.nodes)
+        max_y = max(node.y + 80 for node in self.active_graph.nodes)
+
+        graph_width = max_x - min_x
+        graph_height = max_y - min_y
+
+        if graph_width == 0 or graph_height == 0:
+            return
+
+        # Calculate scale factor
+        scale_x = width / graph_width
+        scale_y = height / graph_height
+        scale = min(scale_x, scale_y) * 0.9  # 90% padding
+
+        # Center the graph
+        offset_x = (width - (graph_width * scale)) / 2 - (min_x * scale)
+        offset_y = (height - (graph_height * scale)) / 2 - (min_y * scale)
+
+        # Draw nodes
+        for node in self.active_graph.nodes:
+            cr.set_source_rgb(0.5, 0.5, 0.5)
+            cr.rectangle(node.x * scale + offset_x, node.y * scale + offset_y, 150 * scale, 80 * scale)
+            cr.fill()
+
 class DynamicNodeEditor(Gtk.Box):
     def __init__(self, node):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -111,6 +153,7 @@ class LogicEditor(Gtk.Box):
             self.delete_node_button.set_sensitive(False)
             self.project_manager.set_dirty()
             self.canvas.queue_draw()
+            self.minimap.queue_draw()
 
     def edit_node_dialog(self, node):
         dialog = Gtk.Dialog(title=f"Edit Node {node.id}", transient_for=self.get_native(), modal=True)
@@ -192,12 +235,21 @@ class LogicEditor(Gtk.Box):
 
         self.append(palette)
 
+        canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        canvas_container.set_hexpand(True)
+        canvas_container.set_vexpand(True)
+
         self.canvas = Gtk.DrawingArea()
         self.canvas.set_hexpand(True)
         self.canvas.set_vexpand(True)
         self.canvas.set_draw_func(self.on_canvas_draw, None)
         self.canvas.set_focusable(True)
-        self.append(self.canvas)
+        canvas_container.append(self.canvas)
+
+        self.minimap = MiniMap(self.canvas, self.active_graph)
+        canvas_container.append(self.minimap)
+
+        self.append(canvas_container)
 
         node_drag = Gtk.GestureDrag.new()
         node_drag.connect("drag-begin", self.on_drag_begin)
@@ -291,14 +343,7 @@ class LogicEditor(Gtk.Box):
 
         cr.set_source_rgb(0.8, 0.8, 0.2)
         cr.move_to(start_x, start_y)
-
-        # Control points for the Bézier curve
-        c1_x = start_x + 50
-        c1_y = start_y
-        c2_x = end_x - 50
-        c2_y = end_y
-
-        cr.curve_to(c1_x, c1_y, c2_x, c2_y, end_x, end_y)
+        cr.curve_to(start_x + 50, start_y, end_x - 50, end_y, end_x, end_y)
         cr.stroke()
 
     def on_add_dialogue_node(self, button):
@@ -306,6 +351,7 @@ class LogicEditor(Gtk.Box):
             new_node = DialogueNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Dialogue", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
+            self.minimap.queue_draw()
             self.project_manager.set_dirty()
 
     def on_add_condition_node(self, button):
@@ -313,6 +359,7 @@ class LogicEditor(Gtk.Box):
             new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
+            self.minimap.queue_draw()
             self.project_manager.set_dirty()
 
     def on_add_action_node(self, button):
@@ -320,6 +367,7 @@ class LogicEditor(Gtk.Box):
             new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
+            self.minimap.queue_draw()
             self.project_manager.set_dirty()
 
     def on_drag_begin(self, gesture, x, y):
@@ -345,6 +393,7 @@ class LogicEditor(Gtk.Box):
                 node.x = start_x + x - offset_x
                 node.y = start_y + y - offset_y
             self.canvas.queue_draw()
+            self.minimap.queue_draw()
 
     def on_drag_end(self, gesture, x, y):
         if self.dragging_node:

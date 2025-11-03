@@ -1,3 +1,4 @@
+import gi
 from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
 from gi.repository import GObject
@@ -10,6 +11,7 @@ class Item:
     type: str
     buy_price: int
     sell_price: int
+    description: Optional[str] = ""
 
 class ItemGObject(GObject.Object):
     __gtype_name__ = 'ItemGObject'
@@ -19,14 +21,17 @@ class ItemGObject(GObject.Object):
     type = GObject.Property(type=str)
     buy_price = GObject.Property(type=int)
     sell_price = GObject.Property(type=int)
+    description = GObject.Property(type=str)
 
     def __init__(self, item: Item):
         super().__init__()
+        self.item = item
         self.id = item.id
         self.name = item.name
         self.type = item.type
         self.buy_price = item.buy_price
         self.sell_price = item.sell_price
+        self.description = item.description
 
 # Schema for Attributes.csv
 @dataclass
@@ -46,6 +51,7 @@ class AttributeGObject(GObject.Object):
 
     def __init__(self, attribute: Attribute):
         super().__init__()
+        self.attribute_data = attribute
         self.id = attribute.id
         self.name = attribute.name
         self.initial_value = attribute.initial_value
@@ -71,6 +77,7 @@ class CharacterGObject(GObject.Object):
 
     def __init__(self, character: Character):
         super().__init__()
+        self.character_data = character
         self.id = character.id
         self.display_name = character.display_name
         self.dialogue_start_id = character.dialogue_start_id
@@ -99,6 +106,7 @@ class HotspotGObject(GObject.Object):
 
     def __init__(self, hotspot: Hotspot):
         super().__init__()
+        self.hotspot_data = hotspot
         self.id = hotspot.id
         self.name = hotspot.name
         self.x = hotspot.x
@@ -172,6 +180,7 @@ class Asset:
 class Animation(Asset):
     frame_count: int
     frame_rate: int
+    frames: List[str] = field(default_factory=list)
 
 # --- Audio Schemas ---
 @dataclass
@@ -189,3 +198,11 @@ class ProjectData:
     assets: List[Asset] = field(default_factory=list)
     audio_files: List[Audio] = field(default_factory=list)
     # Dialogue graphs and UI layouts would also be added here.
+
+class StringGObject(GObject.Object):
+    __gtype_name__ = 'StringGObject'
+    value = GObject.Property(type=str)
+
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
