@@ -1,7 +1,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo
+from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango
 import json
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
@@ -185,6 +185,7 @@ class LogicEditor(Gtk.Box):
         self.connecting_from_node = None
         self.connecting_line_x = 0
         self.connecting_line_y = 0
+        self.resizing_node = None
 
         self.set_margin_top(10)
         self.set_margin_bottom(10)
