@@ -4,7 +4,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gio
 
 from .core.project_manager import ProjectManager
 from .ui.item_editor import ItemEditor
@@ -29,10 +29,15 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.header = Gtk.HeaderBar()
         self.main_box.append(self.header)
 
-        # Add "New Project" button to the header
-        self.new_project_button = Gtk.Button(label="New Project")
-        self.new_project_button.connect("clicked", self.on_new_project_clicked)
-        self.header.pack_start(self.new_project_button)
+        # Add a menu button to the header
+        menu = Gio.Menu.new()
+        menu.append("New Project", "app.new-project")
+
+        menu_button = Gtk.MenuButton()
+        menu_button.set_icon_name("open-menu-symbolic")
+        menu_button.set_menu_model(menu)
+        self.header.pack_end(menu_button)
+
 
         self.split_view = Adw.NavigationSplitView()
         self.split_view.set_vexpand(True)
@@ -96,27 +101,6 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         if row:
             self.content_stack.set_visible_child_name(row.view_name)
 
-    def on_new_project_clicked(self, button):
-        dialog = Gtk.FileChooserDialog(
-            title="Create a New Project",
-            parent=self,
-            action=Gtk.FileChooserAction.SELECT_FOLDER,
-        )
-        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK)
-
-        def on_dialog_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
-                folder = dialog.get_file().get_path()
-                success, error = ProjectManager.create_project(folder)
-                if success:
-                    self.get_application().load_project(folder)
-                else:
-                    # You might want to show an error dialog here
-                    print(f"Error creating project: {error}")
-            dialog.destroy()
-
-        dialog.connect("response", on_dialog_response)
-        dialog.show()
 
 
 class AdvEngine(Adw.Application):
@@ -127,16 +111,49 @@ class AdvEngine(Adw.Application):
         self.connect('activate', self.on_activate)
 
     def on_activate(self, app):
+        # This is called when the application is first launched
         self.load_project("TestGame")
 
+        new_project_action = Gio.SimpleAction.new("new-project", None)
+        new_project_action.connect("activate", self.on_new_project_activate)
+        self.add_action(new_project_action)
+
     def load_project(self, project_path):
+        """Loads a project and shows its window."""
         self.project_manager = ProjectManager(project_path)
         self.project_manager.load_project()
 
+        # Create a new window for the project
+        new_win = AdvEngineWindow(application=self, project_manager=self.project_manager)
+        new_win.present()
+
+        # If there was an old window, close it.
         if self.win:
-            self.win.destroy()
-        self.win = AdvEngineWindow(application=self, project_manager=self.project_manager)
-        self.win.present()
+            self.win.close()
+
+        self.win = new_win
+
+    def on_new_project_activate(self, action, param):
+        dialog = Gtk.FileChooserDialog(
+            title="Create a New Project",
+            parent=self.win,
+            action=Gtk.FileChooserAction.SELECT_FOLDER,
+        )
+        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK)
+
+        def on_dialog_response(dialog, response):
+            if response == Gtk.ResponseType.OK:
+                folder = dialog.get_file().get_path()
+                success, error = ProjectManager.create_project(folder)
+                if success:
+                    self.load_project(folder)
+                else:
+                    # You might want to show an error dialog here
+                    print(f"Error creating project: {error}")
+            dialog.destroy()
+
+        dialog.connect("response", on_dialog_response)
+        dialog.show()
 
 def main():
     app = AdvEngine(application_id="com.example.advengine")
