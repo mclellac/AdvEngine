@@ -99,7 +99,7 @@ class SceneEditor(Gtk.Box):
                 cr.fill()
 
             cr.set_source_rgb(0.9, 0.9, 0.9)
-            cr.select_font_face("Sans", "normal", "bold")
+            cr.select_font_face("Sans", 0, 1)
             cr.set_font_size(24)
             text = f"Editing: {self.selected_scene.name}"
             cr.move_to(10, 30)
@@ -110,7 +110,15 @@ class SceneEditor(Gtk.Box):
 
     def on_canvas_click(self, gesture, n_press, x, y):
         if self.hotspot_mode and self.selected_scene:
-            self.project_manager.add_hotspot_to_scene(self.selected_scene.id, "New Hotspot", int(x), int(y), 50, 50)
+            grid_size = 50
+            hotspot_width = 50
+            hotspot_height = 50
+
+            # Snap to grid and center on cursor
+            snapped_x = round((x - hotspot_width / 2) / grid_size) * grid_size
+            snapped_y = round((y - hotspot_height / 2) / grid_size) * grid_size
+
+            self.project_manager.add_hotspot_to_scene(self.selected_scene.id, "New Hotspot", int(snapped_x), int(snapped_y), hotspot_width, hotspot_height)
             self.canvas.queue_draw()
 
     def on_add_scene(self, button):
