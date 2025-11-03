@@ -189,9 +189,36 @@ class Animation(Asset):
 class Audio(Asset):
     duration: float # in seconds
 
+# --- Global State Schema ---
+@dataclass
+class GlobalVariable:
+    id: str
+    name: str
+    type: str  # "bool", "int", "str"
+    initial_value: Any
+    category: Optional[str] = "Default"
+
+class GlobalVariableGObject(GObject.Object):
+    __gtype_name__ = 'GlobalVariableGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    type = GObject.Property(type=str)
+    initial_value_str = GObject.Property(type=str)
+    category = GObject.Property(type=str)
+
+    def __init__(self, variable: GlobalVariable):
+        super().__init__()
+        self.variable_data = variable
+        self.id = variable.id
+        self.name = variable.name
+        self.type = variable.type
+        self.initial_value_str = str(variable.initial_value)
+        self.category = variable.category
+
 # A container for all project data
 @dataclass
 class ProjectData:
+    global_variables: List[GlobalVariable] = field(default_factory=list)
     items: List[Item] = field(default_factory=list)
     attributes: List[Attribute] = field(default_factory=list)
     characters: List[Character] = field(default_factory=list)
