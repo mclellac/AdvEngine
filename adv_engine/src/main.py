@@ -68,7 +68,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
         sidebar_page = Adw.NavigationPage.new(sidebar_content, "Editors")
         self.split_view.set_sidebar(sidebar_page)
-        self.split_view.set_sidebar_visible(True)
+        self.split_view.set_property("show-sidebar", True)
         # --- Add actual editor widgets to sidebar and stack ---
         self.add_editor("Scenes", "scenes_editor", self.scene_editor)
         self.add_editor("Logic", "logic_editor", self.logic_editor)
