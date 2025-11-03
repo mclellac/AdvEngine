@@ -8,7 +8,9 @@ class SceneEditor(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
         self.selected_scene = None
+        self.selected_hotspot = None
         self.hotspot_mode = False
+        self.show_grid = True
 
         self.set_margin_top(10)
         self.set_margin_bottom(10)
@@ -49,6 +51,12 @@ class SceneEditor(Gtk.Box):
         hotspot_toggle.connect("toggled", self.on_hotspot_toggled)
         left_panel.append(hotspot_toggle)
 
+        grid_toggle = Gtk.CheckButton(label="Show Grid")
+        grid_toggle.set_active(self.show_grid)
+        grid_toggle.set_tooltip_text("Toggle grid visibility")
+        grid_toggle.connect("toggled", self.on_grid_toggled)
+        left_panel.append(grid_toggle)
+
         self.canvas = Gtk.DrawingArea()
         self.canvas.set_hexpand(True)
         self.canvas.set_vexpand(True)
@@ -59,6 +67,29 @@ class SceneEditor(Gtk.Box):
         self.canvas.add_controller(click_gesture)
 
         self.append(self.canvas)
+
+        # --- Properties Panel ---
+        self.props_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.props_panel.set_size_request(200, -1)
+        self.props_panel.set_visible(False)
+        self.append(self.props_panel)
+
+        self.props_panel.append(Gtk.Label(label="Hotspot Properties", css_classes=["title-3"]))
+
+        self.prop_x = self.create_spin_button("X:")
+        self.prop_y = self.create_spin_button("Y:")
+        self.prop_width = self.create_spin_button("Width:")
+        self.prop_height = self.create_spin_button("Height:")
+
+    def create_spin_button(self, label):
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        box.append(Gtk.Label(label=label))
+        adj = Gtk.Adjustment(lower=0, upper=2000, step_increment=1, page_increment=10)
+        spin_button = Gtk.SpinButton(adjustment=adj)
+        spin_button.connect("value-changed", self.on_prop_changed)
+        box.append(spin_button)
+        self.props_panel.append(box)
+        return spin_button
 
     def refresh_scene_list(self):
         self.model.remove_all()
@@ -77,27 +108,34 @@ class SceneEditor(Gtk.Box):
             self.selected_scene = scene_gobject.scene_data
         else:
             self.selected_scene = None
+        self.selected_hotspot = None
+        self.props_panel.set_visible(False)
         self.canvas.queue_draw()
 
     def on_canvas_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.1, 0.1, 0.1)
         cr.paint()
 
-        cr.set_source_rgb(0.3, 0.3, 0.3)
-        cr.set_line_width(1)
-        grid_size = 50
-        for i in range(0, int(width), grid_size):
-            cr.move_to(i, 0)
-            cr.line_to(i, height)
-            cr.stroke()
-        for i in range(0, int(height), grid_size):
-            cr.move_to(0, i)
-            cr.line_to(width, i)
-            cr.stroke()
+        if self.show_grid:
+            cr.set_source_rgb(0.3, 0.3, 0.3)
+            cr.set_line_width(1)
+            grid_size = 50
+            for i in range(0, int(width), grid_size):
+                cr.move_to(i, 0)
+                cr.line_to(i, height)
+                cr.stroke()
+            for i in range(0, int(height), grid_size):
+                cr.move_to(0, i)
+                cr.line_to(width, i)
+                cr.stroke()
 
         if self.selected_scene:
-            cr.set_source_rgba(0.5, 0.5, 1.0, 0.5) # Semi-transparent blue
+            # Draw all hotspots
             for hotspot in self.selected_scene.hotspots:
+                if hotspot == self.selected_hotspot:
+                    cr.set_source_rgba(1.0, 1.0, 0.0, 0.6)  # Yellow for selected
+                else:
+                    cr.set_source_rgba(0.5, 0.5, 1.0, 0.5)  # Blue for others
                 cr.rectangle(hotspot.x, hotspot.y, hotspot.width, hotspot.height)
                 cr.fill()
 
@@ -107,6 +145,10 @@ class SceneEditor(Gtk.Box):
             text = f"Editing: {self.selected_scene.name}"
             cr.move_to(10, 30)
             cr.show_text(text)
+
+    def on_grid_toggled(self, button):
+        self.show_grid = button.get_active()
+        self.canvas.queue_draw()
 
     def on_hotspot_toggled(self, button):
         self.hotspot_mode = button.get_active()
@@ -122,6 +164,38 @@ class SceneEditor(Gtk.Box):
             snapped_y = round((y - hotspot_height / 2) / grid_size) * grid_size
 
             self.project_manager.add_hotspot_to_scene(self.selected_scene.id, "New Hotspot", int(snapped_x), int(snapped_y), hotspot_width, hotspot_height)
+            self.canvas.queue_draw()
+        elif self.selected_scene:
+            # Check if a hotspot was clicked
+            for hotspot in reversed(self.selected_scene.hotspots):
+                if x >= hotspot.x and x <= hotspot.x + hotspot.width and y >= hotspot.y and y <= hotspot.y + hotspot.height:
+                    self.selected_hotspot = hotspot
+                    self.update_props_panel()
+                    self.canvas.queue_draw()
+                    return
+
+            # If no hotspot was clicked, deselect
+            self.selected_hotspot = None
+            self.props_panel.set_visible(False)
+            self.canvas.queue_draw()
+
+    def update_props_panel(self):
+        if self.selected_hotspot:
+            self.prop_x.set_value(self.selected_hotspot.x)
+            self.prop_y.set_value(self.selected_hotspot.y)
+            self.prop_width.set_value(self.selected_hotspot.width)
+            self.prop_height.set_value(self.selected_hotspot.height)
+            self.props_panel.set_visible(True)
+        else:
+            self.props_panel.set_visible(False)
+
+    def on_prop_changed(self, spin_button):
+        if self.selected_hotspot:
+            self.selected_hotspot.x = self.prop_x.get_value()
+            self.selected_hotspot.y = self.prop_y.get_value()
+            self.selected_hotspot.width = self.prop_width.get_value()
+            self.selected_hotspot.height = self.prop_height.get_value()
+            self.project_manager.set_dirty()
             self.canvas.queue_draw()
 
     def on_add_scene(self, button):

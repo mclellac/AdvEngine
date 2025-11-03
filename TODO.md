@@ -16,8 +16,8 @@ This document tracks planned improvements to the user interface and user experie
 ### Scene Editor (`module_scene.py`)
 
 - [ ] **Canvas Zoom & Pan**: Implement intuitive zoom (Ctrl+Scroll) and pan (Middle-mouse drag) controls for the scene canvas to handle large scenes.
-- [ ] **Visible Grid & Snapping**: Add an optional, toggleable grid to the canvas and enable snapping for precise placement of hotspots and props.
-- [ ] **Properties Panel**: When a hotspot is selected, display its coordinates (X, Y) and dimensions (Width, Height) in a dedicated properties sidebar for precise editing.
+- [x] **Visible Grid & Snapping**: Add an optional, toggleable grid to the canvas and enable snapping for precise placement of hotspots and props.
+- [x] **Properties Panel**: When a hotspot is selected, display its coordinates (X, Y) and dimensions (Width, Height) in a dedicated properties sidebar for precise editing.
 - [ ] **Layer Management**: Add a simple list view to manage the Z-order (layering) of hotspots and props within a scene.
 
 ### Logic Editor (`module_logic.py`)
