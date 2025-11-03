@@ -4,7 +4,7 @@ This document outlines planned features to expand the capabilities of AdvEngine,
 
 ## Core Systems & Gameplay
 
-- [ ] **Global Game State Manager**
+- [x] **Global Game State Manager**
     - A dedicated UI to create, edit, and delete global game variables (booleans, integers, strings).
     - Ability to set initial values and group variables by category (e.g., "Chapter 1 Quest Flags", "Player Stats").
     - Provides a live-debug view to watch variable changes when the game is running.

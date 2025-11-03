@@ -9,7 +9,7 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio
+    Asset, Animation, Audio, GlobalVariable
 )
 
 class ProjectManager:
@@ -27,9 +27,12 @@ class ProjectManager:
         self._load_logic_graphs()
         self._load_assets()
         self._load_audio()
+        self._load_global_variables()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
+        if self.data.global_variables:
+            self._save_global_variables()
         if self.data.scenes:
             self._save_scenes()
         if self.data.logic_graphs:
@@ -163,6 +166,29 @@ class ProjectManager:
         with open(file_path, "w") as f:
             json.dump([asdict(audio) for audio in self.data.audio_files], f, indent=2)
 
+    def _load_global_variables(self):
+        file_path = os.path.join(self.project_path, "Data", "GlobalState.json")
+        try:
+            with open(file_path, "r") as f:
+                self.data.global_variables = [GlobalVariable(**var) for var in json.load(f)]
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_global_variables(self):
+        file_path = os.path.join(self.project_path, "Data", "GlobalState.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump([asdict(var) for var in self.data.global_variables], f, indent=2)
+
+    def add_global_variable(self, name, type, initial_value, category):
+        new_id = f"var_{len(self.data.global_variables) + 1}"
+        new_var = GlobalVariable(id=new_id, name=name, type=type, initial_value=initial_value, category=category)
+        self.data.global_variables.append(new_var)
+        self.set_dirty()
+        return new_var
+
     def create_scene(self, name):
         new_id = f"scene_{len(self.data.scenes) + 1}"
         new_scene = Scene(id=new_id, name=name)
@@ -247,6 +273,7 @@ class ProjectManager:
             json_files = [
                 os.path.join(data_dir, "Assets.json"),
                 os.path.join(data_dir, "Audio.json"),
+                os.path.join(data_dir, "GlobalState.json"),
                 os.path.join(logic_dir, "Scenes.json"),
                 os.path.join(logic_dir, "LogicGraphs.json"),
                 os.path.join(ui_dir, "WindowLayout.json"),
