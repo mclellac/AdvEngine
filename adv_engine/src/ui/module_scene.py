@@ -93,7 +93,7 @@ class SceneEditor(Gtk.Box):
             cr.stroke()
 
         if self.selected_scene:
-            cr.set_source_rgb(0.5, 0.5, 1.0, 0.5) # Semi-transparent blue
+            cr.set_source_rgba(0.5, 0.5, 1.0, 0.5) # Semi-transparent blue
             for hotspot in self.selected_scene.hotspots:
                 cr.rectangle(hotspot.x, hotspot.y, hotspot.width, hotspot.height)
                 cr.fill()
