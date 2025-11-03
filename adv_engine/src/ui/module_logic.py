@@ -319,8 +319,8 @@ class LogicEditor(Gtk.Box):
                     if output_node:
                         self.draw_connection(cr, node, output_node)
             if self.connecting_from_node:
-                start_x = self.connecting_from_node.x + 150
-                start_y = self.connecting_from_node.y + 40
+                start_x = self.connecting_from_node.x + self.connecting_from_node.width
+                start_y = self.connecting_from_node.y + self.connecting_from_node.height / 2
                 cr.set_source_rgb(0.8, 0.8, 0.2)
                 cr.move_to(start_x, start_y)
                 cr.line_to(self.connecting_line_x, self.connecting_line_y)
@@ -353,6 +353,7 @@ class LogicEditor(Gtk.Box):
         # Node text (using Pango)
         layout = PangoCairo.create_layout(cr)
         layout.set_width( (node.width - 20) * Pango.SCALE)
+        layout.set_wrap(Pango.WrapMode.WORD_CHAR)
 
         # Header text
         cr.set_source_rgb(1, 1, 1)
@@ -384,27 +385,30 @@ class LogicEditor(Gtk.Box):
         if isinstance(node, DialogueNode):
             body_text = f"Character: {node.character_id}\n\"{node.dialogue_text}\""
         elif isinstance(node, ConditionNode):
-            body_text = f"Type: {node.condition_type}\nParams: {node.parameters}"
+            params_str = "\n".join([f"- {k}: {v}" for k, v in node.parameters.items()])
+            body_text = f"Type: {node.condition_type}\nParams:\n{params_str}"
         elif isinstance(node, ActionNode):
-            body_text = f"Command: {node.action_command}\nParams: {node.parameters}"
+            params_str = "\n".join([f"- {k}: {v}" for k, v in node.parameters.items()])
+            body_text = f"Command: {node.action_command}\nParams:\n{params_str}"
 
         layout.set_text(body_text, -1)
         PangoCairo.show_layout(cr, layout)
 
 
         # Connectors
+        connector_y = node.y + node.height / 2
         cr.set_source_rgb(0.8, 0.8, 0.2)
         # Input connector
-        cr.rectangle(node.x - 5, node.y + 35, 10, 10)
+        cr.rectangle(node.x - 5, connector_y - 5, 10, 10)
         cr.fill()
         cr.set_source_rgb(0.9, 0.9, 0.9)
-        cr.move_to(node.x - 20, node.y + 42)
+        cr.move_to(node.x - 25, connector_y + 5)
         cr.show_text("In")
         # Output connector
-        cr.rectangle(node.x + node.width - 5, node.y + 35, 10, 10)
+        cr.rectangle(node.x + node.width - 5, connector_y - 5, 10, 10)
         cr.fill()
         cr.set_source_rgb(0.9, 0.9, 0.9)
-        cr.move_to(node.x + node.width + 10, node.y + 42)
+        cr.move_to(node.x + node.width + 10, connector_y + 5)
         cr.show_text("Out")
 
         # Resize handle
@@ -413,10 +417,10 @@ class LogicEditor(Gtk.Box):
         cr.fill()
 
     def draw_connection(self, cr, from_node, to_node):
-        start_x = from_node.x + 150
-        start_y = from_node.y + 40
+        start_x = from_node.x + from_node.width
+        start_y = from_node.y + from_node.height / 2
         end_x = to_node.x
-        end_y = to_node.y + 40
+        end_y = to_node.y + to_node.height / 2
 
         cr.set_source_rgb(0.8, 0.8, 0.2)
         cr.move_to(start_x, start_y)
@@ -483,7 +487,8 @@ class LogicEditor(Gtk.Box):
     def on_connection_drag_begin(self, gesture, x, y):
         if self.active_graph:
             for node in reversed(self.active_graph.nodes):
-                if x >= node.x + node.width - 5 and x <= node.x + node.width + 5 and y >= node.y + 35 and y <= node.y + 45:
+                connector_y = node.y + node.height / 2
+                if x >= node.x + node.width - 5 and x <= node.x + node.width + 5 and y >= connector_y - 5 and y <= connector_y + 5:
                     self.connecting_from_node = node
                     gesture.set_state(Gtk.EventSequenceState.CLAIMED)
                     return
@@ -498,7 +503,8 @@ class LogicEditor(Gtk.Box):
     def on_connection_drag_end(self, gesture, x, y):
         if self.connecting_from_node and self.active_graph:
             for node in reversed(self.active_graph.nodes):
-                if self.connecting_line_x >= node.x - 5 and self.connecting_line_x <= node.x + 5 and self.connecting_line_y >= node.y + 35 and self.connecting_line_y <= node.y + 45:
+                connector_y = node.y + node.height / 2
+                if self.connecting_line_x >= node.x - 5 and self.connecting_line_x <= node.x + 5 and self.connecting_line_y >= connector_y - 5 and self.connecting_line_y <= connector_y + 5:
                     self.connecting_from_node.outputs.append(node.id)
                     node.inputs.append(self.connecting_from_node.id)
                     self.project_manager.set_dirty()

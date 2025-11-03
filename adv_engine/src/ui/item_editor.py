@@ -4,12 +4,30 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
 from ..core.data_schemas import Item, ItemGObject
 
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Gio, Adw, GObject, Gdk
+from ..core.data_schemas import Item, ItemGObject
+
 class ItemEditorDialog(Adw.MessageDialog):
-    def __init__(self, parent, item=None):
+    def __init__(self, parent, project_manager, item=None):
         super().__init__(transient_for=parent, modal=True)
         self.set_heading("Add New Item" if item is None else "Edit Item")
-
+        self.project_manager = project_manager
         self.item = item
+
+        # Add CSS provider for validation styling
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(b"""
+        .error {
+            border: 1px solid red;
+            border-radius: 6px;
+        }
+        """)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.set_margin_top(10)
@@ -41,11 +59,46 @@ class ItemEditorDialog(Adw.MessageDialog):
         desc_box.append(scrolled_window)
         content.append(desc_box)
 
-
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
         self.set_default_response("ok")
         self.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+
+        # Connect validation signals
+        self.id_entry.connect("changed", self._validate)
+        self.name_entry.connect("changed", self._validate)
+
+        # Initial validation
+        self._validate(None)
+
+    def _validate(self, entry):
+        is_valid = True
+        # Validate ID
+        id_text = self.id_entry.get_text()
+        is_new_item = self.item is None
+        id_is_duplicate = any(item.id == id_text for item in self.project_manager.data.items if (is_new_item or item.id != self.item.id))
+
+        if not id_text or id_is_duplicate:
+            self.id_entry.add_css_class("error")
+            if not id_text:
+                self.id_entry.set_tooltip_text("ID cannot be empty.")
+            else:
+                self.id_entry.set_tooltip_text("This ID is already in use.")
+            is_valid = False
+        else:
+            self.id_entry.remove_css_class("error")
+            self.id_entry.set_tooltip_text("")
+
+        # Validate Name
+        if not self.name_entry.get_text():
+            self.name_entry.add_css_class("error")
+            self.name_entry.set_tooltip_text("Name cannot be empty.")
+            is_valid = False
+        else:
+            self.name_entry.remove_css_class("error")
+            self.name_entry.set_tooltip_text("")
+
+        self.set_response_enabled("ok", is_valid)
 
 
     def _create_row(self, label_text, widget):
@@ -164,7 +217,7 @@ class ItemEditor(Gtk.Box):
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _on_add_clicked(self, button):
-        dialog = ItemEditorDialog(self.get_root())
+        dialog = ItemEditorDialog(self.get_root(), self.project_manager)
         dialog.connect("response", self._on_add_dialog_response)
         dialog.present()
 
@@ -191,7 +244,7 @@ class ItemEditor(Gtk.Box):
         if selected_item_gobject:
             # Need to get the underlying ItemGObject from the SortListModel
             underlying_item = self.sort_model.get_item(self.selection.get_selected())
-            dialog = ItemEditorDialog(self.get_root(), item=underlying_item.item)
+            dialog = ItemEditorDialog(self.get_root(), self.project_manager, item=underlying_item.item)
             dialog.connect("response", self._on_edit_dialog_response, underlying_item)
             dialog.present()
 

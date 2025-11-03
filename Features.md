@@ -41,7 +41,7 @@ point-and-click adventure games.
 
 ## Content & Asset Management
 
-- [ ] **Character Manager**
+- [x] **Character Manager**
     - A central place to define player characters (PCs) and non-player
       characters (NPCs).
     - Assign sprite sheets for different animations (e.g., walk cycles, talk
