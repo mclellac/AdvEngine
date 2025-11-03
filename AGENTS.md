@@ -1,6 +1,7 @@
-## AGENTS.md: AdvEngine Project Documentation (Exhaustive Detail)
+# AGENTS.md: AdvEngine
 
 ---
+
 ## 1. Project Overview & Context
 
 * Project Name (Tool): **AdvEngine**
@@ -11,6 +12,7 @@
 * Output Goal: Game must support modern resolutions (2K, 4K, Ultrawide) via intelligent scaling and UI anchoring.
 
 ---
+
 ## 2. Technology Stack & Dependencies
 
 ### A. Core Tool Stack (AdvEngine Application)
@@ -35,6 +37,7 @@
 | **Visuals** | **Modern Rendering** | Template must leverage UE5's **Lumen** (GI) and **Control Rig/Animation Blueprints** for fluid character movement/lighting. |
 
 ---
+
 ## 3. AdvEngine Internal Tool Architecture (Python Source)
 
 The architecture is strictly modular to isolate UI logic from data logic.
@@ -64,11 +67,12 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 ### B. Module Responsibilities
 
-*   **core/project_manager.py**: Manages loading and saving of the native .adv project format. It tracks unsaved changes ("dirty" state) and provides notifications to the UI.
-*   **core/ue_exporter.py**: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.
-*   **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.
+* **core/project_manager.py**: Manages loading and saving of the native .adv project format. It tracks unsaved changes ("dirty" state) and provides notifications to the UI.
+* **core/ue_exporter.py**: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.
+* **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.
 
 ---
+
 ## 4. AdvEngine Feature Specification
 
 ### A. Core Editor Modules (Tabs)
@@ -93,10 +97,11 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 ### C. Window/Menu Manager Details
 
-*   **UI Anchoring**: Provides a visual editor to define how UI elements (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios (16:9, 21:9).
-*   **Layout Definition**: Defines the grid size (e.g., 5x4 inventory grid) and sprite key for currency indicators.
+* **UI Anchoring**: Provides a visual editor to define how UI elements (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios (16:9, 21:9).
+* **Layout Definition**: Defines the grid size (e.g., 5x4 inventory grid) and sprite key for currency indicators.
 
 ---
+
 ## 5. Export Contract Data (API Specification)
 
 ### A. File Structure & Paths

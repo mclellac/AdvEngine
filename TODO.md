@@ -26,6 +26,7 @@ This document tracks planned improvements to the user interface and user experie
 - [ ] **Canvas Mini-Map**: For large graphs, add an interactive mini-map that allows for quick navigation of the entire logic canvas.
 - [ ] **Curved Connectors**: Switch from straight-line connectors to Bézier curves for node connections to improve readability and reduce visual clutter.
 - [x] **Right-Click Context Menus**: Add context-sensitive right-click menus on nodes (for actions like "Delete", "Duplicate", "Edit") and on the canvas (for "Add Node...").
+- [ ] **Node Information Displayed**: Nodes should be resizable, and also display the information set in them. There is no way to distingush between multiple nodes of the same type and what information they contain without clicking on them. This is not helpful. Nodes should show what they do to the user better without opening them.
 
 ### Asset Manager (`module_assets.py`)
 
