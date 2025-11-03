@@ -9,7 +9,7 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable, Verb
+    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene
 )
 
 class ProjectManager:
@@ -30,6 +30,7 @@ class ProjectManager:
         self._load_global_variables()
         self._load_verbs()
         self._load_dialogue_graphs()
+        self._load_cutscenes()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
@@ -49,6 +50,8 @@ class ProjectManager:
             self._save_characters()
         if self.data.dialogue_graphs:
             self._save_dialogue_graphs()
+        if self.data.cutscenes:
+            self._save_cutscenes()
         self.set_dirty(False) # Project is clean after saving
 
     def register_dirty_state_callback(self, callback):
@@ -334,6 +337,33 @@ class ProjectManager:
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
 
+    def _load_cutscenes(self):
+        file_path = os.path.join(self.project_path, "Logic", "Cutscenes.json")
+        try:
+            with open(file_path, "r") as f:
+                self.data.cutscenes = [Cutscene(**cs) for cs in json.load(f)]
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_cutscenes(self):
+        file_path = os.path.join(self.project_path, "Logic", "Cutscenes.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump([asdict(cs) for cs in self.data.cutscenes], f, indent=2)
+
+    def add_cutscene(self, name):
+        new_id = f"cutscene_{len(self.data.cutscenes) + 1}"
+        new_cutscene = Cutscene(id=new_id, name=name)
+        self.data.cutscenes.append(new_cutscene)
+        self.set_dirty()
+        return new_cutscene
+
+    def remove_cutscene(self, cutscene_id):
+        self.data.cutscenes = [cs for cs in self.data.cutscenes if cs.id != cutscene_id]
+        self.set_dirty()
+
     @staticmethod
     def create_project(project_path):
         """
@@ -369,6 +399,7 @@ class ProjectManager:
                 os.path.join(logic_dir, "Scenes.json"),
                 os.path.join(logic_dir, "LogicGraphs.json"),
                 os.path.join(logic_dir, "DialogueGraphs.json"),
+                os.path.join(logic_dir, "Cutscenes.json"),
                 os.path.join(ui_dir, "WindowLayout.json"),
             ]
             for file_path in json_files:
