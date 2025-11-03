@@ -178,3 +178,18 @@ The central logic file, an array of Interaction Objects.
 
 *   **Definition**: Defined by the `shop_id` in the NPC schema and the `buy_price`/`sell_price` in the Item schema.
 *   **Stock Data**: An additional simple table/list is required
+
+---
+## 7. Coding Style and Conventions
+
+### A. Python Code Style
+
+*   **PEP8 Compliance**: All Python code must adhere to the [PEP8 style guide](https://www.python.org/dev/peps/pep-0008/). Use an autoformatter like `black` or `autopep8` to ensure consistency.
+*   **Docstrings**: All modules, classes, and functions must have clear and concise docstrings explaining their purpose, arguments, and return values. Use the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for formatting.
+*   **Idiomatic Python**: Write clean, readable, and Pythonic code. Avoid unnecessary complexity and prefer built-in functions and standard library modules where possible.
+
+### B. Error Handling
+
+*   **Robustness**: The application must be resilient to common errors, such as missing files, invalid data formats, or incorrect user input.
+*   **Exception Handling**: Use `try...except` blocks for all file I/O operations (e.g., reading CSV files, writing JSON files) and data parsing.
+*   **User Feedback**: When an error occurs, provide clear and informative feedback to the user via a dialog or a message in the UI. Avoid printing raw exception tracebacks to the console in production builds.

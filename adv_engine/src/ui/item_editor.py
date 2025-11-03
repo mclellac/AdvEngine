@@ -1,12 +1,12 @@
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GObject, Gio
-
-from .data_models import Item, ItemGObject
+from gi.repository import Gtk, Gio
+from ..core.data_schemas import ItemGObject
 
 class ItemEditor(Gtk.Box):
-    def __init__(self, items):
+    def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.project_manager = project_manager
 
         self.set_margin_top(10)
         self.set_margin_bottom(10)
@@ -21,9 +21,8 @@ class ItemEditor(Gtk.Box):
         self.column_view = Gtk.ColumnView()
         self.column_view.set_vexpand(True)
 
-        # Use the provided item data to create the model
         self.model = Gio.ListStore(item_type=ItemGObject)
-        for item in items:
+        for item in self.project_manager.data.items:
             self.model.append(ItemGObject(item))
 
         self.selection = Gtk.SingleSelection(model=self.model)
@@ -43,9 +42,7 @@ class ItemEditor(Gtk.Box):
 
     def _create_column(self, title, expression_func):
         factory = Gtk.SignalListItemFactory()
-        # Setup: Create the widget (a Gtk.Label in this case)
         factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
-        # Bind: Connect the data from the item to the widget's properties
         factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
 
         col = Gtk.ColumnViewColumn(title=title, factory=factory)
