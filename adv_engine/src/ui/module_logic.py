@@ -1,7 +1,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, Adw, Gio
+from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo
 import json
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
@@ -276,8 +276,35 @@ class LogicEditor(Gtk.Box):
         right_click_gesture.connect("pressed", self.on_right_click)
         self.canvas.add_controller(right_click_gesture)
 
+        resize_drag = Gtk.GestureDrag.new()
+        resize_drag.connect("drag-begin", self.on_resize_drag_begin)
+        resize_drag.connect("drag-update", self.on_resize_drag_update)
+        resize_drag.connect("drag-end", self.on_resize_drag_end)
+        self.canvas.add_controller(resize_drag)
+
         self.create_canvas_context_menu()
         self.create_node_context_menu()
+
+    def on_resize_drag_begin(self, gesture, x, y):
+        if self.active_graph:
+            for node in reversed(self.active_graph.nodes):
+                if (x >= node.x + node.width - 10 and x <= node.x + node.width and
+                        y >= node.y + node.height - 10 and y <= node.y + node.height):
+                    self.resizing_node = node
+                    gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+                    return
+
+    def on_resize_drag_update(self, gesture, x, y):
+        if self.resizing_node:
+            success, start_x, start_y = gesture.get_start_point()
+            self.resizing_node.width = max(100, self.resizing_node.width + x)
+            self.resizing_node.height = max(50, self.resizing_node.height + y)
+            self.canvas.queue_draw()
+
+    def on_resize_drag_end(self, gesture, x, y):
+        if self.resizing_node:
+            self.project_manager.set_dirty()
+            self.resizing_node = None
 
     def on_canvas_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.15, 0.15, 0.15)
@@ -300,7 +327,7 @@ class LogicEditor(Gtk.Box):
     def draw_node(self, cr, node):
         # Node body
         cr.set_source_rgb(0.2, 0.2, 0.2)
-        cr.rectangle(node.x, node.y, 150, 80)
+        cr.rectangle(node.x, node.y, node.width, node.height)
         cr.fill()
 
         # Node Header
@@ -312,27 +339,59 @@ class LogicEditor(Gtk.Box):
             cr.set_source_rgb(0.4, 0.4, 0.6)  # Bluish
         else:
             cr.set_source_rgb(0.5, 0.5, 0.5)  # Grey
-        cr.rectangle(node.x, node.y, 150, 25)
+        cr.rectangle(node.x, node.y, node.width, 25)
         cr.fill()
 
         if node in self.selected_nodes:
             cr.set_source_rgb(1.0, 1.0, 0.0)  # Yellow for selection
             cr.set_line_width(3)
-            cr.rectangle(node.x - 2, node.y - 2, 154, 84)
+            cr.rectangle(node.x - 2, node.y - 2, node.width + 4, node.height + 4)
             cr.stroke()
 
-        # Node text
+        # Node text (using Pango)
+        layout = PangoCairo.create_layout(cr)
+        layout.set_width( (node.width - 20) * Pango.SCALE)
+
+        # Header text
         cr.set_source_rgb(1, 1, 1)
-        cr.move_to(node.x + 10, node.y + 18)
-        cr.show_text(f"{node.node_type}: {node.id}")
+        layout.set_text(f"{node.node_type}: {node.id}", -1)
+        cr.move_to(node.x + 10, node.y + 5)
+        PangoCairo.show_layout(cr, layout)
+
+        # Body text
+        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.move_to(node.x + 10, node.y + 30)
+
+        body_text = ""
+        if isinstance(node, DialogueNode):
+            body_text = f"Character: {node.character_id}\n\"{node.dialogue_text}\""
+        elif isinstance(node, ConditionNode):
+            body_text = f"Type: {node.condition_type}\nParams: {node.parameters}"
+        elif isinstance(node, ActionNode):
+            body_text = f"Command: {node.action_command}\nParams: {node.parameters}"
+
+        layout.set_text(body_text, -1)
+        PangoCairo.show_layout(cr, layout)
+
 
         # Connectors
         cr.set_source_rgb(0.8, 0.8, 0.2)
         # Input connector
         cr.rectangle(node.x - 5, node.y + 35, 10, 10)
         cr.fill()
+        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.move_to(node.x - 20, node.y + 42)
+        cr.show_text("In")
         # Output connector
-        cr.rectangle(node.x + 145, node.y + 35, 10, 10)
+        cr.rectangle(node.x + node.width - 5, node.y + 35, 10, 10)
+        cr.fill()
+        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.move_to(node.x + node.width + 10, node.y + 42)
+        cr.show_text("Out")
+
+        # Resize handle
+        cr.set_source_rgb(0.5, 0.5, 0.5)
+        cr.rectangle(node.x + node.width - 10, node.y + node.height - 10, 10, 10)
         cr.fill()
 
     def draw_connection(self, cr, from_node, to_node):
@@ -373,7 +432,7 @@ class LogicEditor(Gtk.Box):
     def on_drag_begin(self, gesture, x, y):
         if self.active_graph:
             for node in reversed(self.active_graph.nodes):
-                if x >= node.x and x <= node.x + 150 and y >= node.y and y <= node.y + 80:
+                if x >= node.x and x <= node.x + node.width and y >= node.y and y <= node.y + node.height:
                     self.dragging_node = node
                     if node not in self.selected_nodes:
                         self.selected_nodes = [node]
@@ -404,7 +463,7 @@ class LogicEditor(Gtk.Box):
     def on_connection_drag_begin(self, gesture, x, y):
         if self.active_graph:
             for node in reversed(self.active_graph.nodes):
-                if x >= node.x + 145 and x <= node.x + 155 and y >= node.y + 35 and y <= node.y + 45:
+                if x >= node.x + node.width - 5 and x <= node.x + node.width + 5 and y >= node.y + 35 and y <= node.y + 45:
                     self.connecting_from_node = node
                     gesture.set_state(Gtk.EventSequenceState.CLAIMED)
                     return
@@ -431,7 +490,7 @@ class LogicEditor(Gtk.Box):
         node_clicked = None
         if self.active_graph:
             for node in self.active_graph.nodes:
-                if x >= node.x and x <= node.x + 150 and y >= node.y and y <= node.y + 80:
+                if x >= node.x and x <= node.x + node.width and y >= node.y and y <= node.y + node.height:
                     node_clicked = node
                     break
 
@@ -461,7 +520,7 @@ class LogicEditor(Gtk.Box):
         node_clicked = None
         if self.active_graph:
             for node in self.active_graph.nodes:
-                if x >= node.x and x <= node.x + 150 and y >= node.y and y <= node.y + 80:
+                if x >= node.x and x <= node.x + node.width and y >= node.y and y <= node.y + node.height:
                     node_clicked = node
                     break
 
