@@ -36,14 +36,46 @@ class Attribute:
     initial_value: int
     max_value: int
 
+class AttributeGObject(GObject.Object):
+    __gtype_name__ = 'AttributeGObject'
+
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    initial_value = GObject.Property(type=int)
+    max_value = GObject.Property(type=int)
+
+    def __init__(self, attribute: Attribute):
+        super().__init__()
+        self.id = attribute.id
+        self.name = attribute.name
+        self.initial_value = attribute.initial_value
+        self.max_value = attribute.max_value
+
 # Schema for CharacterData.csv
 @dataclass
 class Character:
     id: str
-    default_animation: str
+    display_name: str
     dialogue_start_id: str
     is_merchant: bool
     shop_id: Optional[str]
+
+class CharacterGObject(GObject.Object):
+    __gtype_name__ = 'CharacterGObject'
+
+    id = GObject.Property(type=str)
+    display_name = GObject.Property(type=str)
+    dialogue_start_id = GObject.Property(type=str)
+    is_merchant = GObject.Property(type=bool, default=False)
+    shop_id = GObject.Property(type=str)
+
+    def __init__(self, character: Character):
+        super().__init__()
+        self.id = character.id
+        self.display_name = character.display_name
+        self.dialogue_start_id = character.dialogue_start_id
+        self.is_merchant = character.is_merchant
+        self.shop_id = character.shop_id
 
 # --- Interaction Matrix Schemas (InteractionMatrix.json) ---
 
