@@ -75,9 +75,9 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 | Module Name | Functionality Focus | Key Feature |
 |---|---|---|
-| **Scenes** | World Design | Walk Mesh drawing, Hotspot placement, Camera Safe Area preview. Animated Prop Template placement. |
-| **Logic** | Puzzle & Narrative | Node-graph editor, Condition/Action definition, Dialogue/Quest branching, Live Variable Watcher. |
-| **Assets** | Media Management | Sprite import, Animation sequence definition, Normal Map texture pairing (for UE lighting). |
+| **Scenes** | World Design | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
+| **Logic** | Puzzle & Narrative | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
+| **Assets** | Media Management | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
 | **Verbs & Items** | Database | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens. |
 | **Audio** | Sound & Ambiance | Assignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters. |
 

@@ -103,6 +103,29 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
         self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
 
+        self.setup_logic_editor_actions()
+
+
+    def setup_logic_editor_actions(self):
+        add_dialogue_action = Gio.SimpleAction.new("add-dialogue-node", None)
+        add_dialogue_action.connect("activate", lambda a, p: self.logic_editor.on_add_dialogue_node(None))
+        self.add_action(add_dialogue_action)
+
+        add_condition_action = Gio.SimpleAction.new("add-condition-node", None)
+        add_condition_action.connect("activate", lambda a, p: self.logic_editor.on_add_condition_node(None))
+        self.add_action(add_condition_action)
+
+        add_action_action = Gio.SimpleAction.new("add-action-node", None)
+        add_action_action.connect("activate", lambda a, p: self.logic_editor.on_add_action_node(None))
+        self.add_action(add_action_action)
+
+        edit_node_action = Gio.SimpleAction.new("edit-node", None)
+        edit_node_action.connect("activate", lambda a, p: self.logic_editor.edit_node_dialog(self.logic_editor.selected_nodes[0]))
+        self.add_action(edit_node_action)
+
+        delete_node_action = Gio.SimpleAction.new("delete-node", None)
+        delete_node_action.connect("activate", lambda a, p: self.logic_editor.on_delete_node(None))
+        self.add_action(delete_node_action)
 
     def add_editor(self, name, view_name, widget):
         action_row = Adw.ActionRow(title=name)
