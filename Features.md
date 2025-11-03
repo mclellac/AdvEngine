@@ -9,7 +9,7 @@ This document outlines planned features to expand the capabilities of AdvEngine,
     - Ability to set initial values and group variables by category (e.g., "Chapter 1 Quest Flags", "Player Stats").
     - Provides a live-debug view to watch variable changes when the game is running.
 
-- [x] **Advanced Dialogue & Cutscene System**
+- [ ] **Advanced Dialogue & Cutscene System**
     - A dedicated tree-based editor for writing branching dialogue.
     - Support for displaying character portraits next to dialogue text.
     - Ability to embed simple commands within dialogue nodes (e.g., `give_item key_01`, `set_variable door_unlocked true`).

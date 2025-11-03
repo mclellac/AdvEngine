@@ -10,6 +10,7 @@ from .core.project_manager import ProjectManager
 from .ui.item_editor import ItemEditor
 from .ui.character_editor import CharacterEditor
 from .ui.attribute_editor import AttributeEditor
+from .ui.verb_editor import VerbEditor
 from .ui.module_scene import SceneEditor
 from .ui.module_logic import LogicEditor
 from .ui.module_assets import AssetEditor
@@ -110,6 +111,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         verbs_items_stack.add_titled(
             AttributeEditor(self.project_manager), "attributes", "Attributes"
         )
+        verbs_items_stack.add_titled(VerbEditor(self.project_manager), "verbs", "Verbs")
 
         self.add_editor(
             "Verbs &amp; Items", "verbs_items_editor", verbs_items_container

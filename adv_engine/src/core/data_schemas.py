@@ -65,7 +65,6 @@ class Character:
     dialogue_start_id: str
     is_merchant: bool
     shop_id: Optional[str]
-    portrait_asset_id: Optional[str] = None
 
 class CharacterGObject(GObject.Object):
     __gtype_name__ = 'CharacterGObject'
@@ -75,7 +74,6 @@ class CharacterGObject(GObject.Object):
     dialogue_start_id = GObject.Property(type=str)
     is_merchant = GObject.Property(type=bool, default=False)
     shop_id = GObject.Property(type=str)
-    portrait_asset_id = GObject.Property(type=str)
 
     def __init__(self, character: Character):
         super().__init__()
@@ -85,7 +83,6 @@ class CharacterGObject(GObject.Object):
         self.dialogue_start_id = character.dialogue_start_id
         self.is_merchant = character.is_merchant
         self.shop_id = character.shop_id
-        self.portrait_asset_id = character.portrait_asset_id
 
 # --- Scene Schemas ---
 
@@ -218,10 +215,28 @@ class GlobalVariableGObject(GObject.Object):
         self.initial_value_str = str(variable.initial_value)
         self.category = variable.category
 
+# --- Verb Schema ---
+@dataclass
+class Verb:
+    id: str
+    name: str
+
+class VerbGObject(GObject.Object):
+    __gtype_name__ = 'VerbGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+
+    def __init__(self, verb: Verb):
+        super().__init__()
+        self.verb_data = verb
+        self.id = verb.id
+        self.name = verb.name
+
 # A container for all project data
 @dataclass
 class ProjectData:
     global_variables: List[GlobalVariable] = field(default_factory=list)
+    verbs: List[Verb] = field(default_factory=list)
     items: List[Item] = field(default_factory=list)
     attributes: List[Attribute] = field(default_factory=list)
     characters: List[Character] = field(default_factory=list)
