@@ -2,8 +2,30 @@ import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
-from ..core.data_schemas import DialogueNode, LogicGraph
+from gi.repository import Gtk, Adw, GObject
+from ..core.data_schemas import DialogueNode, ActionNode, LogicGraph
+from .module_logic import DynamicNodeEditor # Re-use the Action/Condition editor
+
+class ActionEditorDialog(Adw.MessageDialog):
+    def __init__(self, parent, project_manager, action_node=None):
+        super().__init__(transient_for=parent, modal=True)
+        self.set_heading("Add New Action" if action_node is None else "Edit Action")
+        self.project_manager = project_manager
+        self.action_node = action_node
+
+        self.editor = DynamicNodeEditor(self.action_node or ActionNode(id="", node_type="Action", x=0, y=0))
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_margin_top(10)
+        content.set_margin_bottom(10)
+        content.set_margin_start(10)
+        content.set_margin_end(10)
+        content.append(self.editor)
+        self.set_extra_child(content)
+
+        self.add_response("cancel", "_Cancel")
+        self.add_response("ok", "_OK")
+        self.set_default_response("ok")
 
 class DialogueNodeEditor(Gtk.Box):
     def __init__(self, node: DialogueNode, project_manager):
@@ -40,6 +62,40 @@ class DialogueNodeEditor(Gtk.Box):
         save_button = Gtk.Button(label="Save Changes")
         save_button.connect("clicked", self.on_save_clicked)
         self.append(save_button)
+
+        add_action_button = Gtk.Button(label="Add Action")
+        add_action_button.connect("clicked", self.on_add_action_clicked)
+        self.append(add_action_button)
+
+    def on_add_action_clicked(self, button):
+        dialog = ActionEditorDialog(self.get_ancestor(Gtk.Window), self.project_manager)
+        dialog.connect("response", self.on_add_action_response)
+        dialog.show()
+
+    def on_add_action_response(self, dialog, response):
+        if response == "ok":
+            values = dialog.editor.get_values()
+            parent_dialogue_node = self.node
+
+            new_action_id = f"action_{len(self.project_manager.data.dialogue_graphs[0].nodes)}" # Simplified ID
+            new_action_node = ActionNode(
+                id=new_action_id,
+                node_type="Action",
+                x=0, y=0, # Not relevant for tree view
+                action_command=values.get("action_command", ""),
+                parameters=values.get("parameters", {})
+            )
+
+            parent_dialogue_node.outputs.append(new_action_id)
+            new_action_node.inputs.append(parent_dialogue_node.id)
+
+            self.project_manager.data.dialogue_graphs[0].nodes.append(new_action_node)
+            self.project_manager.set_dirty()
+
+            # Emit signal to refresh the tree
+            self.get_ancestor(DialogueEditor).emit('refresh-tree')
+
+        dialog.destroy()
 
     def on_save_clicked(self, button):
         if self.node:
@@ -79,6 +135,10 @@ class DialogueNodeEditor(Gtk.Box):
         self.portrait_preview.set_filename(None)
 
 class DialogueEditor(Gtk.Box):
+    __gsignals__ = {
+        'refresh-tree': (GObject.SIGNAL_RUN_FIRST, None, ())
+    }
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -135,6 +195,7 @@ class DialogueEditor(Gtk.Box):
         self.properties_stack.set_visible_child_name("placeholder")
 
         self.tree_view.get_selection().connect("changed", self.on_tree_selection_changed)
+        self.connect("refresh-tree", lambda _: self._load_dialogue_graphs())
         self._load_dialogue_graphs()
 
     def on_add_node(self, button):
@@ -190,8 +251,13 @@ class DialogueEditor(Gtk.Box):
                 if parent_node and node_id in parent_node.outputs:
                     parent_node.outputs.remove(node_id)
 
-            # For simplicity, this example doesn't reconnect children.
-            # A real implementation would need to handle orphaned nodes.
+            if isinstance(node_to_delete, DialogueNode):
+                # This is a simplification. A real implementation would need to handle
+                # re-parenting of any children of the deleted dialogue node.
+                for child_id in node_to_delete.outputs:
+                    child_node = next((n for n in self.active_graph.nodes if n.id == child_id), None)
+                    if child_node:
+                        child_node.inputs.remove(node_id)
 
             # Remove the node itself
             self.active_graph.nodes.remove(node_to_delete)
@@ -215,15 +281,19 @@ class DialogueEditor(Gtk.Box):
             self._populate_tree(root_nodes[0], None)
 
     def _populate_tree(self, node, parent_iter):
+        display_text = ""
         if isinstance(node, DialogueNode):
             display_text = f"{node.character_id}: {node.dialogue_text[:30]}..."
-            current_iter = self.tree_store.append(parent_iter, [node.id, display_text])
+        elif isinstance(node, ActionNode):
+            display_text = f"-> ACTION: {node.action_command}"
 
-            # Recurse through children
-            for child_id in node.outputs:
-                child_node = next((n for n in self.active_graph.nodes if n.id == child_id), None)
-                if child_node:
-                    self._populate_tree(child_node, current_iter)
+        current_iter = self.tree_store.append(parent_iter, [node.id, display_text])
+
+        # Recurse through children
+        for child_id in node.outputs:
+            child_node = next((n for n in self.active_graph.nodes if n.id == child_id), None)
+            if child_node:
+                self._populate_tree(child_node, current_iter)
 
     def on_tree_selection_changed(self, selection):
         model, tree_iter = selection.get_selected()
@@ -233,16 +303,34 @@ class DialogueEditor(Gtk.Box):
 
             node = next((n for n in self.active_graph.nodes if n.id == node_id), None)
 
-            if node and isinstance(node, DialogueNode):
-                if not self.node_editor:
-                    self.node_editor = DialogueNodeEditor(node, self.project_manager)
-                    self.properties_stack.add_named(self.node_editor, "editor")
-                else:
-                    self.node_editor.update_node(node, model, tree_iter)
-
-                self.properties_stack.set_visible_child_name("editor")
+            if node:
+                if isinstance(node, DialogueNode):
+                    if not self.node_editor:
+                        self.node_editor = DialogueNodeEditor(node, self.project_manager)
+                        self.properties_stack.add_named(self.node_editor, "editor")
+                    else:
+                        self.node_editor.update_node(node, model, tree_iter)
+                    self.properties_stack.set_visible_child_name("editor")
+                elif isinstance(node, ActionNode):
+                    dialog = ActionEditorDialog(self.get_ancestor(Gtk.Window), self.project_manager, action_node=node)
+                    dialog.connect("response", self.on_edit_action_response)
+                    dialog.show()
+                    self.properties_stack.set_visible_child_name("placeholder") # Don't show editor for actions
             else:
                 self.properties_stack.set_visible_child_name("placeholder")
         else:
             self.delete_button.set_sensitive(False)
             self.properties_stack.set_visible_child_name("placeholder")
+
+    def on_edit_action_response(self, dialog, response):
+        if response == "ok":
+            values = dialog.editor.get_values()
+            action_node = dialog.action_node
+
+            action_node.action_command = values.get("action_command", "")
+            action_node.parameters = values.get("parameters", {})
+
+            self.project_manager.set_dirty()
+            self.emit('refresh-tree')
+
+        dialog.destroy()
