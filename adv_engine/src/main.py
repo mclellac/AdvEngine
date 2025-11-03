@@ -29,6 +29,11 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.header = Gtk.HeaderBar()
         self.main_box.append(self.header)
 
+        # Add "New Project" button to the header
+        self.new_project_button = Gtk.Button(label="New Project")
+        self.new_project_button.connect("clicked", self.on_new_project_clicked)
+        self.header.pack_start(self.new_project_button)
+
         self.split_view = Adw.NavigationSplitView()
         self.split_view.set_vexpand(True)
         self.main_box.append(self.split_view)
@@ -91,6 +96,28 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         if row:
             self.content_stack.set_visible_child_name(row.view_name)
 
+    def on_new_project_clicked(self, button):
+        dialog = Gtk.FileChooserDialog(
+            title="Create a New Project",
+            parent=self,
+            action=Gtk.FileChooserAction.SELECT_FOLDER,
+        )
+        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK)
+
+        def on_dialog_response(dialog, response):
+            if response == Gtk.ResponseType.OK:
+                folder = dialog.get_file().get_path()
+                success, error = ProjectManager.create_project(folder)
+                if success:
+                    self.get_application().load_project(folder)
+                else:
+                    # You might want to show an error dialog here
+                    print(f"Error creating project: {error}")
+            dialog.destroy()
+
+        dialog.connect("response", on_dialog_response)
+        dialog.show()
+
 
 class AdvEngine(Adw.Application):
     def __init__(self, **kwargs):
@@ -100,10 +127,15 @@ class AdvEngine(Adw.Application):
         self.connect('activate', self.on_activate)
 
     def on_activate(self, app):
-        self.project_manager = ProjectManager("TestGame")
+        self.load_project("TestGame")
+
+    def load_project(self, project_path):
+        self.project_manager = ProjectManager(project_path)
         self.project_manager.load_project()
 
-        self.win = AdvEngineWindow(application=app, project_manager=self.project_manager)
+        if self.win:
+            self.win.destroy()
+        self.win = AdvEngineWindow(application=self, project_manager=self.project_manager)
         self.win.present()
 
 def main():
