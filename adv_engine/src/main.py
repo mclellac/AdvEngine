@@ -85,7 +85,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         verbs_items_stack.add_titled(CharacterEditor(self.project_manager), "characters", "Characters")
         verbs_items_stack.add_titled(AttributeEditor(self.project_manager), "attributes", "Attributes")
 
-        self.add_editor("Verbs & Items", "verbs_items_editor", verbs_items_container)
+        self.add_editor("Verbs &amp; Items", "verbs_items_editor", verbs_items_container)
         self.add_editor("Audio", "audio_editor", self.audio_editor)
 
         # Set initial state
@@ -95,13 +95,14 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
     def add_editor(self, name, view_name, widget):
         row = Adw.ActionRow(title=name)
-        row.view_name = view_name
+        row.set_name(view_name)  # Use the standard 'name' property
         self.sidebar_list.append(row)
         self.content_stack.add_named(widget, view_name)
 
     def on_sidebar_activated(self, listbox, row):
         if row:
-            self.content_stack.set_visible_child_name(row.view_name)
+            view_name = row.get_name()  # Use the standard 'name' property
+            self.content_stack.set_visible_child_name(view_name)
 
 
 
@@ -170,24 +171,20 @@ class AdvEngine(Adw.Application):
         dialog.show()
 
     def on_preferences_activate(self, action, param):
-        dialog = Adw.MessageDialog(
-            transient_for=self.win,
-            heading="Preferences",
-            body="This is where application preferences will be.",
+        dialog = Adw.AlertDialog(
+            title="Preferences",
+            detail="This is where application preferences will be.",
         )
-        dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.close())
-        dialog.present()
+        dialog.add_button("OK")
+        dialog.present(self.win)
 
     def on_shortcuts_activate(self, action, param):
-        dialog = Adw.MessageDialog(
-            transient_for=self.win,
-            heading="Keyboard Shortcuts",
-            body="This is where keyboard shortcuts will be displayed.",
+        dialog = Adw.AlertDialog(
+            title="Keyboard Shortcuts",
+            detail="This is where keyboard shortcuts will be displayed.",
         )
-        dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.close())
-        dialog.present()
+        dialog.add_button("OK")
+        dialog.present(self.win)
 
     def on_about_activate(self, action, param):
         dialog = Adw.AboutWindow(
