@@ -31,5 +31,5 @@ pip install PyGObject
 To launch the application, run the following command from the root of the project:
 
 ```bash
-python3 -m adv_engine.main
+python3 -m adv_engine.src.main
 ```

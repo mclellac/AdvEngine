@@ -41,9 +41,9 @@ def export_project(project_manager):
         for attr in data.attributes:
             writer.writerow(asdict(attr))
 
-    # --- Export Interaction Matrix to InteractionMatrix.json ---
-    with open(os.path.join(logic_dir, "InteractionMatrix.json"), "w") as f:
-        json.dump([asdict(interaction) for interaction in data.interaction_matrix], f, indent=2)
+    # --- Export Logic Graphs to LogicGraphs.json ---
+    with open(os.path.join(logic_dir, "LogicGraphs.json"), "w") as f:
+        json.dump([asdict(graph) for graph in data.logic_graphs], f, indent=2)
 
     # --- Placeholder JSON files ---
     with open(os.path.join(dialogues_dir, "Graph_Placeholder.json"), "w") as f:

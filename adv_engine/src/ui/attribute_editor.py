@@ -14,7 +14,7 @@ class AttributeEditor(Gtk.Box):
         self.set_margin_end(10)
 
         # Title
-        self.append(Gtk.Label(label="Attribute Editor", halign=G-tk.Align.START,
+        self.append(Gtk.Label(label="Attribute Editor", halign=Gtk.Align.START,
                       css_classes=["title-2"]))
 
         # --- Column View for Attributes ---
