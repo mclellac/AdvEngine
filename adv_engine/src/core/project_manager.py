@@ -9,7 +9,7 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene
+    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction
 )
 
 class ProjectManager:
@@ -31,6 +31,7 @@ class ProjectManager:
         self._load_verbs()
         self._load_dialogue_graphs()
         self._load_cutscenes()
+        self._load_interactions()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
@@ -38,6 +39,8 @@ class ProjectManager:
             self._save_global_variables()
         if self.data.verbs:
             self._save_verbs()
+        if self.data.interactions:
+            self._save_interactions()
         if self.data.scenes:
             self._save_scenes()
         if self.data.logic_graphs:
@@ -353,6 +356,31 @@ class ProjectManager:
         with open(file_path, "w") as f:
             json.dump([asdict(cs) for cs in self.data.cutscenes], f, indent=2)
 
+    def _load_interactions(self):
+        file_path = os.path.join(self.project_path, "Logic", "Interactions.json")
+        try:
+            with open(file_path, "r") as f:
+                self.data.interactions = [Interaction(**interaction) for interaction in json.load(f)]
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_interactions(self):
+        file_path = os.path.join(self.project_path, "Logic", "Interactions.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump([asdict(interaction) for interaction in self.data.interactions], f, indent=2)
+
+    def add_interaction(self, interaction):
+        self.data.interactions.append(interaction)
+        self.set_dirty()
+
+    def remove_interaction(self, interaction):
+        if interaction in self.data.interactions:
+            self.data.interactions.remove(interaction)
+            self.set_dirty()
+
     def add_cutscene(self, name):
         new_id = f"cutscene_{len(self.data.cutscenes) + 1}"
         new_cutscene = Cutscene(id=new_id, name=name)
@@ -363,6 +391,43 @@ class ProjectManager:
     def remove_cutscene(self, cutscene_id):
         self.data.cutscenes = [cs for cs in self.data.cutscenes if cs.id != cutscene_id]
         self.set_dirty()
+
+    def get_verb_index(self, verb_id):
+        for i, verb in enumerate(self.data.verbs):
+            if verb.id == verb_id:
+                return i
+        return -1
+
+    def get_item_index(self, item_id):
+        for i, item in enumerate(self.data.items):
+            if item.id == item_id:
+                return i
+        return -1
+
+    def get_logic_graph_index(self, graph_id):
+        for i, graph in enumerate(self.data.logic_graphs):
+            if graph.id == graph_id:
+                return i
+        return -1
+
+    def get_verb_name(self, verb_id):
+        for verb in self.data.verbs:
+            if verb.id == verb_id:
+                return verb.name
+        return ""
+
+    def get_item_name(self, item_id):
+        for item in self.data.items:
+            if item.id == item_id:
+                return item.name
+        return ""
+
+    def get_hotspot_index(self, hotspot_id):
+        for i, scene in enumerate(self.data.scenes):
+            for j, hotspot in enumerate(scene.hotspots):
+                if hotspot.id == hotspot_id:
+                    return i * 1000 + j # A bit of a hack to get a unique index
+        return -1
 
     @staticmethod
     def create_project(project_path):
