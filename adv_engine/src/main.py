@@ -105,15 +105,16 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
 
     def add_editor(self, name, view_name, widget):
-        row = Adw.ActionRow(title=name)
-        row.set_name(view_name)  # Use the standard 'name' property
-        self.sidebar_list.append(row)
+        action_row = Adw.ActionRow(title=name)
+        list_box_row = Gtk.ListBoxRow()
+        list_box_row.set_child(action_row)
+        list_box_row.set_name(view_name)
+        self.sidebar_list.append(list_box_row)
         self.content_stack.add_named(widget, view_name)
 
     def on_sidebar_activated(self, listbox, row):
         if row:
-            action_row = row.get_child()
-            view_name = action_row.get_name()
+            view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
 
     def on_dirty_state_changed(self, is_dirty):
