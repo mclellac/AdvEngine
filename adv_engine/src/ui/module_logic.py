@@ -1,7 +1,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, Adw
+from gi.repository import Gtk, Gdk, Adw, Gio
 import json
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
