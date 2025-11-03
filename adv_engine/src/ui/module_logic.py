@@ -6,7 +6,131 @@ import json
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
 
+class DynamicNodeEditor(Gtk.Box):
+    def __init__(self, node):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.node = node
+        self.widgets = {}
+        self.build_ui()
+
+    def build_ui(self):
+        if isinstance(self.node, DialogueNode):
+            self.add_entry("character_id", "Character ID:", self.node.character_id)
+            self.add_entry("dialogue_text", "Dialogue Text:", self.node.dialogue_text)
+        elif isinstance(self.node, (ConditionNode, ActionNode)):
+            defs = get_command_definitions()
+            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
+            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
+
+            # Dropdown for command type
+            command_types = list(defs[command_key].keys())
+            self.add_dropdown(command_type_key, "Type:", command_types, getattr(self.node, command_type_key))
+
+            # Parameters Box
+            self.params_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+            self.append(self.params_box)
+            self.update_params_ui(None) # Initial population
+
+    def add_entry(self, key, label_text, default_value):
+        self.append(Gtk.Label(label=label_text, halign=Gtk.Align.START))
+        entry = Gtk.Entry(text=str(default_value))
+        self.widgets[key] = entry
+        self.append(entry)
+
+    def add_dropdown(self, key, label_text, options, default_value):
+        self.append(Gtk.Label(label=label_text, halign=Gtk.Align.START))
+        dropdown = Gtk.DropDown.new_from_strings(options)
+        self.widgets[key] = dropdown
+        if default_value in options:
+            dropdown.set_selected(options.index(default_value))
+        dropdown.connect("notify::selected-item", self.update_params_ui)
+        self.append(dropdown)
+
+    def update_params_ui(self, dropdown, _=None):
+        # Clear existing params
+        for child in list(self.params_box.observe_children()):
+            self.params_box.remove(child)
+
+        command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
+        command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
+
+        selected_command = self.widgets[command_type_key].get_selected_item().get_string()
+
+        if selected_command:
+            defs = get_command_definitions()[command_key][selected_command]["params"]
+            for param, p_type in defs.items():
+                default = self.node.parameters.get(param, "")
+                self.add_param_widget(param, p_type, default)
+
+    def add_param_widget(self, key, param_type, default_value):
+        self.params_box.append(Gtk.Label(label=f"{key}:", halign=Gtk.Align.START))
+        if isinstance(param_type, list): # It's a dropdown
+            dropdown = Gtk.DropDown.new_from_strings(param_type)
+            if default_value in param_type:
+                dropdown.set_selected(param_type.index(default_value))
+            self.widgets[key] = dropdown
+            self.params_box.append(dropdown)
+        else: # It's an entry
+            entry = Gtk.Entry(text=str(default_value))
+            self.widgets[key] = entry
+            self.params_box.append(entry)
+
+    def get_values(self):
+        values = {}
+        if isinstance(self.node, (ConditionNode, ActionNode)):
+            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
+            values[command_type_key] = self.widgets[command_type_key].get_selected_item().get_string()
+            values['parameters'] = {}
+            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
+            selected_command = self.widgets[command_type_key].get_selected_item().get_string()
+            if selected_command:
+                defs = get_command_definitions()[command_key][selected_command]["params"]
+                for param, p_type in defs.items():
+                    if isinstance(p_type, list):
+                        values['parameters'][param] = self.widgets[param].get_selected_item().get_string()
+                    else:
+                         values['parameters'][param] = self.widgets[param].get_text()
+        else:
+            for key, widget in self.widgets.items():
+                values[key] = widget.get_text()
+        return values
+
 class LogicEditor(Gtk.Box):
+    def on_delete_node(self, button):
+        if self.selected_nodes and self.active_graph:
+            for node_to_delete in self.selected_nodes:
+                self.active_graph.nodes.remove(node_to_delete)
+                # Remove any connections to the deleted node
+                for node in self.active_graph.nodes:
+                    if node_to_delete.id in node.outputs:
+                        node.outputs.remove(node_to_delete.id)
+                    if node_to_delete.id in node.inputs:
+                        node.inputs.remove(node_to_delete.id)
+
+            self.selected_nodes.clear()
+            self.delete_node_button.set_sensitive(False)
+            self.project_manager.save_project()
+            self.canvas.queue_draw()
+
+    def edit_node_dialog(self, node):
+        dialog = Gtk.Dialog(title=f"Edit Node {node.id}", transient_for=self.get_native(), modal=True)
+        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Save", Gtk.ResponseType.OK)
+
+        editor = DynamicNodeEditor(node)
+        dialog.get_content_area().append(editor)
+
+        def on_response(dialog, response_id):
+            if response_id == Gtk.ResponseType.OK:
+                values = editor.get_values()
+                for key, value in values.items():
+                    setattr(node, key, value)
+                self.project_manager.save_project()
+                self.canvas.queue_draw()
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.show()
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -261,130 +385,6 @@ class LogicEditor(Gtk.Box):
                     self.selected_nodes.append(node_clicked)
 
             self.delete_node_button.set_sensitive(len(self.selected_nodes) > 0)
-            self.canvas.queue_draw()
-
-class DynamicNodeEditor(Gtk.Box):
-    def __init__(self, node):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.node = node
-        self.widgets = {}
-        self.build_ui()
-
-    def build_ui(self):
-        if isinstance(self.node, DialogueNode):
-            self.add_entry("character_id", "Character ID:", self.node.character_id)
-            self.add_entry("dialogue_text", "Dialogue Text:", self.node.dialogue_text)
-        elif isinstance(self.node, (ConditionNode, ActionNode)):
-            defs = get_command_definitions()
-            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
-            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
-
-            # Dropdown for command type
-            command_types = list(defs[command_key].keys())
-            self.add_dropdown(command_type_key, "Type:", command_types, getattr(self.node, command_type_key))
-
-            # Parameters Box
-            self.params_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-            self.append(self.params_box)
-            self.update_params_ui(None) # Initial population
-
-    def add_entry(self, key, label_text, default_value):
-        self.append(Gtk.Label(label=label_text, halign=Gtk.Align.START))
-        entry = Gtk.Entry(text=str(default_value))
-        self.widgets[key] = entry
-        self.append(entry)
-
-    def add_dropdown(self, key, label_text, options, default_value):
-        self.append(Gtk.Label(label=label_text, halign=Gtk.Align.START))
-        dropdown = Gtk.DropDown.new_from_strings(options)
-        self.widgets[key] = dropdown
-        if default_value in options:
-            dropdown.set_selected(options.index(default_value))
-        dropdown.connect("notify::selected-item", self.update_params_ui)
-        self.append(dropdown)
-
-    def update_params_ui(self, dropdown, _=None):
-        # Clear existing params
-        for child in list(self.params_box.observe_children()):
-            self.params_box.remove(child)
-
-        command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
-        command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
-
-        selected_command = self.widgets[command_type_key].get_selected_item().get_string()
-
-        if selected_command:
-            defs = get_command_definitions()[command_key][selected_command]["params"]
-            for param, p_type in defs.items():
-                default = self.node.parameters.get(param, "")
-                self.add_param_widget(param, p_type, default)
-
-    def add_param_widget(self, key, param_type, default_value):
-        self.params_box.append(Gtk.Label(label=f"{key}:", halign=Gtk.Align.START))
-        if isinstance(param_type, list): # It's a dropdown
-            dropdown = Gtk.DropDown.new_from_strings(param_type)
-            if default_value in param_type:
-                dropdown.set_selected(param_type.index(default_value))
-            self.widgets[key] = dropdown
-            self.params_box.append(dropdown)
-        else: # It's an entry
-            entry = Gtk.Entry(text=str(default_value))
-            self.widgets[key] = entry
-            self.params_box.append(entry)
-
-    def get_values(self):
-        values = {}
-        if isinstance(self.node, (ConditionNode, ActionNode)):
-            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
-            values[command_type_key] = self.widgets[command_type_key].get_selected_item().get_string()
-            values['parameters'] = {}
-            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
-            selected_command = self.widgets[command_type_key].get_selected_item().get_string()
-            if selected_command:
-                defs = get_command_definitions()[command_key][selected_command]["params"]
-                for param, p_type in defs.items():
-                    if isinstance(p_type, list):
-                        values['parameters'][param] = self.widgets[param].get_selected_item().get_string()
-                    else:
-                         values['parameters'][param] = self.widgets[param].get_text()
-        else:
-            for key, widget in self.widgets.items():
-                values[key] = widget.get_text()
-        return values
-
-    def edit_node_dialog(self, node):
-        dialog = Gtk.Dialog(title=f"Edit Node {node.id}", transient_for=self.get_native(), modal=True)
-        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Save", Gtk.ResponseType.OK)
-
-        editor = DynamicNodeEditor(node)
-        dialog.get_content_area().append(editor)
-
-        def on_response(dialog, response_id):
-            if response_id == Gtk.ResponseType.OK:
-                values = editor.get_values()
-                for key, value in values.items():
-                    setattr(node, key, value)
-                self.project_manager.save_project()
-                self.canvas.queue_draw()
-            dialog.destroy()
-
-        dialog.connect("response", on_response)
-        dialog.show()
-
-    def on_delete_node(self, button):
-        if self.selected_nodes and self.active_graph:
-            for node_to_delete in self.selected_nodes:
-                self.active_graph.nodes.remove(node_to_delete)
-                # Remove any connections to the deleted node
-                for node in self.active_graph.nodes:
-                    if node_to_delete.id in node.outputs:
-                        node.outputs.remove(node_to_delete.id)
-                    if node_to_delete.id in node.inputs:
-                        node.inputs.remove(node_to_delete.id)
-
-            self.selected_nodes.clear()
-            self.delete_node_button.set_sensitive(False)
-            self.project_manager.save_project()
             self.canvas.queue_draw()
 
     def on_key_pressed(self, controller, keyval, keycode, state):
