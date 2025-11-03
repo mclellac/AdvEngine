@@ -352,8 +352,6 @@ class DynamicNodeEditor(Gtk.Box):
                 values[key] = widget.get_text()
         return values
 
-class LogicEditor(Gtk.Box):
-...
     def edit_node_dialog(self, node):
         dialog = Gtk.Dialog(title=f"Edit Node {node.id}", transient_for=self.get_native(), modal=True)
         dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Save", Gtk.ResponseType.OK)
