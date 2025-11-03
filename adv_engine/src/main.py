@@ -379,7 +379,7 @@ class AdvEngine(Adw.Application):
         dialog.show()
 
     def on_preferences_activate(self, action, param):
-        dialog = PreferencesDialog(parent=self.win)
+        dialog = PreferencesDialog(parent=self.win, project_manager=self.project_manager, settings_manager=self.project_manager.settings)
         dialog.present()
 
     def on_shortcuts_activate(self, action, param):
