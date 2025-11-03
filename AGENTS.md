@@ -60,7 +60,72 @@ The architecture is strictly modular to isolate UI logic from data logic.
 |   |-- main.py                    # Application entry point
 |-- build/                         # PyInstaller output directories
 |-- data/                          # Runtime project files and configuration
-B. Module Responsibilitiescore/project_manager.py: Manages the native .adv file format, ensuring version control and integrity across saves.core/ue_exporter.py: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.ui/module_logic.py: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.4. AdvEngine Feature SpecificationA. Core Editor Modules (Tabs)Module NameFunctionality FocusKey FeatureScenesWorld DesignWalk Mesh drawing, Hotspot placement, Camera Safe Area preview. Animated Prop Template placement.LogicPuzzle & NarrativeNode-graph editor, Condition/Action definition, Dialogue/Quest branching, Live Variable Watcher.AssetsMedia ManagementSprite import, Animation sequence definition, Normal Map texture pairing (for UE lighting).Verbs & ItemsDatabaseEditing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens.AudioSound & AmbianceAssignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters.B. Rapid Development & Debugging FeaturesFeature NameIntegration PointPurposeBatch ProcessingAsset & Logic ModulesCSV import for dialogue scripts; Template system for repetitive animated environment assets.Interaction Trace LogDebug WindowStreams puzzle failure/success conditions from the UE game back to the AdvEngine UI.Contextual FallbacksLogic EditorGlobal or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here.").Task/Note AttachmentAll EditorsAllows attaching simple to-do items directly to Hotspots or Logic Nodes.C. Window/Menu Manager DetailsUI Anchoring: Provides a visual editor to define how UI elements (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios (16:9, 21:9).Layout Definition: Defines the grid size (e.g., 5x4 inventory grid) and sprite key for currency indicators.5. Export Contract Data (API Specification)A. File Structure & PathsPathPurposeFormatNotes (UE Consumer)[ProjectName]/Data/ItemData.csvList of all items, prices, and properties.CSVLoaded into the BP_ItemData Data Table.[ProjectName]/Logic/InteractionMatrix.jsonCRITICAL: Full puzzle logic file.JSONParsed by the BP_InteractionComponent at runtime.[ProjectName]/UI/WindowLayout.jsonDefines the anchoring and contents of all custom menus.JSONUsed by the BP_UIManager to dynamically build the UI.B. Core Action Commands (Mapped to UE Blueprint Functions)These commands are the fixed API contract between AdvEngine and the UE runtime.CommandPurposeSET_VARIABLEUpdate a global game state variable or quest flag.INVENTORY_ADD/REMOVEModifies the player's inventory and updates the UE Inventory UI Widget.SCENE_TRANSITIONWarps the player to a new scene and spawn point.SHOP_OPENTriggers the Shop UI, referencing a specific Shop ID for inventory population.MODIFY_ATTRIBUTEChanges a character's attribute value (e.g., Tech Skill +1).PLAY_CINEMATICTriggers a pre-built UE Sequencer asset for cutscenes.PLAY_SFXTriggers a sound effect event defined in the Audio Manifest.C. Interaction Matrix Structure (InteractionMatrix.json)The central logic file, an array of Interaction Objects.JSON[
+```
+
+### B. Module Responsibilities
+
+*   **core/project_manager.py**: Manages the native .adv file format, ensuring version control and integrity across saves.
+*   **core/ue_exporter.py**: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.
+*   **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.
+
+---
+## 4. AdvEngine Feature Specification
+
+### A. Core Editor Modules (Tabs)
+
+| Module Name | Functionality Focus | Key Feature |
+|---|---|---|
+| **Scenes** | World Design | Walk Mesh drawing, Hotspot placement, Camera Safe Area preview. Animated Prop Template placement. |
+| **Logic** | Puzzle & Narrative | Node-graph editor, Condition/Action definition, Dialogue/Quest branching, Live Variable Watcher. |
+| **Assets** | Media Management | Sprite import, Animation sequence definition, Normal Map texture pairing (for UE lighting). |
+| **Verbs & Items** | Database | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens. |
+| **Audio** | Sound & Ambiance | Assignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters. |
+
+### B. Rapid Development & Debugging Features
+
+| Feature Name | Integration Point | Purpose |
+|---|---|---|
+| **Batch Processing** | Asset & Logic Modules | CSV import for dialogue scripts; Template system for repetitive animated environment assets. |
+| **Interaction Trace Log** | Debug Window | Streams puzzle failure/success conditions from the UE game back to the AdvEngine UI. |
+| **Contextual Fallbacks** | Logic Editor | Global or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here."). |
+| **Task/Note Attachment** | All Editors | Allows attaching simple to-do items directly to Hotspots or Logic Nodes. |
+
+### C. Window/Menu Manager Details
+
+*   **UI Anchoring**: Provides a visual editor to define how UI elements (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios (16:9, 21:9).
+*   **Layout Definition**: Defines the grid size (e.g., 5x4 inventory grid) and sprite key for currency indicators.
+
+---
+## 5. Export Contract Data (API Specification)
+
+### A. File Structure & Paths
+
+| Path | Purpose | Format | Notes (UE Consumer) |
+|---|---|---|---|
+| `[ProjectName]/Data/ItemData.csv` | List of all items, prices, and properties. | CSV | Loaded into the `BP_ItemData` Data Table. |
+| `[ProjectName]/Logic/InteractionMatrix.json` | **CRITICAL**: Full puzzle logic file. | JSON | Parsed by the `BP_InteractionComponent` at runtime. |
+| `[ProjectName]/UI/WindowLayout.json` | Defines the anchoring and contents of all custom menus. | JSON | Used by the `BP_UIManager` to dynamically build the UI. |
+
+### B. Core Action Commands (Mapped to UE Blueprint Functions)
+
+These commands are the fixed API contract between AdvEngine and the UE runtime.
+
+| Command | Purpose |
+|---|---|
+| `SET_VARIABLE` | Update a global game state variable or quest flag. |
+| `INVENTORY_ADD/REMOVE` | Modifies the player's inventory and updates the UE Inventory UI Widget. |
+| `SCENE_TRANSITION` | Warps the player to a new scene and spawn point. |
+| `SHOP_OPEN` | Triggers the Shop UI, referencing a specific Shop ID for inventory population. |
+| `MODIFY_ATTRIBUTE` | Changes a character's attribute value (e.g., Tech Skill +1). |
+| `PLAY_CINEMATIC` | Triggers a pre-built UE Sequencer asset for cutscenes. |
+| `PLAY_SFX` | Triggers a sound effect event defined in the Audio Manifest. |
+
+### C. Interaction Matrix Structure (InteractionMatrix.json)
+
+The central logic file, an array of Interaction Objects.
+
+```json
+[
   // Array of Interaction Objects
   {
     "scene_id": "String",                 // Scene ID or "*"
