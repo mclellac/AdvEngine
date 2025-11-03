@@ -16,7 +16,7 @@ from .ui.module_assets import AssetEditor
 from .ui.module_audio import AudioEditor
 
 
-class AdvEngineWindow(Gtk.ApplicationWindow):
+class AdvEngineWindow(Adw.ApplicationWindow):
     def __init__(self, project_manager, **kwargs):
         super().__init__(**kwargs)
         self.project_manager = project_manager
@@ -24,23 +24,23 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.set_default_size(1024, 768)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_child(self.main_box)
+        self.set_content(self.main_box)
 
-        self.header = Gtk.HeaderBar()
+        self.header = Adw.HeaderBar()
         self.main_box.append(self.header)
 
         # Add a menu button to the header
         menu = Gio.Menu.new()
         menu.append("New Project", "app.new-project")
+        menu.append("Preferences", "app.preferences")
+        menu.append("Keyboard Shortcuts", "app.shortcuts")
+        menu.append("About", "app.about")
 
-        menu_button = Gtk.MenuButton()
+        menu_button = Gtk.MenuButton(menu_model=menu)
         menu_button.set_icon_name("open-menu-symbolic")
-        menu_button.set_menu_model(menu)
         self.header.pack_end(menu_button)
 
-
-        self.split_view = Adw.NavigationSplitView()
-        self.split_view.set_vexpand(True)
+        self.split_view = Adw.NavigationSplitView(vexpand=True)
         self.main_box.append(self.split_view)
 
         self.content_stack = Adw.ViewStack()
@@ -60,11 +60,15 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.audio_editor = AudioEditor(self.project_manager)
 
         # --- Sidebar setup ---
+        sidebar_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.sidebar_list = Gtk.ListBox()
         self.sidebar_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
-        self.split_view.set_sidebar(Adw.NavigationPage.new(self.sidebar_list, "Editors"))
+        sidebar_content.append(self.sidebar_list)
 
+        sidebar_page = Adw.NavigationPage.new(sidebar_content, "Editors")
+        self.split_view.set_sidebar(sidebar_page)
+        self.split_view.set_show_sidebar(True)
         # --- Add actual editor widgets to sidebar and stack ---
         self.add_editor("Scenes", "scenes_editor", self.scene_editor)
         self.add_editor("Logic", "logic_editor", self.logic_editor)
@@ -90,9 +94,7 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
 
 
     def add_editor(self, name, view_name, widget):
-        row = Gtk.ListBoxRow()
-        label = Gtk.Label(label=name, halign=Gtk.Align.START, margin_start=10)
-        row.set_child(label)
+        row = Adw.ActionRow(title=name)
         row.view_name = view_name
         self.sidebar_list.append(row)
         self.content_stack.add_named(widget, view_name)
@@ -117,6 +119,18 @@ class AdvEngine(Adw.Application):
         new_project_action = Gio.SimpleAction.new("new-project", None)
         new_project_action.connect("activate", self.on_new_project_activate)
         self.add_action(new_project_action)
+
+        preferences_action = Gio.SimpleAction.new("preferences", None)
+        preferences_action.connect("activate", self.on_preferences_activate)
+        self.add_action(preferences_action)
+
+        shortcuts_action = Gio.SimpleAction.new("shortcuts", None)
+        shortcuts_action.connect("activate", self.on_shortcuts_activate)
+        self.add_action(shortcuts_action)
+
+        about_action = Gio.SimpleAction.new("about", None)
+        about_action.connect("activate", self.on_about_activate)
+        self.add_action(about_action)
 
     def load_project(self, project_path):
         """Loads a project and shows its window."""
@@ -154,6 +168,37 @@ class AdvEngine(Adw.Application):
 
         dialog.connect("response", on_dialog_response)
         dialog.show()
+
+    def on_preferences_activate(self, action, param):
+        dialog = Adw.MessageDialog(
+            transient_for=self.win,
+            heading="Preferences",
+            body="This is where application preferences will be.",
+        )
+        dialog.add_response("ok", "OK")
+        dialog.connect("response", lambda d, r: d.close())
+        dialog.present()
+
+    def on_shortcuts_activate(self, action, param):
+        dialog = Adw.MessageDialog(
+            transient_for=self.win,
+            heading="Keyboard Shortcuts",
+            body="This is where keyboard shortcuts will be displayed.",
+        )
+        dialog.add_response("ok", "OK")
+        dialog.connect("response", lambda d, r: d.close())
+        dialog.present()
+
+    def on_about_activate(self, action, param):
+        dialog = Adw.AboutWindow(
+            transient_for=self.win,
+            application_name="AdvEngine",
+            developer_name="Your Name",
+            version="0.1.0",
+            comments="A modern adventure game editor.",
+            website="https://example.com",
+        )
+        dialog.present()
 
 def main():
     app = AdvEngine(application_id="com.example.advengine")

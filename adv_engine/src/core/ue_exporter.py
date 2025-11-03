@@ -3,6 +3,27 @@ import json
 import csv
 from dataclasses import asdict
 
+COMMAND_DEFINITIONS = {
+    "actions": {
+        "SET_VARIABLE": {"params": {"VarName": "str", "Value": "any"}},
+        "INVENTORY_ADD": {"params": {"ItemID": "str", "Amount": "int"}},
+        "INVENTORY_REMOVE": {"params": {"ItemID": "str", "Amount": "int"}},
+        "SCENE_TRANSITION": {"params": {"SceneID": "str", "SpawnPoint": "str"}},
+        "SHOP_OPEN": {"params": {"ShopID": "str"}},
+        "MODIFY_ATTRIBUTE": {"params": {"AttributeID": "str", "Value": "int"}},
+        "PLAY_CINEMATIC": {"params": {"CinematicID": "str"}},
+        "PLAY_SFX": {"params": {"SoundID": "str"}},
+    },
+    "conditions": {
+        "VARIABLE_EQUALS": {"params": {"VarName": "str", "Value": "any"}},
+        "HAS_ITEM": {"params": {"ItemID": "str", "Amount": "int"}},
+        "ATTRIBUTE_CHECK": {"params": {"AttributeID": "str", "Value": "int", "Comparison": ["==", ">", "<", ">=", "<="]}},
+    }
+}
+
+def get_command_definitions():
+    return COMMAND_DEFINITIONS
+
 def export_project(project_manager):
     """
     Exports all data files to the specified project path using data from the project_manager.
