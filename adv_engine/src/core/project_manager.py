@@ -184,6 +184,39 @@ class ProjectManager:
                 return new_hotspot
         return None
 
+    def add_item(self, item):
+        """Adds a new item to the project."""
+        self.data.items.append(item)
+        self.set_dirty()
+
+    def remove_item(self, item):
+        """Removes an item from the project."""
+        if item in self.data.items:
+            self.data.items.remove(item)
+            self.set_dirty()
+
+    def add_character(self, character):
+        """Adds a new character to the project."""
+        self.data.characters.append(character)
+        self.set_dirty()
+
+    def remove_character(self, character):
+        """Removes a character from the project."""
+        if character in self.data.characters:
+            self.data.characters.remove(character)
+            self.set_dirty()
+
+    def add_attribute(self, attribute):
+        """Adds a new attribute to the project."""
+        self.data.attributes.append(attribute)
+        self.set_dirty()
+
+    def remove_attribute(self, attribute):
+        """Removes an attribute from the project."""
+        if attribute in self.data.attributes:
+            self.data.attributes.remove(attribute)
+            self.set_dirty()
+
     @staticmethod
     def create_project(project_path):
         """
