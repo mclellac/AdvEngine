@@ -164,3 +164,45 @@ class ProjectManager:
                 self.save_project()
                 return new_hotspot
         return None
+
+    @staticmethod
+    def create_project(project_path):
+        """
+        Creates the directory structure and empty data files for a new project.
+        """
+        try:
+            # Create base directories
+            data_dir = os.path.join(project_path, "Data")
+            logic_dir = os.path.join(project_path, "Logic")
+            ui_dir = os.path.join(project_path, "UI")
+            os.makedirs(data_dir, exist_ok=True)
+            os.makedirs(logic_dir, exist_ok=True)
+            os.makedirs(ui_dir, exist_ok=True)
+
+            # Create CSV files with headers
+            csv_files = {
+                "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
+                "Attributes.csv": ["id", "name", "initial_value", "max_value"],
+                "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id"],
+            }
+            for filename, headers in csv_files.items():
+                file_path = os.path.join(data_dir, filename)
+                with open(file_path, "w", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(headers)
+
+            # Create empty JSON files
+            json_files = [
+                os.path.join(data_dir, "Assets.json"),
+                os.path.join(data_dir, "Audio.json"),
+                os.path.join(logic_dir, "Scenes.json"),
+                os.path.join(logic_dir, "LogicGraphs.json"),
+                os.path.join(ui_dir, "WindowLayout.json"),
+            ]
+            for file_path in json_files:
+                with open(file_path, "w") as f:
+                    json.dump([], f)
+
+            return True, None
+        except Exception as e:
+            return False, str(e)
