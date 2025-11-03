@@ -1,3 +1,4 @@
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -5,10 +6,10 @@ from gi.repository import Gtk, Gio, Adw
 from ..core.data_schemas import Character, CharacterGObject
 
 class CharacterEditorDialog(Adw.MessageDialog):
-    def __init__(self, parent, character=None):
+    def __init__(self, parent, project_manager, character=None):
         super().__init__(transient_for=parent, modal=True)
         self.set_heading("Add New Character" if character is None else "Edit Character")
-
+        self.project_manager = project_manager
         self.character = character
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -23,19 +24,57 @@ class CharacterEditorDialog(Adw.MessageDialog):
         self.dialogue_start_id_entry = Gtk.Entry(text=character.dialogue_start_id if character else "")
         self.is_merchant_check = Gtk.CheckButton(active=character.is_merchant if character else False)
         self.shop_id_entry = Gtk.Entry(text=character.shop_id if character else "")
-        self.portrait_asset_id_entry = Gtk.Entry(text=character.portrait_asset_id if character else "")
+
+        # Portrait Asset Dropdown
+        self.portrait_asset_id_dropdown = self._create_asset_dropdown(character)
+        self.portrait_asset_id_dropdown.connect("notify::selected-item", self._on_portrait_selection_changed)
+
+        # Portrait Preview
+        self.portrait_preview = Gtk.Picture()
+        self.portrait_preview.set_size_request(128, 128)
+        self._update_portrait_preview(character.portrait_asset_id if character else None)
 
         content.append(self._create_row("ID:", self.id_entry))
         content.append(self._create_row("Display Name:", self.display_name_entry))
         content.append(self._create_row("Dialogue Start ID:", self.dialogue_start_id_entry))
         content.append(self._create_row("Is Merchant:", self.is_merchant_check))
         content.append(self._create_row("Shop ID:", self.shop_id_entry))
-        content.append(self._create_row("Portrait Asset ID:", self.portrait_asset_id_entry))
+        content.append(self._create_row("Portrait Asset:", self.portrait_asset_id_dropdown))
+        content.append(self.portrait_preview)
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
         self.set_default_response("ok")
         self.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+
+    def _create_asset_dropdown(self, character):
+        image_assets = [asset.id for asset in self.project_manager.data.assets if asset.asset_type in ["sprite", "animation"]]
+        dropdown = Gtk.DropDown.new_from_strings(["None"] + image_assets)
+        if character and character.portrait_asset_id in image_assets:
+            dropdown.set_selected(image_assets.index(character.portrait_asset_id) + 1)
+        else:
+            dropdown.set_selected(0)
+        return dropdown
+
+    def _on_portrait_selection_changed(self, dropdown, _):
+        selected_item = dropdown.get_selected_item()
+        if selected_item:
+            asset_id = selected_item.get_string()
+            self._update_portrait_preview(asset_id)
+
+    def _update_portrait_preview(self, asset_id):
+        if asset_id and asset_id != "None":
+            asset = next((a for a in self.project_manager.data.assets if a.id == asset_id), None)
+            if asset:
+                full_path = os.path.join(self.project_manager.project_path, asset.file_path)
+                if os.path.exists(full_path):
+                    self.portrait_preview.set_filename(full_path)
+                else:
+                    self.portrait_preview.set_filename(None) # Clear preview if path is invalid
+            else:
+                self.portrait_preview.set_filename(None)
+        else:
+            self.portrait_preview.set_filename(None)
 
     def _create_row(self, label_text, widget):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -149,44 +188,61 @@ class CharacterEditor(Gtk.Box):
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _on_add_clicked(self, button):
-        dialog = CharacterEditorDialog(self.get_root())
+        dialog = CharacterEditorDialog(self.get_root(), self.project_manager)
         dialog.connect("response", self._on_add_dialog_response)
         dialog.present()
 
     def _on_add_dialog_response(self, dialog, response):
         if response == "ok":
+            portrait_asset_id = dialog.portrait_asset_id_dropdown.get_selected_item().get_string()
+            if portrait_asset_id == "None":
+                portrait_asset_id = None
             new_char = Character(
                 id=dialog.id_entry.get_text(),
                 display_name=dialog.display_name_entry.get_text(),
                 dialogue_start_id=dialog.dialogue_start_id_entry.get_text(),
                 is_merchant=dialog.is_merchant_check.get_active(),
                 shop_id=dialog.shop_id_entry.get_text(),
-                portrait_asset_id=dialog.portrait_asset_id_entry.get_text()
+                portrait_asset_id=portrait_asset_id
             )
             self.project_manager.add_character(new_char)
             self.model.append(CharacterGObject(new_char))
         dialog.destroy()
 
     def _on_edit_clicked(self, button):
-        selected_char_gobject = self.selection.get_selected_item()
-        if selected_char_gobject:
-            underlying_item = self.sort_model.get_item(self.selection.get_selected())
-            dialog = CharacterEditorDialog(self.get_root(), character=underlying_item.character_data)
-            dialog.connect("response", self._on_edit_dialog_response, underlying_item)
-            dialog.present()
+        selected_item_pos = self.selection.get_selected()
+        if selected_item_pos != Gtk.INVALID_LIST_POSITION:
+            char_gobject = self.sort_model.get_item(selected_item_pos)
+            if char_gobject:
+                dialog = CharacterEditorDialog(self.get_root(), self.project_manager, character=char_gobject.character_data)
+                dialog.connect("response", self._on_edit_dialog_response, char_gobject)
+                dialog.present()
 
     def _on_edit_dialog_response(self, dialog, response, char_gobject):
         if response == "ok":
             char_gobject.character_data.id = dialog.id_entry.get_text()
+            char_gobject.id = dialog.id_entry.get_text()
             char_gobject.character_data.display_name = dialog.display_name_entry.get_text()
+            char_gobject.display_name = dialog.display_name_entry.get_text()
             char_gobject.character_data.dialogue_start_id = dialog.dialogue_start_id_entry.get_text()
+            char_gobject.dialogue_start_id = dialog.dialogue_start_id_entry.get_text()
             char_gobject.character_data.is_merchant = dialog.is_merchant_check.get_active()
+            char_gobject.is_merchant = dialog.is_merchant_check.get_active()
             char_gobject.character_data.shop_id = dialog.shop_id_entry.get_text()
-            char_gobject.character_data.portrait_asset_id = dialog.portrait_asset_id_entry.get_text()
+            char_gobject.shop_id = dialog.shop_id_entry.get_text()
+
+            portrait_asset_id = dialog.portrait_asset_id_dropdown.get_selected_item().get_string()
+            if portrait_asset_id == "None":
+                portrait_asset_id = None
+            char_gobject.character_data.portrait_asset_id = portrait_asset_id
+            char_gobject.portrait_asset_id = portrait_asset_id
+
             self.project_manager.set_dirty(True)
-            pos = self.model.find(char_gobject)[1]
-            if pos >= 0:
-                self.model.items_changed(pos, 1, 1)
+            # Find the item in the original model to notify of the change
+            for i, item in enumerate(self.model):
+                if item.id == char_gobject.id:
+                    self.model.items_changed(i, 1, 1)
+                    break
         dialog.destroy()
 
     def _on_delete_clicked(self, button):

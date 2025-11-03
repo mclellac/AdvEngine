@@ -4,12 +4,18 @@
 
 ## 1. Project Overview & Context
 
-* Project Name (Tool): **AdvEngine**
-* Purpose: A modern adventure game editor focused on **rapid creation and iteration** of atmospheric 2.5D cyberpunk detective/noir adventure games by a one-man team.
-* Function: AdvEngine is a **Data and Configuration Manager**. It provides a superior, cross-platform UI/UX for design and exports structured data files for the target game engine to consume at runtime.
-* Target Game Engine: **Unreal Engine 5.6**
-* Core Principle: Abstraction—hide all UE complexity behind a clean, data-driven Python interface.
-* Output Goal: Game must support modern resolutions (2K, 4K, Ultrawide) via intelligent scaling and UI anchoring.
+*   Project Name (Tool): **AdvEngine**
+*   Purpose: A modern adventure game editor focused on **rapid creation and
+    iteration** of atmospheric 2.5D cyberpunk detective/noir adventure games
+    by a one-man team.
+*   Function: AdvEngine is a **Data and Configuration Manager**. It provides a
+    superior, cross-platform UI/UX for design and exports structured data files
+    for the target game engine to consume at runtime.
+*   Target Game Engine: **Unreal Engine 5.6**
+*   Core Principle: Abstraction—hide all UE complexity behind a clean,
+    data-driven Python interface.
+*   Output Goal: Game must support modern resolutions (2K, 4K, Ultrawide) via
+    intelligent scaling and UI anchoring.
 
 ---
 
@@ -17,24 +23,24 @@
 
 ### A. Core Tool Stack (AdvEngine Application)
 
-| Component | Role | Required Version | Notes |
-|---|---|---|---|
-| **Language** | Front-end logic, data management, and export scripting. | **Python 3.10+** | |
-| **GUI Framework** | Cross-platform UI toolkit. | **GTK4 (via PyGObject)** | Provides the core application structure and widgets. |
-| **Design Library** | Modern, responsive UI/UX components. | **Libadwaita** | Ensures a clean, polished aesthetic on all platforms. |
-| **Packaging** | Bundling the Python app into standalone executables. | **PyInstaller** | Critical for Windows/macOS distribution. Must bundle all GTK/Libadwaita dependencies. |
-| **Graphing** | Node drawing and connection management. | **Custom GTK Widget** | Will use **cairo** or similar library for canvas rendering (Logic Editor). |
-| **Serialization** | Data processing. | **json**, **csv**, **os** | Standard Python libraries for project I/O and export contract files. |
+| Component      | Role                                                  | Required Version      | Notes                                                              |
+| -------------- | ----------------------------------------------------- | --------------------- | ------------------------------------------------------------------ |
+| **Language**   | Front-end logic, data management, and export scripting. | **Python 3.10+**      |                                                                    |
+| **GUI Framework**| Cross-platform UI toolkit.                            | **GTK4 (via PyGObject)** | Provides the core application structure and widgets.               |
+| **Design Library**| Modern, responsive UI/UX components.                  | **Libadwaita**        | Ensures a clean, polished aesthetic on all platforms.              |
+| **Packaging**  | Bundling the Python app into standalone executables.    | **PyInstaller**       | Critical for Windows/macOS distribution. Must bundle all GTK/Libadwaita dependencies. |
+| **Graphing**   | Node drawing and connection management.               | **Custom GTK Widget** | Will use **cairo** or similar library for canvas rendering (Logic Editor). |
+| **Serialization**| Data processing.                                      | **json**, **csv**, **os** | Standard Python libraries for project I/O and export contract files. |
 
 ### B. Target Game Engine & API Contract (The Connection)
 
-| Component | Role | Critical Detail |
-|---|---|---|
-| **Engine Project** | **AdvEngine UE Template** | Pre-built UE project with fixed Blueprints/C++ for movement, inventory, and scene loading. |
-| **Data Contract**| **Schema Alignment** | Exported JSON/CSV structures **must** match the **UE Custom Structs** (e.g., FS_InteractionRule) and **Data Table Blueprints** exactly. |
-| **Data Location** | Filesystem Write | Python tool writes data files directly into the UE project's Content/ExternalData/ directory. |
+| Component          | Role                      | Critical Detail                                                                                                |
+| ------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Engine Project** | **AdvEngine UE Template** | Pre-built UE project with fixed Blueprints/C++ for movement, inventory, and scene loading.                       |
+| **Data Contract**  | **Schema Alignment**      | Exported JSON/CSV structures **must** match the **UE Custom Structs** (e.g., FS_InteractionRule) and **Data Table Blueprints** exactly. |
+| **Data Location**  | Filesystem Write          | Python tool writes data files directly into the UE project's Content/ExternalData/ directory.                    |
 | **Runtime Data Load** | **AdvEngine Game Instance** | All parsing is handled by the UE **Game Instance Blueprint** or dedicated C++ service during game startup. |
-| **Visuals** | **Modern Rendering** | Template must leverage UE5's **Lumen** (GI) and **Control Rig/Animation Blueprints** for fluid character movement/lighting. |
+| **Visuals**        | **Modern Rendering**      | Template must leverage UE5's **Lumen** (GI) and **Control Rig/Animation Blueprints** for fluid character movement/lighting. |
 
 ---
 
@@ -49,19 +55,19 @@ The architecture is strictly modular to isolate UI logic from data logic.
 |-- src/
 |   |-- core/
 |   |   |-- __init__.py
-|   |   |-- project_manager.py     # Handles native project serialization (AdvEngine format)
-|   |   |-- data_schemas.py        # Python dataclass definitions for all game data
-|   |   |-- ue_exporter.py         # **CRITICAL:** Handles CSV/JSON formatting and filesystem write
+|   |   |-- project_manager.py     # Handles native project serialization
+|   |   |-- data_schemas.py        # Python dataclass definitions
+|   |   |-- ue_exporter.py         # **CRITICAL:** Handles CSV/JSON formatting
 |   |-- ui/
 |   |   |-- __init__.py
-|   |   |-- main_window.py         # Main Adw.ApplicationWindow setup and navigation
-|   |   |-- module_scene.py        # Custom widget and logic for the Scene Editor canvas
-|   |   |-- module_logic.py        # Custom node graph widget for Dialogue/Interaction
+|   |   |-- main_window.py         # Main Adw.ApplicationWindow setup
+|   |   |-- module_scene.py        # Scene Editor canvas
+|   |   |-- module_logic.py        # Dialogue/Interaction node graph
 |   |   |-- item_editor.py         # Spreadsheet-like editor for Items
 |   |   |-- character_editor.py    # Spreadsheet-like editor for Characters
 |   |   |-- attribute_editor.py    # Spreadsheet-like editor for Attributes
 |   |   |-- verb_editor.py         # Spreadsheet-like editor for Verbs
-|   |   |-- widgets/               # Reusable GTK components (e.g., Trace Log Panel)
+|   |   |-- widgets/               # Reusable GTK components
 |   |-- resources/                 # Libadwaita UI/CSS files and icons
 |   |-- main.py                    # Application entry point
 |-- build/                         # PyInstaller output directories
@@ -70,9 +76,15 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 ### B. Module Responsibilities
 
-* **core/project_manager.py**: Manages loading and saving of the native .adv project format. It tracks unsaved changes ("dirty" state) and provides notifications to the UI.
-* **core/ue_exporter.py**: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.
-* **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.
+*   **core/project_manager.py**: Manages loading and saving of the native .adv
+    project format. It tracks unsaved changes ("dirty" state) and provides
+    notifications to the UI.
+*   **core/ue_exporter.py**: The API Gatekeeper. Converts Python object lists
+    into validated JSON/CSV strings that adhere precisely to the UE Data Table
+    specification.
+*   **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the
+    custom drawing canvas. Serializes the visual node layout into the
+    InteractionMatrix.json structure.
 
 ---
 
@@ -80,29 +92,32 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 ### A. Core Editor Modules (Tabs)
 
-| Module Name | Functionality Focus | Key Feature |
-|---|---|---|
-| **Scenes** | World Design | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
-| **Logic** | Puzzle & Narrative | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
-| **Assets** | Media Management | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
-| **Global State** | State Management | Create, edit, and delete global game variables (booleans, integers, strings) with categorization. |
-| **Verbs & Items** | Database | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens. |
-| **Audio** | Sound & Ambiance | Assignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters. |
+| Module Name    | Functionality Focus | Key Feature                                                                                              |
+| -------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Scenes**     | World Design        | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
+| **Logic**      | Puzzle & Narrative  | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
+| **Assets**     | Media Management    | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
+| **Global State** | State Management    | Create, edit, and delete global game variables (booleans, integers, strings) with categorization.      |
+| **Verbs & Items**| Database            | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens.         |
+| **Audio**      | Sound & Ambiance    | Assignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters.        |
 
 ### B. Rapid Development & Debugging Features
 
-| Feature Name | Integration Point | Purpose |
-|---|---|---|
-| **Batch Processing** | Asset & Logic Modules | CSV import for dialogue scripts; Template system for repetitive animated environment assets. |
-| **Interaction Trace Log** | Debug Window | Streams puzzle failure/success conditions from the UE game back to the AdvEngine UI. |
-| **Contextual Fallbacks** | Logic Editor | Global or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here."). |
-| **Task/Note Attachment** | All Editors | Allows attaching simple to-do items directly to Hotspots or Logic Nodes. |
-| **Save Status Indicator** | Main Window | The window title displays an asterisk (*) when there are unsaved changes. Project saving is handled manually via a "Save" button or `Ctrl+S`. |
+| Feature Name           | Integration Point       | Purpose                                                                                                 |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Batch Processing**   | Asset & Logic Modules   | CSV import for dialogue scripts; Template system for repetitive animated environment assets.            |
+| **Interaction Trace Log** | Debug Window            | Streams puzzle failure/success conditions from the UE game back to the AdvEngine UI.                    |
+| **Contextual Fallbacks** | Logic Editor            | Global or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here."). |
+| **Task/Note Attachment** | All Editors             | Allows attaching simple to-do items directly to Hotspots or Logic Nodes.                                |
+| **Save Status Indicator**| Main Window             | The window title displays an asterisk (*) when there are unsaved changes. Project saving is handled manually via a "Save" button or `Ctrl+S`. |
 
 ### C. Window/Menu Manager Details
 
-* **UI Anchoring**: Provides a visual editor to define how UI elements (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios (16:9, 21:9).
-* **Layout Definition**: Defines the grid size (e.g., 5x4 inventory grid) and sprite key for currency indicators.
+*   **UI Anchoring**: Provides a visual editor to define how UI elements
+    (Inventory Panel, Stat HUD) scale and anchor across different aspect ratios
+    (16:9, 21:9).
+*   **Layout Definition**: Defines the grid size (e.g., 5x4 inventory grid) and
+    sprite key for currency indicators.
 
 ---
 
@@ -110,27 +125,27 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 ### A. File Structure & Paths
 
-| Path | Purpose | Format | Notes (UE Consumer) |
-|---|---|---|---|
-| `[ProjectName]/Data/ItemData.csv` | List of all items, prices, and properties. | CSV | Loaded into the `BP_ItemData` Data Table. |
-| `[ProjectName]/Data/Verbs.json` | Defines the verbs available to the player (e.g., "Look", "Use"). | JSON | Used to build the in-game UI and parse interactions. |
-| `[ProjectName]/Data/GlobalState.json` | Defines all global game variables and their initial values. | JSON | Parsed by a global state manager in UE. |
-| `[ProjectName]/Logic/InteractionMatrix.json` | **CRITICAL**: Full puzzle logic file. | JSON | Parsed by the `BP_InteractionComponent` at runtime. |
-| `[ProjectName]/UI/WindowLayout.json` | Defines the anchoring and contents of all custom menus. | JSON | Used by the `BP_UIManager` to dynamically build the UI. |
+| Path                                     | Purpose                                           | Format | Notes (UE Consumer)                               |
+| ---------------------------------------- | ------------------------------------------------- | ------ | ------------------------------------------------- |
+| `[ProjectName]/Data/ItemData.csv`        | List of all items, prices, and properties.        | CSV    | Loaded into the `BP_ItemData` Data Table.         |
+| `[ProjectName]/Data/Verbs.json`          | Defines the verbs available to the player.        | JSON   | Used to build the in-game UI and parse interactions. |
+| `[ProjectName]/Data/GlobalState.json`    | Defines all global game variables and their initial values. | JSON   | Parsed by a global state manager in UE.           |
+| `[ProjectName]/Logic/InteractionMatrix.json` | **CRITICAL**: Full puzzle logic file.             | JSON   | Parsed by the `BP_InteractionComponent` at runtime. |
+| `[ProjectName]/UI/WindowLayout.json`     | Defines the anchoring and contents of all custom menus. | JSON   | Used by the `BP_UIManager` to dynamically build the UI. |
 
 ### B. Core Action Commands (Mapped to UE Blueprint Functions)
 
 These commands are the fixed API contract between AdvEngine and the UE runtime.
 
-| Command | Purpose |
-|---|---|
-| `SET_VARIABLE` | Update a global game state variable or quest flag. |
+| Command                | Purpose                                                              |
+| ---------------------- | -------------------------------------------------------------------- |
+| `SET_VARIABLE`         | Update a global game state variable or quest flag.                   |
 | `INVENTORY_ADD/REMOVE` | Modifies the player's inventory and updates the UE Inventory UI Widget. |
-| `SCENE_TRANSITION` | Warps the player to a new scene and spawn point. |
-| `SHOP_OPEN` | Triggers the Shop UI, referencing a specific Shop ID for inventory population. |
-| `MODIFY_ATTRIBUTE` | Changes a character's attribute value (e.g., Tech Skill +1). |
-| `PLAY_CINEMATIC` | Triggers a pre-built UE Sequencer asset for cutscenes. |
-| `PLAY_SFX` | Triggers a sound effect event defined in the Audio Manifest. |
+| `SCENE_TRANSITION`     | Warps the player to a new scene and spawn point.                     |
+| `SHOP_OPEN`            | Triggers the Shop UI, referencing a specific Shop ID.                |
+| `MODIFY_ATTRIBUTE`     | Changes a character's attribute value (e.g., Tech Skill +1).         |
+| `PLAY_CINEMATIC`       | Triggers a pre-built UE Sequencer asset for cutscenes.               |
+| `PLAY_SFX`             | Triggers a sound effect event defined in the Audio Manifest.         |
 
 ### C. Interaction Matrix Structure (InteractionMatrix.json)
 
@@ -138,23 +153,21 @@ The central logic file, an array of Interaction Objects.
 
 ```json
 [
-  // Array of Interaction Objects
   {
-    "scene_id": "String",                 // Scene ID or "*"
-    "target_hotspot_id": "String",        // The object being clicked
-    "used_item_id": "String/Null",        // The item dragged onto the hotspot (Null if direct click)
-    "priority": "Integer",                // Used to check complex overrides first
-    "conditions": [                       // LIST of Conditions that MUST be TRUE
-      // { "variable_id": "Door_State", "required_value": "Locked" },
-      // { "check_type": "AttributeCheck", "attribute_id": "attr_tech_skill", "required_level": 5, "comparison": "GE" }
-    ],
-    "actions_on_success": [               // LIST of Core Actions to execute
-      // { "command": "SET_VARIABLE", "parameters": {"VarName": "Quest_Started", "Value": true} }
-    ],
-    "fallback_dialogue_id": "String/Null" // Dialogue played if conditions fail
+    "scene_id": "String",
+    "target_hotspot_id": "String",
+    "used_item_id": "String/Null",
+    "priority": "Integer",
+    "conditions": [],
+    "actions_on_success": [],
+    "fallback_dialogue_id": "String/Null"
   }
 ]
-### 6. Database Schema Documentation
+```
+
+---
+
+## 6. Database Schema Documentation
 
 #### A. Item Database Schema (Export: ItemData.csv)
 
@@ -178,38 +191,47 @@ The central logic file, an array of Interaction Objects.
 
 #### C. NPC Schema (Export: CharacterData.csv)
 
-| Field Name        | Data Type   | Description                                                      |
-|-------------------|-------------|------------------------------------------------------------------|
-| id                | String      | Unique character identifier.                                     |
-| display_name      | String      | The name shown in dialogue boxes.                                |
-| dialogue_start_id | String      | The ID of the first node in the Logic Graph for conversation start.|
-| is_merchant       | Boolean     | If True, this NPC can open the shop interface.                   |
-| shop_id           | String/Null | The ID of the specific shop inventory they sell.                 |
-| portrait_asset_id | String/Null | The ID of the asset to use for the character's portrait.         |
+| Field Name        | Data Type   | Description                                           |
+|-------------------|-------------|-------------------------------------------------------|
+| id                | String      | Unique character identifier.                          |
+| display_name      | String      | The name shown in dialogue boxes.                     |
+| dialogue_start_id | String      | The ID of the first node for conversation start.      |
+| is_merchant       | Boolean     | If True, this NPC can open the shop interface.        |
+| shop_id           | String/Null | The ID of the specific shop inventory they sell.      |
+| portrait_asset_id | String/Null | The ID of the asset for the character's portrait.     |
 
 #### D. Verb Database Schema (Export: Verbs.json)
 
-| Field Name | Data Type | Description |
-|---|---|---|
-| id | String | Unique identifier for the verb (e.g., "use", "look_at"). |
-| name | String | Display name for the verb in the UI (e.g., "Use", "Look at"). |
+| Field Name | Data Type | Description                                           |
+|------------|-----------|-------------------------------------------------------|
+| id         | String    | Unique identifier for the verb (e.g., "use").         |
+| name       | String    | Display name for the verb in the UI (e.g., "Use").    |
 
 #### E. Shop Database Schema (Implicit in CharacterData/ItemData)
 
-*   **Definition**: Defined by the `shop_id` in the NPC schema and the `buy_price`/`sell_price` in the Item schema.
+*   **Definition**: Defined by the `shop_id` in the NPC schema and the
+    `buy_price`/`sell_price` in the Item schema.
 *   **Stock Data**: An additional simple table/list is required
 
 ---
+
 ## 7. Coding Style and Conventions
 
 ### A. Python Code Style
 
-*   **PEP8 Compliance**: All Python code must adhere to the [PEP8 style guide](https://www.python.org/dev/peps/pep-0008/). Use an autoformatter like `black` or `autopep8` to ensure consistency.
-*   **Docstrings**: All modules, classes, and functions must have clear and concise docstrings explaining their purpose, arguments, and return values. Use the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for formatting.
-*   **Idiomatic Python**: Write clean, readable, and Pythonic code. Avoid unnecessary complexity and prefer built-in functions and standard library modules where possible.
+*   **PEP8 Compliance**: All Python code must adhere to the
+    [PEP8 style guide](https://www.python.org/dev/peps/pep-0008/).
+*   **Docstrings**: All modules, classes, and functions must have clear and
+    concise docstrings. Use the
+    [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+    for formatting.
+*   **Idiomatic Python**: Write clean, readable, and Pythonic code.
 
 ### B. Error Handling
 
-*   **Robustness**: The application must be resilient to common errors, such as missing files, invalid data formats, or incorrect user input.
-*   **Exception Handling**: Use `try...except` blocks for all file I/O operations (e.g., reading CSV files, writing JSON files) and data parsing.
-*   **User Feedback**: When an error occurs, provide clear and informative feedback to the user via a dialog or a message in the UI. Avoid printing raw exception tracebacks to the console in production builds.
+*   **Robustness**: The application must be resilient to common errors, such as
+    missing files or invalid data formats.
+*   **Exception Handling**: Use `try...except` blocks for all file I/O
+    operations and data parsing.
+*   **User Feedback**: When an error occurs, provide clear and informative
+    feedback to the user via a dialog or a message in the UI.

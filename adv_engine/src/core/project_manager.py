@@ -45,6 +45,8 @@ class ProjectManager:
             self._save_assets()
         if self.data.audio_files:
             self._save_audio()
+        if self.data.characters:
+            self._save_characters()
         if self.data.dialogue_graphs:
             self._save_dialogue_graphs()
         self.set_dirty(False) # Project is clean after saving
@@ -63,6 +65,21 @@ class ProjectManager:
         if self.is_dirty != state:
             self.is_dirty = state
             self._notify_dirty_state_changed()
+
+    def _save_csv(self, filename, data_list):
+        if not data_list:
+            return # Don't write empty files
+
+        file_path = os.path.join(self.project_path, "Data", filename)
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        try:
+            with open(file_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=asdict(data_list[0]).keys())
+                writer.writeheader()
+                for item in data_list:
+                    writer.writerow(asdict(item))
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def _load_csv(self, filename, dataclass_type, target_list):
         file_path = os.path.join(self.project_path, "Data", filename)
@@ -211,6 +228,9 @@ class ProjectManager:
         with open(file_path, "w") as f:
             json.dump([asdict(verb) for verb in self.data.verbs], f, indent=2)
 
+    def _save_characters(self):
+        self._save_csv("CharacterData.csv", self.data.characters)
+
     def add_verb(self, id, name):
         new_verb = Verb(id=id, name=name)
         self.data.verbs.append(new_verb)
@@ -332,7 +352,7 @@ class ProjectManager:
             csv_files = {
                 "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
                 "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id"],
+                "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id"],
             }
             for filename, headers in csv_files.items():
                 file_path = os.path.join(data_dir, filename)

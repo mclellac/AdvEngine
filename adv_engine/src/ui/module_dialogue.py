@@ -1,3 +1,4 @@
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -17,8 +18,13 @@ class DialogueNodeEditor(Gtk.Box):
         self.set_margin_start(10)
         self.set_margin_end(10)
 
+        self.portrait_preview = Gtk.Picture()
+        self.portrait_preview.set_size_request(128, 128)
+        self.append(self.portrait_preview)
+
         self.append(Gtk.Label(label="Character ID:", halign=Gtk.Align.START))
         self.character_id_entry = Gtk.Entry(text=self.node.character_id if self.node else "")
+        self.character_id_entry.connect("changed", self._on_character_id_changed)
         self.append(self.character_id_entry)
 
         self.append(Gtk.Label(label="Dialogue Text:", halign=Gtk.Align.START))
@@ -55,6 +61,22 @@ class DialogueNodeEditor(Gtk.Box):
         self.tree_iter = tree_iter
         self.character_id_entry.set_text(self.node.character_id)
         self.dialogue_text_view.get_buffer().set_text(self.node.dialogue_text)
+        self._update_portrait_preview()
+
+    def _on_character_id_changed(self, editable):
+        self._update_portrait_preview()
+
+    def _update_portrait_preview(self):
+        char_id = self.character_id_entry.get_text()
+        character = next((c for c in self.project_manager.data.characters if c.id == char_id), None)
+        if character and character.portrait_asset_id:
+            asset = next((a for a in self.project_manager.data.assets if a.id == character.portrait_asset_id), None)
+            if asset:
+                full_path = os.path.join(self.project_manager.project_path, asset.file_path)
+                if os.path.exists(full_path):
+                    self.portrait_preview.set_filename(full_path)
+                    return
+        self.portrait_preview.set_filename(None)
 
 class DialogueEditor(Gtk.Box):
     def __init__(self, project_manager):
