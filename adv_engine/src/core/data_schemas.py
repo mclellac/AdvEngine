@@ -244,7 +244,8 @@ class ProjectData:
     logic_graphs: List[LogicGraph] = field(default_factory=list)
     assets: List[Asset] = field(default_factory=list)
     audio_files: List[Audio] = field(default_factory=list)
-    # Dialogue graphs and UI layouts would also be added here.
+    dialogue_graphs: List[LogicGraph] = field(default_factory=list)
+    # UI layouts would also be added here.
 
 class StringGObject(GObject.Object):
     __gtype_name__ = 'StringGObject'
