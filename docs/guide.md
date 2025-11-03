@@ -13,8 +13,8 @@ The core philosophy of AdvEngine is to separate the creative design process from
 When you first launch AdvEngine, it will automatically load the `TestGame` project included in the repository. The application's core logic is managed by a `ProjectManager` that handles loading all data from the project's subdirectories.
 
 The project is structured as follows:
--   `TestGame/Data/`: Contains all `.csv` files for items, characters, and attributes.
--   `TestGame/Logic/`: Contains `.json` files for game logic, such as the interaction matrix.
+-   `TestGame/Data/`: Contains all `.csv` and `.json` files for items, characters, attributes, verbs, and global state.
+-   `TestGame/Logic/`: Contains `.json` files for game logic, such as scenes and logic graphs.
 -   `TestGame/UI/`: Contains `.json` files for UI layouts.
 
 The application itself is located in the `adv_engine/src` directory. To run it, you'll need to use the following command from the root of the repository:
@@ -30,6 +30,7 @@ The main window of AdvEngine is divided into several editor modules, each focusi
 -   **Scenes:** This is where you'll build the visual world of your game. You can import background art, define areas where the player can walk, and place "hotspots" that the player can interact with.
 -   **Logic:** The heart of your game's interactivity. The Logic Editor is a node-based system that lets you create complex puzzle logic, branching dialogues, and quests without writing any code.
 -   **Assets:** Manage your game's media, such as character sprites, item icons, and animation sequences.
+-   **Global State:** Manage the state of your game by creating and editing global variables (e.g., quest flags, player stats).
 -   **Verbs & Items (Database):** A spreadsheet-like interface for managing all the "things" in your game. This includes creating items, defining character stats, listing NPCs, and setting up shop inventories.
 -   **Audio:** Control the soundscape of your game. Assign background music to scenes, place sound effects in the world, and manage voice-over files.
 

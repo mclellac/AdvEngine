@@ -31,13 +31,20 @@ Hotspots are the interactive elements in your scene. We need two: the door and t
 
 Your scene is now visually set up!
 
-## Step 3: Create the Keycard Item
+## Step 3: Create Verbs and the Keycard Item
 
-The central item for our puzzle is the keycard.
+First, we need to define the actions the player can take.
 
-1.  Navigate to the **Verbs & Items** module. This is your game's database.
-2.  In the "Items" table, add a new row.
-3.  Fill out the details:
+1.  Navigate to the **Verbs & Items** module.
+2.  Select the "Verbs" tab.
+3.  Add a few basic verbs:
+    *   `id: "look", name: "Look At"`
+    *   `id: "use", name: "Use"`
+
+Now, let's create the keycard.
+
+1.  Select the "Items" tab.
+2.  Add a new row and fill out the details:
     *   **id:** `Keycard`
     *   **name:** `Security Keycard`
     *   **description:** `A standard issue level 2 security keycard. Looks slightly worn.`

@@ -7,6 +7,7 @@ AdvEngine is a data and configuration manager used to create 2.5D cyberpunk adve
 *   **Scene Editor:** Design your game world by creating scenes, defining walk meshes, placing hotspots, and setting up camera safe areas.
 *   **Logic Editor:** A powerful node-graph editor for creating puzzle logic, dialogue trees, and quest branching.
 *   **Asset Manager:** Import and manage game assets like sprites and animations.
+*   **Global State Manager:** Define and manage global game variables.
 *   **Database Editor:** Easily edit game data such as items, character attributes, NPCs, and shops.
 *   **Audio Manager:** Assign background music, ambient sounds, and localized sound effects.
 

@@ -57,7 +57,10 @@ The architecture is strictly modular to isolate UI logic from data logic.
 |   |   |-- main_window.py         # Main Adw.ApplicationWindow setup and navigation
 |   |   |-- module_scene.py        # Custom widget and logic for the Scene Editor canvas
 |   |   |-- module_logic.py        # Custom node graph widget for Dialogue/Interaction
-|   |   |-- module_database.py     # Spreadsheet-like editor for Items/Stats/NPCs
+|   |   |-- item_editor.py         # Spreadsheet-like editor for Items
+|   |   |-- character_editor.py    # Spreadsheet-like editor for Characters
+|   |   |-- attribute_editor.py    # Spreadsheet-like editor for Attributes
+|   |   |-- verb_editor.py         # Spreadsheet-like editor for Verbs
 |   |   |-- widgets/               # Reusable GTK components (e.g., Trace Log Panel)
 |   |-- resources/                 # Libadwaita UI/CSS files and icons
 |   |-- main.py                    # Application entry point
@@ -110,6 +113,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | Path | Purpose | Format | Notes (UE Consumer) |
 |---|---|---|---|
 | `[ProjectName]/Data/ItemData.csv` | List of all items, prices, and properties. | CSV | Loaded into the `BP_ItemData` Data Table. |
+| `[ProjectName]/Data/Verbs.json` | Defines the verbs available to the player (e.g., "Look", "Use"). | JSON | Used to build the in-game UI and parse interactions. |
 | `[ProjectName]/Data/GlobalState.json` | Defines all global game variables and their initial values. | JSON | Parsed by a global state manager in UE. |
 | `[ProjectName]/Logic/InteractionMatrix.json` | **CRITICAL**: Full puzzle logic file. | JSON | Parsed by the `BP_InteractionComponent` at runtime. |
 | `[ProjectName]/UI/WindowLayout.json` | Defines the anchoring and contents of all custom menus. | JSON | Used by the `BP_UIManager` to dynamically build the UI. |
@@ -183,7 +187,14 @@ The central logic file, an array of Interaction Objects.
 | shop_id           | String/Null | The ID of the specific shop inventory they sell.                 |
 | portrait_asset_id | String/Null | The ID of the asset to use for the character's portrait.         |
 
-#### D. Shop Database Schema (Implicit in CharacterData/ItemData)
+#### D. Verb Database Schema (Export: Verbs.json)
+
+| Field Name | Data Type | Description |
+|---|---|---|
+| id | String | Unique identifier for the verb (e.g., "use", "look_at"). |
+| name | String | Display name for the verb in the UI (e.g., "Use", "Look at"). |
+
+#### E. Shop Database Schema (Implicit in CharacterData/ItemData)
 
 *   **Definition**: Defined by the `shop_id` in the NPC schema and the `buy_price`/`sell_price` in the Item schema.
 *   **Stock Data**: An additional simple table/list is required

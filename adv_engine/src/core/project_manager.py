@@ -9,7 +9,7 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable
+    Asset, Animation, Audio, GlobalVariable, Verb
 )
 
 class ProjectManager:
@@ -28,11 +28,14 @@ class ProjectManager:
         self._load_assets()
         self._load_audio()
         self._load_global_variables()
+        self._load_verbs()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
         if self.data.global_variables:
             self._save_global_variables()
+        if self.data.verbs:
+            self._save_verbs()
         if self.data.scenes:
             self._save_scenes()
         if self.data.logic_graphs:
@@ -189,6 +192,28 @@ class ProjectManager:
         self.set_dirty()
         return new_var
 
+    def _load_verbs(self):
+        file_path = os.path.join(self.project_path, "Data", "Verbs.json")
+        try:
+            with open(file_path, "r") as f:
+                self.data.verbs = [Verb(**verb) for verb in json.load(f)]
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_verbs(self):
+        file_path = os.path.join(self.project_path, "Data", "Verbs.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump([asdict(verb) for verb in self.data.verbs], f, indent=2)
+
+    def add_verb(self, id, name):
+        new_verb = Verb(id=id, name=name)
+        self.data.verbs.append(new_verb)
+        self.set_dirty()
+        return new_verb
+
     def create_scene(self, name):
         new_id = f"scene_{len(self.data.scenes) + 1}"
         new_scene = Scene(id=new_id, name=name)
@@ -274,6 +299,7 @@ class ProjectManager:
                 os.path.join(data_dir, "Assets.json"),
                 os.path.join(data_dir, "Audio.json"),
                 os.path.join(data_dir, "GlobalState.json"),
+                os.path.join(data_dir, "Verbs.json"),
                 os.path.join(logic_dir, "Scenes.json"),
                 os.path.join(logic_dir, "LogicGraphs.json"),
                 os.path.join(ui_dir, "WindowLayout.json"),
