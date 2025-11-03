@@ -8,7 +8,7 @@ from gi.repository import Gtk, Adw
 from .item_editor import ItemEditor
 from .character_editor import CharacterEditor
 from .attribute_editor import AttributeEditor
-from .data_loader import load_items_from_csv
+from .data_loader import load_items_from_csv, load_characters_from_csv, load_attributes_from_csv
 
 class AdvEngineWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
@@ -19,6 +19,8 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         # --- Data Loading ---
         self.project_path = "TestGame"
         self.items = load_items_from_csv(self.project_path)
+        self.characters = load_characters_from_csv(self.project_path)
+        self.attributes = load_attributes_from_csv(self.project_path)
 
         # --- UI Setup ---
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -41,15 +43,11 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
 
         # --- Editors ---
         self.item_editor = ItemEditor(self.items)
-        self.character_editor = CharacterEditor()
-        self.attribute_editor = AttributeEditor()
+        self.character_editor = CharacterEditor(self.characters)
+        self.attribute_editor = AttributeEditor(self.attributes)
 
 
         self.split_view.set_content(Adw.NavigationPage.new(content_container, "Content"))
-
-        self.sidebar_list = Gtk.ListBox()
-        self.sidebar_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
 
         # --- Sidebar ---
         self.sidebar_list = Gtk.ListBox()
@@ -77,6 +75,7 @@ class AdvEngineWindow(Gtk.ApplicationWindow):
         self.add_editor("Audio", "audio_editor", Gtk.Label(label="This is the Audio editor."))
 
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+        self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
 
 
     def add_editor(self, name, view_name, widget):

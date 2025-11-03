@@ -1,6 +1,51 @@
 import os
 import csv
-from .data_models import Item
+from .data_models import Item, Attribute, Character
+
+def load_characters_from_csv(project_path):
+    """
+    Loads all characters from the CharacterData.csv file in the project.
+    """
+    characters = []
+    file_path = os.path.join(project_path, "Data", "CharacterData.csv")
+
+    try:
+        with open(file_path, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                characters.append(Character(
+                    id=row["id"],
+                    default_animation=row["default_animation"],
+                    dialogue_start_id=row["dialogue_start_id"],
+                    is_merchant=row["is_merchant"].lower() == "true",
+                    shop_id=row["shop_id"] if row["shop_id"] else None
+                ))
+    except FileNotFoundError:
+        print(f"Warning: {file_path} not found. No characters will be loaded.")
+
+    return characters
+
+def load_attributes_from_csv(project_path):
+    """
+    Loads all attributes from the Attributes.csv file in the project.
+    """
+    attributes = []
+    file_path = os.path.join(project_path, "Data", "Attributes.csv")
+
+    try:
+        with open(file_path, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                attributes.append(Attribute(
+                    id=row["id"],
+                    name=row["name"],
+                    initial_value=int(row["initial_value"]),
+                    max_value=int(row["max_value"])
+                ))
+    except FileNotFoundError:
+        print(f"Warning: {file_path} not found. No attributes will be loaded.")
+
+    return attributes
 
 def load_items_from_csv(project_path):
     """
