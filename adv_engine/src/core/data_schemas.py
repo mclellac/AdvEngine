@@ -142,6 +142,8 @@ class LogicNode:
     node_type: str
     x: int
     y: int
+    width: int = 150
+    height: int = 80
     inputs: List[str] = field(default_factory=list)  # List of connected node IDs
     outputs: List[str] = field(default_factory=list) # List of connected node IDs
 
