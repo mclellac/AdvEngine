@@ -49,6 +49,7 @@ class AssetEditor(Gtk.Box):
         left_panel.append(scrolled_window)
 
         import_button = Gtk.Button(label="Import Asset")
+        import_button.set_tooltip_text("Import a new image asset into the project")
         import_button.connect("clicked", self.on_import_asset)
         left_panel.append(import_button)
         self.append(left_panel)

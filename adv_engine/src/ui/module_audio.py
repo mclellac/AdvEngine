@@ -46,6 +46,7 @@ class AudioEditor(Gtk.Box):
         self.append(scrolled_window)
 
         import_button = Gtk.Button(label="Import Audio")
+        import_button.set_tooltip_text("Import a new audio file into the project")
         import_button.connect("clicked", self.on_import_audio)
         self.append(import_button)
 

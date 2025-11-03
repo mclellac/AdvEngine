@@ -35,14 +35,17 @@ class SceneEditor(Gtk.Box):
 
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         add_button = Gtk.Button(label="Add")
+        add_button.set_tooltip_text("Create a new scene")
         add_button.connect("clicked", self.on_add_scene)
         remove_button = Gtk.Button(label="Remove")
+        remove_button.set_tooltip_text("Delete the selected scene")
         remove_button.connect("clicked", self.on_remove_scene)
         button_box.append(add_button)
         button_box.append(remove_button)
         left_panel.append(button_box)
 
         hotspot_toggle = Gtk.ToggleButton(label="Add Hotspot")
+        hotspot_toggle.set_tooltip_text("Enable/disable hotspot creation mode")
         hotspot_toggle.connect("toggled", self.on_hotspot_toggled)
         left_panel.append(hotspot_toggle)
 

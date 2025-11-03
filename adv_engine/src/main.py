@@ -35,6 +35,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.main_box.append(self.header)
 
         save_button = Gtk.Button(label="Save")
+        save_button.set_tooltip_text("Save project (Ctrl+S)")
         save_button.connect("clicked", self.on_save_clicked)
         self.header.pack_start(save_button)
 
@@ -47,6 +48,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
         menu_button = Gtk.MenuButton(menu_model=menu)
         menu_button.set_icon_name("open-menu-symbolic")
+        menu_button.set_tooltip_text("Application Menu")
         self.header.pack_end(menu_button)
 
         self.split_view = Adw.NavigationSplitView(vexpand=True)
@@ -110,7 +112,8 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
     def on_sidebar_activated(self, listbox, row):
         if row:
-            view_name = row.get_name()
+            action_row = row.get_child()
+            view_name = action_row.get_name()
             self.content_stack.set_visible_child_name(view_name)
 
     def on_dirty_state_changed(self, is_dirty):
