@@ -1,7 +1,8 @@
 import gi
+import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, GObject, Gdk, Adw
+from gi.repository import Gtk, Gio, GObject, Gdk, Adw, GdkPixbuf
 from ..core.data_schemas import SceneGObject, Scene, Hotspot, HotspotGObject
 
 class SceneEditor(Gtk.Box):
@@ -55,6 +56,19 @@ class SceneEditor(Gtk.Box):
         scene_button_box.append(self.add_scene_button)
         scene_button_box.append(remove_scene_button)
         left_panel.append(scene_button_box)
+
+        left_panel.append(Gtk.Separator())
+
+        self.background_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, visible=False)
+        self.background_box.append(Gtk.Label(label="Background", css_classes=["title-4"]))
+
+        self.background_preview = Gtk.Image(width_request=150, height_request=100, icon_name="image-missing-symbolic", css_classes=["card"])
+        self.background_box.append(self.background_preview)
+
+        set_background_button = Gtk.Button(label="Set Background...")
+        set_background_button.connect("clicked", self.on_set_background_clicked)
+        self.background_box.append(set_background_button)
+        left_panel.append(self.background_box)
 
         # Tools
         left_panel.append(Gtk.Separator())
@@ -192,16 +206,93 @@ class SceneEditor(Gtk.Box):
         if row:
             scene_gobject = self.model.get_item(row.get_index())
             self.selected_scene = scene_gobject.scene_data
+            self.background_box.set_visible(True)
         else:
             self.selected_scene = None
+            self.background_box.set_visible(False)
+
+        self.update_background_preview()
         self.selected_hotspot = None
         self.props_panel.set_visible(False)
         self.refresh_layer_list()
         self.canvas.queue_draw()
 
+    def on_set_background_clicked(self, button):
+        if not self.selected_scene:
+            return
+
+        dialog = Gtk.FileChooserDialog(
+            title="Please choose a file",
+            transient_for=self.get_native(),
+            action=Gtk.FileChooserAction.OPEN,
+        )
+        dialog.add_buttons(
+            "_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK
+        )
+
+        file_filter = Gtk.FileFilter()
+        file_filter.set_name("Image files")
+        file_filter.add_pixbuf_formats()
+        dialog.add_filter(file_filter)
+
+        def on_response(dialog, response_id):
+            if response_id == Gtk.ResponseType.OK:
+                file_path = dialog.get_file().get_path()
+                try:
+                    # Make path relative to the project directory
+                    relative_path = os.path.relpath(file_path, self.project_manager.project_path)
+                    self.selected_scene.background_image = relative_path
+                    self.project_manager.set_dirty()
+                    self.update_background_preview()
+                    self.canvas.queue_draw()
+                except ValueError:
+                    # This can happen if the file is on a different drive on Windows
+                    # In this case, we'll have to store the absolute path. A better solution
+                    # would be to copy the asset into the project folder. For now, we'll warn.
+                    error_dialog = Adw.MessageDialog(
+                        transient_for=self.get_native(),
+                        modal=True,
+                        heading="Cannot create relative path",
+                        body="The selected image is outside of the project directory. The absolute path will be stored, but this may cause issues with project portability."
+                    )
+                    error_dialog.add_response("ok", "_OK")
+                    error_dialog.connect("response", lambda d, r: d.destroy())
+                    error_dialog.present()
+                    self.selected_scene.background_image = file_path
+                    self.project_manager.set_dirty()
+                    self.update_background_preview()
+                    self.canvas.queue_draw()
+
+
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def update_background_preview(self):
+        if self.selected_scene and self.selected_scene.background_image:
+            full_path = os.path.join(self.project_manager.project_path, self.selected_scene.background_image)
+            if os.path.exists(full_path):
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(full_path, 150, 100, True)
+                self.background_preview.set_from_pixbuf(pixbuf)
+            else:
+                self.background_preview.set_from_icon_name("image-missing-symbolic")
+        else:
+            self.background_preview.set_from_icon_name("image-missing-symbolic")
+
     def on_canvas_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.1, 0.1, 0.1)
         cr.paint()
+
+        if self.selected_scene and self.selected_scene.background_image:
+            full_path = os.path.join(self.project_manager.project_path, self.selected_scene.background_image)
+            if os.path.exists(full_path):
+                try:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file(full_path)
+                    Gdk.cairo_set_source_pixbuf(cr, pixbuf, 0, 0)
+                    cr.paint()
+                except Exception as e:
+                    print(f"Error loading background image: {e}")
 
         cr.save()
         cr.translate(self.pan_x, self.pan_y)
