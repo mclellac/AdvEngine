@@ -69,8 +69,7 @@ class SceneEditor(Gtk.Box):
         click_gesture.connect("pressed", self.on_canvas_click)
         self.canvas.add_controller(click_gesture)
 
-        scroll_controller = Gtk.EventControllerScroll.new()
-        scroll_controller.set_flags(Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll_controller = Gtk.EventControllerScroll.new(flags=Gtk.EventControllerScrollFlags.VERTICAL)
         scroll_controller.connect("scroll", self.on_scroll)
         self.canvas.add_controller(scroll_controller)
 

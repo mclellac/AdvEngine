@@ -24,7 +24,7 @@ This document tracks planned improvements to the user interface and user experie
 
 - [x] **Visual Node Distinction**: Enhance the visual differentiation between node types (Action, Condition, Dialogue) using unique icons or more distinct header colors.
 - [ ] **Canvas Mini-Map**: For large graphs, add an interactive mini-map that allows for quick navigation of the entire logic canvas.
-- [x] **Curved Connectors**: Switch from straight-line connectors to Bézier curves for node connections to improve readability and reduce visual clutter.
+- [ ] **Curved Connectors**: Switch from straight-line connectors to Bézier curves for node connections to improve readability and reduce visual clutter.
 - [x] **Right-Click Context Menus**: Add context-sensitive right-click menus on nodes (for actions like "Delete", "Duplicate", "Edit") and on the canvas (for "Add Node...").
 
 ### Asset Manager (`module_assets.py`)
@@ -40,6 +40,6 @@ This document tracks planned improvements to the user interface and user experie
 
 ### Database Editors (`item_editor.py`, `character_editor.py`, etc.)
 
-- [x] **Use `Gtk.ColumnView`**: Replace the current `Adw.PreferencesGroup` or `Gtk.ListBox` with a more appropriate `Gtk.ColumnView` to provide a more traditional and efficient table/spreadsheet-like editing experience.
+- [ ] **Use `Gtk.ColumnView`**: Replace the current `Adw.PreferencesGroup` or `Gtk.ListBox` with a more appropriate `Gtk.ColumnView` to provide a more traditional and efficient table/spreadsheet-like editing experience.
 - [ ] **List Filtering & Sorting**: Add controls to filter the database lists by name/ID and sort columns alphabetically or numerically.
 - [ ] **Input Validation**: Implement real-time input validation on entry fields to prevent errors (e.g., ensuring a "price" field only accepts numeric input).
