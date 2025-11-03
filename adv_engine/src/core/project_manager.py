@@ -29,6 +29,7 @@ class ProjectManager:
         self._load_audio()
         self._load_global_variables()
         self._load_verbs()
+        self._load_dialogue_graphs()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
@@ -44,6 +45,8 @@ class ProjectManager:
             self._save_assets()
         if self.data.audio_files:
             self._save_audio()
+        if self.data.dialogue_graphs:
+            self._save_dialogue_graphs()
         self.set_dirty(False) # Project is clean after saving
 
     def register_dirty_state_callback(self, callback):
@@ -268,6 +271,49 @@ class ProjectManager:
             self.data.attributes.remove(attribute)
             self.set_dirty()
 
+    def add_dialogue_graph(self, id, name):
+        new_graph = LogicGraph(id=id, name=name)
+        self.data.dialogue_graphs.append(new_graph)
+        self.set_dirty()
+        return new_graph
+
+    def remove_dialogue_graph(self, graph_id):
+        self.data.dialogue_graphs = [g for g in self.data.dialogue_graphs if g.id != graph_id]
+        self.set_dirty()
+
+    def _load_dialogue_graphs(self):
+        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
+        try:
+            with open(file_path, "r") as f:
+                graphs_data = json.load(f)
+                for graph_data in graphs_data:
+                    nodes = []
+                    for node_data in graph_data.get("nodes", []):
+                        node_type = node_data.get("node_type")
+                        if node_type == "Dialogue":
+                            nodes.append(DialogueNode(**node_data))
+                        elif node_type == "Condition":
+                            nodes.append(ConditionNode(**node_data))
+                        elif node_type == "Action":
+                            nodes.append(ActionNode(**node_data))
+                        else:
+                            nodes.append(LogicNode(**node_data))
+                    graph_data["nodes"] = nodes
+                    self.data.dialogue_graphs.append(LogicGraph(**graph_data))
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found. Starting with an empty dialogue graph list.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_dialogue_graphs(self):
+        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(graph) for graph in self.data.dialogue_graphs], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
+
     @staticmethod
     def create_project(project_path):
         """
@@ -302,6 +348,7 @@ class ProjectManager:
                 os.path.join(data_dir, "Verbs.json"),
                 os.path.join(logic_dir, "Scenes.json"),
                 os.path.join(logic_dir, "LogicGraphs.json"),
+                os.path.join(logic_dir, "DialogueGraphs.json"),
                 os.path.join(ui_dir, "WindowLayout.json"),
             ]
             for file_path in json_files:
