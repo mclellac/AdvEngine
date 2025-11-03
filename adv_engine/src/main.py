@@ -14,6 +14,8 @@ from .ui.module_scene import SceneEditor
 from .ui.module_logic import LogicEditor
 from .ui.module_assets import AssetEditor
 from .ui.module_audio import AudioEditor
+from .ui.preferences import PreferencesDialog
+from .ui.shortcuts import ShortcutsDialog
 
 
 class AdvEngineWindow(Adw.ApplicationWindow):
@@ -101,7 +103,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
     def on_sidebar_activated(self, listbox, row):
         if row:
-            view_name = row.get_name()  # Use the standard 'name' property
+            view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
 
 
@@ -171,20 +173,12 @@ class AdvEngine(Adw.Application):
         dialog.show()
 
     def on_preferences_activate(self, action, param):
-        dialog = Adw.AlertDialog(
-            title="Preferences",
-            detail="This is where application preferences will be.",
-        )
-        dialog.add_button("OK")
-        dialog.present(self.win)
+        dialog = PreferencesDialog(parent=self.win)
+        dialog.present()
 
     def on_shortcuts_activate(self, action, param):
-        dialog = Adw.AlertDialog(
-            title="Keyboard Shortcuts",
-            detail="This is where keyboard shortcuts will be displayed.",
-        )
-        dialog.add_button("OK")
-        dialog.present(self.win)
+        dialog = ShortcutsDialog(parent=self.win)
+        dialog.present()
 
     def on_about_activate(self, action, param):
         dialog = Adw.AboutWindow(
