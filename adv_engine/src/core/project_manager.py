@@ -9,13 +9,16 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction
+    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction,
+    Quest, Objective, UILayout, UIElement, Font
 )
+from .settings_manager import SettingsManager
 
 class ProjectManager:
     def __init__(self, project_path):
         self.project_path = project_path
         self.data = ProjectData()
+        self.settings = SettingsManager(project_path)
         self.is_dirty = False
         self.dirty_state_changed_callbacks = []
 
