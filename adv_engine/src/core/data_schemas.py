@@ -173,6 +173,19 @@ class LogicGraph:
     name: str
     nodes: List[LogicNode] = field(default_factory=list)
 
+# --- Cutscene Schemas ---
+@dataclass
+class CutsceneAction:
+    command: str
+    parameters: List[str] = field(default_factory=list)
+
+@dataclass
+class Cutscene:
+    id: str
+    name: str
+    script: str = ""
+    actions: List[CutsceneAction] = field(default_factory=list)
+
 # --- Asset Schemas ---
 @dataclass
 class Asset:
@@ -248,6 +261,7 @@ class ProjectData:
     assets: List[Asset] = field(default_factory=list)
     audio_files: List[Audio] = field(default_factory=list)
     dialogue_graphs: List[LogicGraph] = field(default_factory=list)
+    cutscenes: List[Cutscene] = field(default_factory=list)
     # UI layouts would also be added here.
 
 class StringGObject(GObject.Object):
