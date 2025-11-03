@@ -11,6 +11,7 @@ from .ui.item_editor import ItemEditor
 from .ui.character_editor import CharacterEditor
 from .ui.attribute_editor import AttributeEditor
 from .ui.verb_editor import VerbEditor
+from .ui.module_character import CharacterManager
 from .ui.module_scene import SceneEditor
 from .ui.module_logic import LogicEditor
 from .ui.module_dialogue import DialogueEditor
@@ -105,6 +106,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.add_editor("Cutscenes", "cutscene_editor", self.cutscene_editor)
         self.add_editor("Assets", "assets_editor", self.asset_editor)
         self.add_editor("Global State", "global_state_editor", self.global_state_editor)
+        self.add_editor("Characters", "character_manager", CharacterManager(self.project_manager))
 
         # Verbs & Items container
         verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -114,9 +116,6 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         verbs_items_container.append(verbs_items_stack)
 
         verbs_items_stack.add_titled(ItemEditor(self.project_manager), "items", "Items")
-        verbs_items_stack.add_titled(
-            CharacterEditor(self.project_manager), "characters", "Characters"
-        )
         verbs_items_stack.add_titled(
             AttributeEditor(self.project_manager), "attributes", "Attributes"
         )

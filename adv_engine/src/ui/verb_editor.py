@@ -4,12 +4,29 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw
 from ..core.data_schemas import Verb, VerbGObject
 
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Gio, Adw, Gdk
+from ..core.data_schemas import Verb, VerbGObject
+
 class VerbEditorDialog(Adw.MessageDialog):
-    def __init__(self, parent, verb=None):
+    def __init__(self, parent, project_manager, verb=None):
         super().__init__(transient_for=parent, modal=True)
         self.set_heading("Add New Verb" if verb is None else "Edit Verb")
-
+        self.project_manager = project_manager
         self.verb = verb
+
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(b"""
+        .error {
+            border: 1px solid red;
+            border-radius: 6px;
+        }
+        """)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.set_margin_top(10)
@@ -28,6 +45,37 @@ class VerbEditorDialog(Adw.MessageDialog):
         self.add_response("ok", "_OK")
         self.set_default_response("ok")
         self.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+
+        self.id_entry.connect("changed", self._validate)
+        self.name_entry.connect("changed", self._validate)
+        self._validate(None)
+
+    def _validate(self, entry):
+        is_valid = True
+        id_text = self.id_entry.get_text()
+        is_new_verb = self.verb is None
+        id_is_duplicate = any(v.id == id_text for v in self.project_manager.data.verbs if (is_new_verb or v.id != self.verb.id))
+
+        if not id_text or id_is_duplicate:
+            self.id_entry.add_css_class("error")
+            if not id_text:
+                self.id_entry.set_tooltip_text("ID cannot be empty.")
+            else:
+                self.id_entry.set_tooltip_text("This ID is already in use.")
+            is_valid = False
+        else:
+            self.id_entry.remove_css_class("error")
+            self.id_entry.set_tooltip_text("")
+
+        if not self.name_entry.get_text():
+            self.name_entry.add_css_class("error")
+            self.name_entry.set_tooltip_text("Name cannot be empty.")
+            is_valid = False
+        else:
+            self.name_entry.remove_css_class("error")
+            self.name_entry.set_tooltip_text("")
+
+        self.set_response_enabled("ok", is_valid)
 
     def _create_row(self, label_text, widget):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -93,7 +141,7 @@ class VerbEditor(Gtk.Box):
         self.column_view.append_column(col)
 
     def _on_add_clicked(self, button):
-        dialog = VerbEditorDialog(self.get_root())
+        dialog = VerbEditorDialog(self.get_root(), self.project_manager)
         dialog.connect("response", self._on_add_dialog_response)
         dialog.present()
 
@@ -109,7 +157,7 @@ class VerbEditor(Gtk.Box):
     def _on_edit_clicked(self, button):
         selected_verb_gobject = self.selection.get_selected_item()
         if selected_verb_gobject:
-            dialog = VerbEditorDialog(self.get_root(), verb=selected_verb_gobject.verb_data)
+            dialog = VerbEditorDialog(self.get_root(), self.project_manager, verb=selected_verb_gobject.verb_data)
             dialog.connect("response", self._on_edit_dialog_response, selected_verb_gobject)
             dialog.present()
 

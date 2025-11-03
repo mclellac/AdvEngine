@@ -63,6 +63,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 |   |   |-- main_window.py         # Main Adw.ApplicationWindow setup
 |   |   |-- module_scene.py        # Scene Editor canvas
 |   |   |-- module_logic.py        # Dialogue/Interaction node graph
+|   |   |-- module_character.py    # Character Manager
 |   |   |-- item_editor.py         # Spreadsheet-like editor for Items
 |   |   |-- character_editor.py    # Spreadsheet-like editor for Characters
 |   |   |-- attribute_editor.py    # Spreadsheet-like editor for Attributes
@@ -96,6 +97,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | -------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
 | **Scenes**     | World Design        | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
 | **Logic**      | Puzzle & Narrative  | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
+| **Characters** | Character Creation  | Define player characters (PCs) and non-player characters (NPCs) with editable properties, sprite assignments, and default inventories. |
 | **Assets**     | Media Management    | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
 | **Global State** | State Management    | Create, edit, and delete global game variables (booleans, integers, strings) with categorization.      |
 | **Verbs & Items**| Database            | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens.         |

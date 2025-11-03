@@ -286,6 +286,16 @@ class ProjectManager:
             self.data.characters.remove(character)
             self.set_dirty()
 
+    def update_character(self, character_id, new_data):
+        """Updates an existing character."""
+        for character in self.data.characters:
+            if character.id == character_id:
+                for key, value in new_data.items():
+                    setattr(character, key, value)
+                self.set_dirty()
+                return True
+        return False
+
     def add_attribute(self, attribute):
         """Adds a new attribute to the project."""
         self.data.attributes.append(attribute)
