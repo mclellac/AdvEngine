@@ -63,7 +63,13 @@ class AudioEditor(Gtk.Box):
 
     def on_import_audio(self, button):
         dialog = Gtk.FileChooserDialog(title="Import Audio", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
-        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
+        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK)
+
+        file_filter = Gtk.FileFilter()
+        file_filter.set_name("Audio Files")
+        file_filter.add_mime_type("audio/*")
+        dialog.add_filter(file_filter)
+
         dialog.show()
 
         def on_response(dialog, response_id):

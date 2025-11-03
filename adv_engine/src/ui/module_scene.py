@@ -115,7 +115,7 @@ class SceneEditor(Gtk.Box):
 
     def on_add_scene(self, button):
         dialog = Gtk.Dialog(title="Create New Scene", transient_for=self.get_native(), modal=True)
-        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK)
         content_area = dialog.get_content_area()
         entry = Gtk.Entry(placeholder_text="Enter scene name...")
         content_area.append(entry)

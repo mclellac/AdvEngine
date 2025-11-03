@@ -139,20 +139,20 @@ class LogicNode:
 
 @dataclass
 class DialogueNode(LogicNode):
-    character_id: str
-    dialogue_text: str
+    character_id: str = ""
+    dialogue_text: str = ""
 
 @dataclass
 class ConditionNode(LogicNode):
     # e.g., "check_variable", "check_attribute"
-    condition_type: str
-    parameters: Dict[str, Any]
+    condition_type: str = ""
+    parameters: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ActionNode(LogicNode):
     # e.g., "SET_VARIABLE", "INVENTORY_ADD"
-    action_command: str
-    parameters: Dict[str, Any]
+    action_command: str = ""
+    parameters: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class LogicGraph:
