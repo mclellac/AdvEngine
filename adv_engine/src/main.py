@@ -14,6 +14,7 @@ from .ui.module_scene import SceneEditor
 from .ui.module_logic import LogicEditor
 from .ui.module_assets import AssetEditor
 from .ui.module_audio import AudioEditor
+from .ui.module_state import GlobalStateEditor
 from .ui.preferences import PreferencesDialog
 from .ui.shortcuts import ShortcutsDialog
 
@@ -77,6 +78,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.logic_editor = LogicEditor(self.project_manager)
         self.asset_editor = AssetEditor(self.project_manager)
         self.audio_editor = AudioEditor(self.project_manager)
+        self.global_state_editor = GlobalStateEditor(self.project_manager)
 
         # --- Sidebar setup ---
         sidebar_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -92,6 +94,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.add_editor("Scenes", "scenes_editor", self.scene_editor)
         self.add_editor("Logic", "logic_editor", self.logic_editor)
         self.add_editor("Assets", "assets_editor", self.asset_editor)
+        self.add_editor("Global State", "global_state_editor", self.global_state_editor)
 
         # Verbs & Items container
         verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
