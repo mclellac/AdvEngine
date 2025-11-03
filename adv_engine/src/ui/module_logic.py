@@ -8,18 +8,21 @@ class LogicEditor(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
         self.dragging_node = None
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
         self.active_graph = None
+        self.connecting_from_node = None
+        self.connecting_line_x = 0
+        self.connecting_line_y = 0
 
         self.set_margin_top(10)
         self.set_margin_bottom(10)
         self.set_margin_start(10)
         self.set_margin_end(10)
 
-        # For this example, we'll just work on the first graph if it exists.
         if self.project_manager.data.logic_graphs:
             self.active_graph = self.project_manager.data.logic_graphs[0]
         else:
-            # Create a default graph if none exist
             self.active_graph = LogicGraph(id="default_graph", name="Default")
             self.project_manager.data.logic_graphs.append(self.active_graph)
 
@@ -29,11 +32,9 @@ class LogicEditor(Gtk.Box):
         dialogue_button = Gtk.Button(label="Add Dialogue")
         dialogue_button.connect("clicked", self.on_add_dialogue_node)
         palette.append(dialogue_button)
-
         condition_button = Gtk.Button(label="Add Condition")
         condition_button.connect("clicked", self.on_add_condition_node)
         palette.append(condition_button)
-
         action_button = Gtk.Button(label="Add Action")
         action_button.connect("clicked", self.on_add_action_node)
         palette.append(action_button)
@@ -46,11 +47,17 @@ class LogicEditor(Gtk.Box):
         self.canvas.set_draw_func(self.on_canvas_draw, None)
         self.append(self.canvas)
 
-        drag = Gtk.GestureDrag.new()
-        drag.connect("drag-begin", self.on_drag_begin)
-        drag.connect("drag-update", self.on_drag_update)
-        drag.connect("drag-end", self.on_drag_end)
-        self.canvas.add_controller(drag)
+        node_drag = Gtk.GestureDrag.new()
+        node_drag.connect("drag-begin", self.on_drag_begin)
+        node_drag.connect("drag-update", self.on_drag_update)
+        node_drag.connect("drag-end", self.on_drag_end)
+        self.canvas.add_controller(node_drag)
+
+        connection_drag = Gtk.GestureDrag.new()
+        connection_drag.connect("drag-begin", self.on_connection_drag_begin)
+        connection_drag.connect("drag-update", self.on_connection_drag_update)
+        connection_drag.connect("drag-end", self.on_connection_drag_end)
+        self.canvas.add_controller(connection_drag)
 
     def on_canvas_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.15, 0.15, 0.15)
@@ -58,6 +65,17 @@ class LogicEditor(Gtk.Box):
         if self.active_graph:
             for node in self.active_graph.nodes:
                 self.draw_node(cr, node)
+                for output_node_id in node.outputs:
+                    output_node = next((n for n in self.active_graph.nodes if n.id == output_node_id), None)
+                    if output_node:
+                        self.draw_connection(cr, node, output_node)
+            if self.connecting_from_node:
+                start_x = self.connecting_from_node.x + 150
+                start_y = self.connecting_from_node.y + 40
+                cr.set_source_rgb(0.8, 0.8, 0.2)
+                cr.move_to(start_x, start_y)
+                cr.line_to(self.connecting_line_x, self.connecting_line_y)
+                cr.stroke()
 
     def draw_node(self, cr, node):
         cr.set_source_rgb(0.4, 0.4, 0.6)
@@ -70,23 +88,39 @@ class LogicEditor(Gtk.Box):
         cr.move_to(node.x + 10, node.y + 40)
         cr.show_text(f"Type: {node.node_type}")
 
+        cr.set_source_rgb(0.8, 0.8, 0.2)
+        cr.rectangle(node.x - 5, node.y + 35, 10, 10) # Input
+        cr.fill()
+        cr.rectangle(node.x + 145, node.y + 35, 10, 10) # Output
+        cr.fill()
+
+    def draw_connection(self, cr, from_node, to_node):
+        start_x = from_node.x + 150
+        start_y = from_node.y + 40
+        end_x = to_node.x
+        end_y = to_node.y + 40
+        cr.set_source_rgb(0.8, 0.8, 0.2)
+        cr.move_to(start_x, start_y)
+        cr.line_to(end_x, end_y)
+        cr.stroke()
+
     def on_add_dialogue_node(self, button):
         if self.active_graph:
-            new_node = DialogueNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Dialogue", x=50, y=50, character_id="", dialogue_text="")
+            new_node = DialogueNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Dialogue", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.project_manager.save_project()
 
     def on_add_condition_node(self, button):
         if self.active_graph:
-            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50, condition_type="", parameters={})
+            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.project_manager.save_project()
 
     def on_add_action_node(self, button):
         if self.active_graph:
-            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50, action_command="", parameters={})
+            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.project_manager.save_project()
@@ -96,16 +130,45 @@ class LogicEditor(Gtk.Box):
             for node in reversed(self.active_graph.nodes):
                 if x >= node.x and x <= node.x + 150 and y >= node.y and y <= node.y + 80:
                     self.dragging_node = node
+                    self.drag_offset_x = x - node.x
+                    self.drag_offset_y = y - node.y
                     gesture.set_state(Gtk.EventSequenceState.CLAIMED)
                     return
 
     def on_drag_update(self, gesture, x, y):
         if self.dragging_node:
-            self.dragging_node.x += x
-            self.dragging_node.y += y
+            start_x, start_y = gesture.get_start_point()
+            self.dragging_node.x = start_x + x - self.drag_offset_x
+            self.dragging_node.y = start_y + y - self.drag_offset_y
             self.canvas.queue_draw()
 
     def on_drag_end(self, gesture, x, y):
         if self.dragging_node:
             self.project_manager.save_project()
             self.dragging_node = None
+
+    def on_connection_drag_begin(self, gesture, x, y):
+        if self.active_graph:
+            for node in reversed(self.active_graph.nodes):
+                if x >= node.x + 145 and x <= node.x + 155 and y >= node.y + 35 and y <= node.y + 45:
+                    self.connecting_from_node = node
+                    gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+                    return
+
+    def on_connection_drag_update(self, gesture, x, y):
+        if self.connecting_from_node:
+            start_x, start_y = gesture.get_start_point()
+            self.connecting_line_x = start_x + x
+            self.connecting_line_y = start_y + y
+            self.canvas.queue_draw()
+
+    def on_connection_drag_end(self, gesture, x, y):
+        if self.connecting_from_node and self.active_graph:
+            for node in reversed(self.active_graph.nodes):
+                if self.connecting_line_x >= node.x - 5 and self.connecting_line_x <= node.x + 5 and self.connecting_line_y >= node.y + 35 and self.connecting_line_y <= node.y + 45:
+                    self.connecting_from_node.outputs.append(node.id)
+                    node.inputs.append(self.connecting_from_node.id)
+                    self.project_manager.save_project()
+                    break
+        self.connecting_from_node = None
+        self.canvas.queue_draw()

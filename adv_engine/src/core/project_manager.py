@@ -67,6 +67,7 @@ class ProjectManager:
 
     def _save_scenes(self):
         file_path = os.path.join(self.project_path, "Logic", "Scenes.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
                 json.dump([asdict(scene) for scene in self.data.scenes], f, indent=2)
@@ -99,6 +100,7 @@ class ProjectManager:
 
     def _save_logic_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
                 json.dump([asdict(graph) for graph in self.data.logic_graphs], f, indent=2)
@@ -120,6 +122,7 @@ class ProjectManager:
 
     def _save_assets(self):
         file_path = os.path.join(self.project_path, "Data", "Assets.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w") as f:
             json.dump([asdict(asset) for asset in self.data.assets], f, indent=2)
 
@@ -133,6 +136,7 @@ class ProjectManager:
 
     def _save_audio(self):
         file_path = os.path.join(self.project_path, "Data", "Audio.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w") as f:
             json.dump([asdict(audio) for audio in self.data.audio_files], f, indent=2)
 
