@@ -3,7 +3,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
-class ShortcutsDialog(Adw.ShortcutsWindow):
+class ShortcutsDialog(Gtk.ShortcutsWindow):
     """
     A dialog for displaying keyboard shortcuts.
     """
@@ -15,15 +15,15 @@ class ShortcutsDialog(Adw.ShortcutsWindow):
         self.set_modal(True)
 
         # General Section
-        section = Adw.ShortcutsSection()
+        section = Gtk.ShortcutsSection()
         self.add(section)
 
         # Logic Editor Group
-        group = Adw.ShortcutsGroup(title="Logic Editor")
+        group = Gtk.ShortcutsGroup(title="Logic Editor")
         section.add(group)
 
         # Delete Node Shortcut
-        shortcut = Adw.ShortcutsShortcut(
+        shortcut = Gtk.ShortcutsShortcut(
             title="Delete Node",
             accelerator="Delete"
         )
