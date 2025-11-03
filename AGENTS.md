@@ -64,7 +64,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 ### B. Module Responsibilities
 
-*   **core/project_manager.py**: Manages the native .adv file format, ensuring version control and integrity across saves.
+*   **core/project_manager.py**: Manages loading and saving of the native .adv project format. It tracks unsaved changes ("dirty" state) and provides notifications to the UI.
 *   **core/ue_exporter.py**: The API Gatekeeper. Converts Python object lists into validated JSON/CSV strings that adhere precisely to the UE Data Table specification.
 *   **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the custom drawing canvas. Serializes the visual node layout into the InteractionMatrix.json structure.
 
@@ -89,6 +89,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | **Interaction Trace Log** | Debug Window | Streams puzzle failure/success conditions from the UE game back to the AdvEngine UI. |
 | **Contextual Fallbacks** | Logic Editor | Global or scene-specific default responses for non-programmed interactions (e.g., "That doesn't work here."). |
 | **Task/Note Attachment** | All Editors | Allows attaching simple to-do items directly to Hotspots or Logic Nodes. |
+| **Save Status Indicator** | Main Window | The window title displays an asterisk (*) when there are unsaved changes. Project saving is handled manually via a "Save" button or `Ctrl+S`. |
 
 ### C. Window/Menu Manager Details
 

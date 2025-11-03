@@ -16,6 +16,8 @@ class ProjectManager:
     def __init__(self, project_path):
         self.project_path = project_path
         self.data = ProjectData()
+        self.is_dirty = False
+        self.dirty_state_changed_callbacks = []
 
     def load_project(self):
         self._load_csv("ItemData.csv", Item, self.data.items)
@@ -25,6 +27,7 @@ class ProjectManager:
         self._load_logic_graphs()
         self._load_assets()
         self._load_audio()
+        self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
         if self.data.scenes:
@@ -35,6 +38,22 @@ class ProjectManager:
             self._save_assets()
         if self.data.audio_files:
             self._save_audio()
+        self.set_dirty(False) # Project is clean after saving
+
+    def register_dirty_state_callback(self, callback):
+        """Register a function to be called when the dirty state changes."""
+        self.dirty_state_changed_callbacks.append(callback)
+
+    def _notify_dirty_state_changed(self):
+        """Notify all registered callbacks of the dirty state change."""
+        for callback in self.dirty_state_changed_callbacks:
+            callback(self.is_dirty)
+
+    def set_dirty(self, state=True):
+        """Sets the project's dirty state and notifies listeners."""
+        if self.is_dirty != state:
+            self.is_dirty = state
+            self._notify_dirty_state_changed()
 
     def _load_csv(self, filename, dataclass_type, target_list):
         file_path = os.path.join(self.project_path, "Data", filename)
@@ -148,12 +167,12 @@ class ProjectManager:
         new_id = f"scene_{len(self.data.scenes) + 1}"
         new_scene = Scene(id=new_id, name=name)
         self.data.scenes.append(new_scene)
-        self.save_project()
+        self.set_dirty()
         return new_scene
 
     def delete_scene(self, scene_id):
         self.data.scenes = [s for s in self.data.scenes if s.id != scene_id]
-        self.save_project()
+        self.set_dirty()
 
     def add_hotspot_to_scene(self, scene_id, name, x, y, width, height):
         for scene in self.data.scenes:
@@ -161,7 +180,7 @@ class ProjectManager:
                 new_hotspot_id = f"hs_{len(scene.hotspots) + 1}"
                 new_hotspot = Hotspot(id=new_hotspot_id, name=name, x=x, y=y, width=width, height=height)
                 scene.hotspots.append(new_hotspot)
-                self.save_project()
+                self.set_dirty()
                 return new_hotspot
         return None
 

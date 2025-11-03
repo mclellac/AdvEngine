@@ -85,7 +85,7 @@ class AudioEditor(Gtk.Box):
 
                 new_audio = Audio(id=f"audio_{len(self.project_manager.data.audio_files)}", name=audio_name, asset_type="sound", file_path=new_filepath, duration=0.0)
                 self.project_manager.data.audio_files.append(new_audio)
-                self.project_manager.save_project()
+                self.project_manager.set_dirty()
                 self.refresh_audio_list()
             dialog.destroy()
 
