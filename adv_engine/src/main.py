@@ -158,6 +158,29 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         )
         self.add_action(delete_node_action)
 
+        add_action_to_dialogue_action = Gio.SimpleAction.new("add-action-to-dialogue", None)
+        add_action_to_dialogue_action.connect("activate", self.on_add_action_to_dialogue)
+        self.add_action(add_action_to_dialogue_action)
+
+    def on_add_action_to_dialogue(self, action, param):
+        if self.logic_editor.selected_nodes and isinstance(self.logic_editor.selected_nodes[0], DialogueNode):
+            dialogue_node = self.logic_editor.selected_nodes[0]
+
+            # Create a new action node
+            new_node = self.logic_editor.on_add_action_node(None, return_node=True)
+
+            # Position it to the right of the dialogue node
+            new_node.x = dialogue_node.x + dialogue_node.width + 50
+            new_node.y = dialogue_node.y
+
+            # Connect them
+            dialogue_node.outputs.append(new_node.id)
+            new_node.inputs.append(dialogue_node.id)
+
+            self.logic_editor.project_manager.set_dirty()
+            self.logic_editor.canvas.queue_draw()
+            self.logic_editor.minimap.queue_draw()
+
     def add_editor(self, name, view_name, widget):
         action_row = Adw.ActionRow(title=name)
         list_box_row = Gtk.ListBoxRow()

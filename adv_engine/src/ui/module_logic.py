@@ -1,8 +1,9 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango
+from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf
 import json
+import os
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
 
@@ -360,8 +361,24 @@ class LogicEditor(Gtk.Box):
         PangoCairo.show_layout(cr, layout)
 
         # Body text
+        text_x_offset = 10
+        if isinstance(node, DialogueNode):
+            character = next((c for c in self.project_manager.data.characters if c.id == node.character_id), None)
+            if character and character.portrait_asset_id:
+                asset = next((a for a in self.project_manager.data.assets if a.id == character.portrait_asset_id), None)
+                if asset and asset.file_path:
+                    full_path = os.path.join(self.project_manager.project_path, asset.file_path)
+                    if os.path.exists(full_path):
+                        try:
+                            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(full_path, 64, 64, True)
+                            Gdk.cairo_set_source_pixbuf(cr, pixbuf, node.x + 10, node.y + 30)
+                            cr.paint()
+                            text_x_offset = 84 # Indent text to make room for portrait
+                        except Exception as e:
+                            print(f"Error loading portrait: {e}")
+
         cr.set_source_rgb(0.9, 0.9, 0.9)
-        cr.move_to(node.x + 10, node.y + 30)
+        cr.move_to(node.x + text_x_offset, node.y + 30)
 
         body_text = ""
         if isinstance(node, DialogueNode):
@@ -422,13 +439,15 @@ class LogicEditor(Gtk.Box):
             self.minimap.queue_draw()
             self.project_manager.set_dirty()
 
-    def on_add_action_node(self, button):
+    def on_add_action_node(self, button, return_node=False):
         if self.active_graph:
             new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.minimap.queue_draw()
             self.project_manager.set_dirty()
+            if return_node:
+                return new_node
 
     def on_drag_begin(self, gesture, x, y):
         if self.active_graph:
@@ -545,5 +564,10 @@ class LogicEditor(Gtk.Box):
         menu = Gio.Menu.new()
         menu.append("Edit Node", "win.edit-node")
         menu.append("Delete Node", "win.delete-node")
+
+        section = Gio.Menu.new()
+        section.append("Add Action", "win.add-action-to-dialogue")
+        menu.append_section(None, section)
+
         self.node_context_menu = Gtk.PopoverMenu.new_from_model(menu)
         self.node_context_menu.set_parent(self.canvas)
