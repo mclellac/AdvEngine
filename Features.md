@@ -23,7 +23,7 @@ point-and-click adventure games.
       (e.g., `CHARACTER walkto 100,200`, `PLAY_ANIMATION idle_sad`, `WAIT 2.0`,
       `SAY "I can't believe it's gone."`).
 
-- [ ] **Complex Inventory & Item Interactions**
+- [x] **Complex Inventory & Item Interactions**
     - A dedicated interface for defining `Verb + Item` or `Item + Item`
       interactions.
     - Moves beyond the generic `InteractionMatrix` to a more intuitive system

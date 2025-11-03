@@ -18,6 +18,7 @@ from .ui.module_cutscene import CutsceneEditor
 from .ui.module_assets import AssetEditor
 from .ui.module_audio import AudioEditor
 from .ui.module_state import GlobalStateEditor
+from .ui.module_interaction import InteractionEditor
 from .ui.preferences import PreferencesDialog
 from .ui.shortcuts import ShortcutsDialog
 
@@ -84,6 +85,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.asset_editor = AssetEditor(self.project_manager)
         self.audio_editor = AudioEditor(self.project_manager)
         self.global_state_editor = GlobalStateEditor(self.project_manager)
+        self.interaction_editor = InteractionEditor(self.project_manager)
 
         # --- Sidebar setup ---
         sidebar_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -98,6 +100,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         # --- Add actual editor widgets to sidebar and stack ---
         self.add_editor("Scenes", "scenes_editor", self.scene_editor)
         self.add_editor("Logic", "logic_editor", self.logic_editor)
+        self.add_editor("Interactions", "interaction_editor", self.interaction_editor)
         self.add_editor("Dialogue", "dialogue_editor", self.dialogue_editor)
         self.add_editor("Cutscenes", "cutscene_editor", self.cutscene_editor)
         self.add_editor("Assets", "assets_editor", self.asset_editor)

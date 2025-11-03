@@ -130,7 +130,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | `[ProjectName]/Data/ItemData.csv`        | List of all items, prices, and properties.        | CSV    | Loaded into the `BP_ItemData` Data Table.         |
 | `[ProjectName]/Data/Verbs.json`          | Defines the verbs available to the player.        | JSON   | Used to build the in-game UI and parse interactions. |
 | `[ProjectName]/Data/GlobalState.json`    | Defines all global game variables and their initial values. | JSON   | Parsed by a global state manager in UE.           |
-| `[ProjectName]/Logic/InteractionMatrix.json` | **CRITICAL**: Full puzzle logic file.             | JSON   | Parsed by the `BP_InteractionComponent` at runtime. |
+| `[ProjectName]/Logic/Interactions.json`      | Defines all verb/item interactions.               | JSON   | Parsed by the `BP_InteractionComponent` at runtime. |
 | `[ProjectName]/UI/WindowLayout.json`     | Defines the anchoring and contents of all custom menus. | JSON   | Used by the `BP_UIManager` to dynamically build the UI. |
 
 ### B. Core Action Commands (Mapped to UE Blueprint Functions)
@@ -140,27 +140,27 @@ These commands are the fixed API contract between AdvEngine and the UE runtime.
 | Command                | Purpose                                                              |
 | ---------------------- | -------------------------------------------------------------------- |
 | `SET_VARIABLE`         | Update a global game state variable or quest flag.                   |
-| `INVENTORY_ADD/REMOVE` | Modifies the player's inventory and updates the UE Inventory UI Widget. |
+| `INVENTORY_ADD`        | Adds an item to the player's inventory.                              |
+| `INVENTORY_REMOVE`     | Removes an item from the player's inventory.                         |
 | `SCENE_TRANSITION`     | Warps the player to a new scene and spawn point.                     |
 | `SHOP_OPEN`            | Triggers the Shop UI, referencing a specific Shop ID.                |
 | `MODIFY_ATTRIBUTE`     | Changes a character's attribute value (e.g., Tech Skill +1).         |
 | `PLAY_CINEMATIC`       | Triggers a pre-built UE Sequencer asset for cutscenes.               |
 | `PLAY_SFX`             | Triggers a sound effect event defined in the Audio Manifest.         |
 
-### C. Interaction Matrix Structure (InteractionMatrix.json)
+### C. Interaction Structure (Interactions.json)
 
 The central logic file, an array of Interaction Objects.
 
 ```json
 [
   {
-    "scene_id": "String",
-    "target_hotspot_id": "String",
-    "used_item_id": "String/Null",
-    "priority": "Integer",
-    "conditions": [],
-    "actions_on_success": [],
-    "fallback_dialogue_id": "String/Null"
+    "id": "String",
+    "verb_id": "String",
+    "primary_item_id": "String/Null",
+    "secondary_item_id": "String/Null",
+    "target_hotspot_id": "String/Null",
+    "logic_graph_id": "String"
   }
 ]
 ```

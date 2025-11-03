@@ -248,6 +248,42 @@ class VerbGObject(GObject.Object):
         self.id = verb.id
         self.name = verb.name
 
+# --- Interaction Schemas ---
+@dataclass
+class Interaction:
+    """Represents a game interaction, which links a trigger (like using a verb
+    on an item) to a logic graph that defines conditions and actions."""
+    id: str
+    verb_id: str
+    # ID of the LogicGraph containing the conditions and actions for this interaction.
+    logic_graph_id: str
+    # The primary item for the interaction (e.g., the item being used).
+    primary_item_id: Optional[str] = None
+    # The secondary item for 'combine' interactions (e.g., use item A on item B).
+    secondary_item_id: Optional[str] = None
+    # The hotspot that is the target of the interaction.
+    target_hotspot_id: Optional[str] = None
+
+class InteractionGObject(GObject.Object):
+    __gtype_name__ = 'InteractionGObject'
+
+    id = GObject.Property(type=str)
+    verb_id = GObject.Property(type=str)
+    primary_item_id = GObject.Property(type=str)
+    secondary_item_id = GObject.Property(type=str)
+    target_hotspot_id = GObject.Property(type=str)
+    logic_graph_id = GObject.Property(type=str)
+
+    def __init__(self, interaction: Interaction):
+        super().__init__()
+        self.interaction_data = interaction
+        self.id = interaction.id
+        self.verb_id = interaction.verb_id
+        self.primary_item_id = interaction.primary_item_id
+        self.secondary_item_id = interaction.secondary_item_id
+        self.target_hotspot_id = interaction.target_hotspot_id
+        self.logic_graph_id = interaction.logic_graph_id
+
 # A container for all project data
 @dataclass
 class ProjectData:
@@ -262,6 +298,7 @@ class ProjectData:
     audio_files: List[Audio] = field(default_factory=list)
     dialogue_graphs: List[LogicGraph] = field(default_factory=list)
     cutscenes: List[Cutscene] = field(default_factory=list)
+    interactions: List[Interaction] = field(default_factory=list)
     # UI layouts would also be added here.
 
 class StringGObject(GObject.Object):
