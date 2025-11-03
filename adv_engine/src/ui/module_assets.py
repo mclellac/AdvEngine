@@ -96,7 +96,7 @@ class AssetEditor(Gtk.Box):
 
                 new_asset = Asset(id=f"asset_{len(self.project_manager.data.assets)}", name=asset_name, asset_type=asset_type, file_path=new_filepath)
                 self.project_manager.data.assets.append(new_asset)
-                self.project_manager.save_project()
+                self.project_manager.set_dirty()
                 self.refresh_asset_list()
             dialog.destroy()
 

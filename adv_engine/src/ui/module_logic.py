@@ -109,7 +109,7 @@ class LogicEditor(Gtk.Box):
 
             self.selected_nodes.clear()
             self.delete_node_button.set_sensitive(False)
-            self.project_manager.save_project()
+            self.project_manager.set_dirty()
             self.canvas.queue_draw()
 
     def edit_node_dialog(self, node):
@@ -124,7 +124,7 @@ class LogicEditor(Gtk.Box):
                 values = editor.get_values()
                 for key, value in values.items():
                     setattr(node, key, value)
-                self.project_manager.save_project()
+                self.project_manager.set_dirty()
                 self.canvas.queue_draw()
             dialog.destroy()
 
@@ -291,21 +291,21 @@ class LogicEditor(Gtk.Box):
             new_node = DialogueNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Dialogue", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
-            self.project_manager.save_project()
+            self.project_manager.set_dirty()
 
     def on_add_condition_node(self, button):
         if self.active_graph:
             new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
-            self.project_manager.save_project()
+            self.project_manager.set_dirty()
 
     def on_add_action_node(self, button):
         if self.active_graph:
             new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
-            self.project_manager.save_project()
+            self.project_manager.set_dirty()
 
     def on_drag_begin(self, gesture, x, y):
         if self.active_graph:
@@ -333,7 +333,7 @@ class LogicEditor(Gtk.Box):
 
     def on_drag_end(self, gesture, x, y):
         if self.dragging_node:
-            self.project_manager.save_project()
+            self.project_manager.set_dirty()
             self.dragging_node = None
             self.drag_offsets = {}
 
@@ -358,7 +358,7 @@ class LogicEditor(Gtk.Box):
                 if self.connecting_line_x >= node.x - 5 and self.connecting_line_x <= node.x + 5 and self.connecting_line_y >= node.y + 35 and self.connecting_line_y <= node.y + 45:
                     self.connecting_from_node.outputs.append(node.id)
                     node.inputs.append(self.connecting_from_node.id)
-                    self.project_manager.save_project()
+                    self.project_manager.set_dirty()
                     break
         self.connecting_from_node = None
         self.canvas.queue_draw()

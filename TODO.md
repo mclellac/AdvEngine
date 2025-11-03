@@ -4,9 +4,9 @@ This document tracks planned improvements to the user interface and user experie
 
 ## Global / Application-Wide Enhancements
 
-- [ ] **Unified Save Status Indicator**: Implement a global indicator (e.g., an asterisk `*` in the window title or a dot on the save button) to clearly show when there are unsaved changes.
+- [x] **Unified Save Status Indicator**: Implement a global indicator (e.g., an asterisk `*` in the window title or a dot on the save button) to clearly show when there are unsaved changes.
 - [ ] **Comprehensive Tooltips**: Add `tooltip_text` to all toolbar buttons, icon-only buttons, and complex input fields across all modules to improve discoverability.
-- [ ] **Keyboard Shortcut System**: Implement and document keyboard shortcuts for common global actions (e.g., `Ctrl+S` for Save, `Ctrl+O` for Open, `Ctrl+N` for New Project).
+- [x] **Keyboard Shortcut System**: Implement and document keyboard shortcuts for common global actions (e.g., `Ctrl+S` for Save, `Ctrl+O` for Open, `Ctrl+N` for New Project).
 - [ ] **Consistent Empty States**: Design and implement informative "empty state" placeholders for all lists, views, and canvases. For example, when no scenes exist, the Scene Editor should display a message like "No Scenes Found. Click 'Add Scene' to Begin."
 - [ ] **Improved Error/Confirmation Dialogs**: Replace generic dialogs with more specific and helpful `Adw.MessageDialog`s that clearly explain the action, error, or confirmation.
 - [ ] **Application-Wide Search**: Consider a global search feature to quickly find assets, logic nodes, or database entries by name or ID.

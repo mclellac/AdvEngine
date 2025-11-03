@@ -22,14 +22,21 @@ class AdvEngineWindow(Adw.ApplicationWindow):
     def __init__(self, project_manager, **kwargs):
         super().__init__(**kwargs)
         self.project_manager = project_manager
-        self.set_title("AdvEngine")
+        self.base_title = "AdvEngine"
+        self.set_title(self.base_title)
         self.set_default_size(1024, 768)
+
+        self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(self.main_box)
 
         self.header = Adw.HeaderBar()
         self.main_box.append(self.header)
+
+        save_button = Gtk.Button(label="Save")
+        save_button.connect("clicked", self.on_save_clicked)
+        self.header.pack_start(save_button)
 
         # Add a menu button to the header
         menu = Gio.Menu.new()
@@ -106,6 +113,17 @@ class AdvEngineWindow(Adw.ApplicationWindow):
             view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
 
+    def on_dirty_state_changed(self, is_dirty):
+        """Updates the window title to reflect the unsaved changes status."""
+        if is_dirty:
+            self.set_title(f"{self.base_title}*")
+        else:
+            self.set_title(self.base_title)
+
+    def on_save_clicked(self, button):
+        """Handler for the save button click."""
+        self.get_application().save_project()
+
 
 
 class AdvEngine(Adw.Application):
@@ -118,6 +136,11 @@ class AdvEngine(Adw.Application):
     def on_activate(self, app):
         # This is called when the application is first launched
         self.load_project("TestGame")
+
+        save_action = Gio.SimpleAction.new("save-project", None)
+        save_action.connect("activate", lambda a, p: self.save_project())
+        self.add_action(save_action)
+        self.set_accels_for_action("app.save-project", ["<Primary>s"])
 
         new_project_action = Gio.SimpleAction.new("new-project", None)
         new_project_action.connect("activate", self.on_new_project_activate)
@@ -134,6 +157,11 @@ class AdvEngine(Adw.Application):
         about_action = Gio.SimpleAction.new("about", None)
         about_action.connect("activate", self.on_about_activate)
         self.add_action(about_action)
+
+    def save_project(self):
+        """Saves the current project if it's dirty."""
+        if self.project_manager and self.project_manager.is_dirty:
+            self.project_manager.save_project()
 
     def load_project(self, project_path):
         """Loads a project and shows its window."""
