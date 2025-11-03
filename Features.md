@@ -16,7 +16,7 @@ point-and-click adventure games.
 
 - [x] **Advanced Dialogue & Cutscene System**
     - [x] A dedicated tree-based editor for writing branching dialogue.
-    - [ ] Support for displaying character portraits next to dialogue text.
+    - [x] Support for displaying character portraits next to dialogue text.
     - [ ] Ability to embed simple commands within dialogue nodes (e.g.,
       `give_item key_01`, `set_variable door_unlocked true`).
     - A simple timeline or script-based tool for creating in-game cutscenes
