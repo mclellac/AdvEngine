@@ -64,8 +64,11 @@ The architecture is strictly modular to isolate UI logic from data logic.
 |   |   |-- module_scene.py        # Scene Editor canvas
 |   |   |-- module_logic.py        # Dialogue/Interaction node graph
 |   |   |-- module_character.py    # Character Manager
+|   |   |-- module_quest.py        # Quest & Objective Tracker
+|   |   |-- module_ui_builder.py   # Point-and-Click UI Builder
+|   |   |-- module_font.py         # Font Management
+|   |   |-- module_log.py          # Interaction Log
 |   |   |-- item_editor.py         # Spreadsheet-like editor for Items
-|   |   |-- character_editor.py    # Spreadsheet-like editor for Characters
 |   |   |-- attribute_editor.py    # Spreadsheet-like editor for Attributes
 |   |   |-- verb_editor.py         # Spreadsheet-like editor for Verbs
 |   |   |-- widgets/               # Reusable GTK components
@@ -98,6 +101,9 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | **Scenes**     | World Design        | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
 | **Logic**      | Puzzle & Narrative  | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
 | **Characters** | Character Creation  | Define player characters (PCs) and non-player characters (NPCs) with editable properties, sprite assignments, and default inventories. |
+| **Quests**     | Quest & Objective   | A simple system to define high-level quests or tasks.                                                     |
+| **UI Builder** | UI Design           | A visual editor to design the main in-game user interface.                                                |
+| **Fonts**      | Font Management     | A system to import and manage bitmap fonts for in-game text.                                              |
 | **Assets**     | Media Management    | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
 | **Global State** | State Management    | Create, edit, and delete global game variables (booleans, integers, strings) with categorization.      |
 | **Verbs & Items**| Database            | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens.         |

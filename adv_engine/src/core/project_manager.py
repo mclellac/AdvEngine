@@ -32,6 +32,9 @@ class ProjectManager:
         self._load_dialogue_graphs()
         self._load_cutscenes()
         self._load_interactions()
+        self._load_quests()
+        self._load_ui_layouts()
+        self._load_fonts()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
@@ -55,6 +58,12 @@ class ProjectManager:
             self._save_dialogue_graphs()
         if self.data.cutscenes:
             self._save_cutscenes()
+        if self.data.quests:
+            self._save_quests()
+        if self.data.ui_layouts:
+            self._save_ui_layouts()
+        if self.data.fonts:
+            self._save_fonts()
         self.set_dirty(False) # Project is clean after saving
 
     def register_dirty_state_callback(self, callback):
@@ -391,6 +400,238 @@ class ProjectManager:
             self.data.interactions.remove(interaction)
             self.set_dirty()
 
+    def _load_quests(self):
+        file_path = os.path.join(self.project_path, "Logic", "Quests.json")
+        try:
+            with open(file_path, "r") as f:
+                quests_data = json.load(f)
+                for quest_data in quests_data:
+                    objectives = [Objective(**obj) for obj in quest_data.get("objectives", [])]
+                    quest_data["objectives"] = objectives
+                    self.data.quests.append(Quest(**quest_data))
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found. Starting with an empty quest list.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_quests(self):
+        file_path = os.path.join(self.project_path, "Logic", "Quests.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(quest) for quest in self.data.quests], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
+
+    def add_quest(self, id, name):
+        new_quest = Quest(id=id, name=name)
+        self.data.quests.append(new_quest)
+        self.set_dirty()
+        return new_quest
+
+    def remove_quest(self, quest_id):
+        self.data.quests = [q for q in self.data.quests if q.id != quest_id]
+        self.set_dirty()
+
+    def update_quest(self, quest_id, new_data):
+        for quest in self.data.quests:
+            if quest.id == quest_id:
+                for key, value in new_data.items():
+                    setattr(quest, key, value)
+                self.set_dirty()
+                return True
+        return False
+
+    def add_objective_to_quest(self, quest_id, objective_id, objective_name):
+        for quest in self.data.quests:
+            if quest.id == quest_id:
+                new_objective = Objective(id=objective_id, name=objective_name)
+                quest.objectives.append(new_objective)
+                self.set_dirty()
+                return new_objective
+        return None
+
+    def remove_objective_from_quest(self, quest_id, objective_id):
+        for quest in self.data.quests:
+            if quest.id == quest_id:
+                quest.objectives = [obj for obj in quest.objectives if obj.id != objective_id]
+                self.set_dirty()
+                return True
+        return False
+
+    def update_objective(self, quest_id, objective_id, new_data):
+        for quest in self.data.quests:
+            if quest.id == quest_id:
+                for objective in quest.objectives:
+                    if objective.id == objective_id:
+                        for key, value in new_data.items():
+                            setattr(objective, key, value)
+                        self.set_dirty()
+                        return True
+        return False
+
+    def _load_ui_layouts(self):
+        file_path = os.path.join(self.project_path, "UI", "WindowLayout.json")
+        try:
+            with open(file_path, "r") as f:
+                layouts_data = json.load(f)
+                for layout_data in layouts_data:
+                    elements = [UIElement(**elem) for elem in layout_data.get("elements", [])]
+                    layout_data["elements"] = elements
+                    self.data.ui_layouts.append(UILayout(**layout_data))
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found. Starting with an empty UI layout list.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_ui_layouts(self):
+        file_path = os.path.join(self.project_path, "UI", "WindowLayout.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(layout) for layout in self.data.ui_layouts], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
+
+    def add_ui_layout(self, id, name):
+        new_layout = UILayout(id=id, name=name)
+        self.data.ui_layouts.append(new_layout)
+        self.set_dirty()
+        return new_layout
+
+    def remove_ui_layout(self, layout_id):
+        self.data.ui_layouts = [layout for layout in self.data.ui_layouts if layout.id != layout_id]
+        self.set_dirty()
+
+    def update_ui_layout(self, layout_id, new_data):
+        for layout in self.data.ui_layouts:
+            if layout.id == layout_id:
+                for key, value in new_data.items():
+                    setattr(layout, key, value)
+                self.set_dirty()
+                return True
+        return False
+
+    def add_element_to_layout(self, layout_id, element_id, element_type, x, y, width, height):
+        for layout in self.data.ui_layouts:
+            if layout.id == layout_id:
+                new_element = UIElement(id=element_id, type=element_type, x=x, y=y, width=width, height=height)
+                layout.elements.append(new_element)
+                self.set_dirty()
+                return new_element
+        return None
+
+    def remove_element_from_layout(self, layout_id, element_id):
+        for layout in self.data.ui_layouts:
+            if layout.id == layout_id:
+                layout.elements = [elem for elem in layout.elements if elem.id != element_id]
+                self.set_dirty()
+                return True
+        return False
+
+    def update_element(self, layout_id, element_id, new_data):
+        for layout in self.data.ui_layouts:
+            if layout.id == layout_id:
+                for element in layout.elements:
+                    if element.id == element_id:
+                        for key, value in new_data.items():
+                            setattr(element, key, value)
+                        self.set_dirty()
+                        return True
+        return False
+
+    def _load_fonts(self):
+        file_path = os.path.join(self.project_path, "Data", "Fonts.json")
+        try:
+            with open(file_path, "r") as f:
+                self.data.fonts = [Font(**font) for font in json.load(f)]
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_fonts(self):
+        file_path = os.path.join(self.project_path, "Data", "Fonts.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump([asdict(font) for font in self.data.fonts], f, indent=2)
+
+    def add_font(self, id, name, file_path):
+        new_font = Font(id=id, name=name, file_path=file_path)
+        self.data.fonts.append(new_font)
+        self.set_dirty()
+        return new_font
+
+    def remove_font(self, font_id):
+        self.data.fonts = [font for font in self.data.fonts if font.id != font_id]
+        self.set_dirty()
+
+    def update_font(self, font_id, new_data):
+        for font in self.data.fonts:
+            if font.id == font_id:
+                for key, value in new_data.items():
+                    setattr(font, key, value)
+                self.set_dirty()
+                return True
+        return False
+
+    def export_localization(self, file_path):
+        """Exports all user-facing text to a CSV file."""
+        with open(file_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ID", "Source Text", "Translated Text"])
+
+            for item in self.data.items:
+                writer.writerow([f"item_{item.id}_name", item.name, ""])
+                writer.writerow([f"item_{item.id}_description", item.description, ""])
+
+            for character in self.data.characters:
+                writer.writerow([f"character_{character.id}_display_name", character.display_name, ""])
+
+            for dialogue_node in [node for graph in self.data.dialogue_graphs for node in graph.nodes if isinstance(node, DialogueNode)]:
+                writer.writerow([f"dialogue_{dialogue_node.id}_dialogue_text", dialogue_node.dialogue_text, ""])
+
+            for quest in self.data.quests:
+                writer.writerow([f"quest_{quest.id}_name", quest.name, ""])
+                for objective in quest.objectives:
+                    writer.writerow([f"objective_{objective.id}_name", objective.name, ""])
+
+    def import_localization(self, file_path):
+        """Imports translated text from a CSV file."""
+        with open(file_path, "r", newline="") as f:
+            reader = csv.reader(f)
+            next(reader) # Skip header
+            for row in reader:
+                id_parts = row[0].split("_")
+                text_type = id_parts[0]
+                item_id = id_parts[1]
+                property_name = id_parts[2]
+                translated_text = row[2]
+
+                if text_type == "item":
+                    for item in self.data.items:
+                        if item.id == item_id:
+                            setattr(item, property_name, translated_text)
+                elif text_type == "character":
+                    for character in self.data.characters:
+                        if character.id == item_id:
+                            setattr(character, property_name, translated_text)
+                elif text_type == "dialogue":
+                    for graph in self.data.dialogue_graphs:
+                        for node in graph.nodes:
+                            if node.id == item_id:
+                                setattr(node, property_name, translated_text)
+                elif text_type == "quest":
+                    for quest in self.data.quests:
+                        if quest.id == item_id:
+                            setattr(quest, property_name, translated_text)
+                elif text_type == "objective":
+                    for quest in self.data.quests:
+                        for objective in quest.objectives:
+                            if objective.id == item_id:
+                                setattr(objective, property_name, translated_text)
+        self.set_dirty()
+
     def add_cutscene(self, name):
         new_id = f"cutscene_{len(self.data.cutscenes) + 1}"
         new_cutscene = Cutscene(id=new_id, name=name)
@@ -440,10 +681,24 @@ class ProjectManager:
         return -1
 
     @staticmethod
-    def create_project(project_path):
+    def get_templates():
+        """Returns a list of available project templates."""
+        template_dir = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
+        if os.path.exists(template_dir):
+            return [d for d in os.listdir(template_dir) if os.path.isdir(os.path.join(template_dir, d))]
+        return []
+
+    @staticmethod
+    def create_project(project_path, template=None):
         """
         Creates the directory structure and empty data files for a new project.
         """
+        if template:
+            template_dir = os.path.join(os.path.dirname(__file__), "..", "..", "templates", template)
+            if os.path.exists(template_dir):
+                import shutil
+                shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
+
         try:
             # Create base directories
             data_dir = os.path.join(project_path, "Data")

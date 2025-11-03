@@ -264,6 +264,88 @@ class Interaction:
     # The hotspot that is the target of the interaction.
     target_hotspot_id: Optional[str] = None
 
+@dataclass
+class Font:
+    id: str
+    name: str
+    file_path: str
+
+@dataclass
+class UIElement:
+    id: str
+    type: str
+    x: int
+    y: int
+    width: int
+    height: int
+    properties: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class UILayout:
+    id: str
+    name: str
+    elements: List['UIElement'] = field(default_factory=list)
+
+class UILayoutGObject(GObject.Object):
+    __gtype_name__ = 'UILayoutGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+
+    def __init__(self, layout: UILayout):
+        super().__init__()
+        self.layout_data = layout
+        self.id = layout.id
+        self.name = layout.name
+
+class FontGObject(GObject.Object):
+    __gtype_name__ = 'FontGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    file_path = GObject.Property(type=str)
+
+    def __init__(self, font: Font):
+        super().__init__()
+        self.font_data = font
+        self.id = font.id
+        self.name = font.name
+        self.file_path = font.file_path
+
+@dataclass
+class Objective:
+    id: str
+    name: str
+    completed: bool = False
+
+@dataclass
+class Quest:
+    id: str
+    name: str
+    objectives: List[Objective] = field(default_factory=list)
+
+class ObjectiveGObject(GObject.Object):
+    __gtype_name__ = 'ObjectiveGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    completed = GObject.Property(type=bool, default=False)
+
+    def __init__(self, objective: Objective):
+        super().__init__()
+        self.objective_data = objective
+        self.id = objective.id
+        self.name = objective.name
+        self.completed = objective.completed
+
+class QuestGObject(GObject.Object):
+    __gtype_name__ = 'QuestGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+
+    def __init__(self, quest: Quest):
+        super().__init__()
+        self.quest_data = quest
+        self.id = quest.id
+        self.name = quest.name
+
 class InteractionGObject(GObject.Object):
     __gtype_name__ = 'InteractionGObject'
 
@@ -299,6 +381,9 @@ class ProjectData:
     dialogue_graphs: List[LogicGraph] = field(default_factory=list)
     cutscenes: List[Cutscene] = field(default_factory=list)
     interactions: List[Interaction] = field(default_factory=list)
+    quests: List[Quest] = field(default_factory=list)
+    ui_layouts: List['UILayout'] = field(default_factory=list)
+    fonts: List['Font'] = field(default_factory=list)
     # UI layouts would also be added here.
 
 class StringGObject(GObject.Object):

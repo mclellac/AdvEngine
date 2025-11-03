@@ -31,7 +31,7 @@ point-and-click adventure games.
     - Support for item combination logic (`COMBINE item_a WITH item_b TO CREATE
       item_c`).
 
-- [ ] **Quest & Objective Tracker**
+- [x] **Quest & Objective Tracker**
     - A simple system to define high-level quests or tasks (e.g., "Find a way
       into the abandoned warehouse").
     - Ability to link quest steps to the completion of specific logic graph
@@ -49,7 +49,7 @@ point-and-click adventure games.
     - Define character properties like walk speed, dialogue color, and default
       inventory.
 
-- [ ] **Point-and-Click UI Builder**
+- [x] **Point-and-Click UI Builder**
     - A visual editor to design the main in-game user interface.
     - Support for classic Sierra-style verb bars or verb coins (Walk, Look,
       Talk, Use).
@@ -57,7 +57,7 @@ point-and-click adventure games.
       and menus.
     - Anchor points and scaling rules for modern widescreen resolutions.
 
-- [ ] **Font Management**
+- [x] **Font Management**
     - A system to import and manage bitmap fonts for in-game text, preserving
       the retro aesthetic.
     - Ability to assign different fonts to UI elements like dialogue,
@@ -65,20 +65,20 @@ point-and-click adventure games.
 
 ## Development & Debugging Tools
 
-- [ ] **Integrated Game Launcher & Debugger**
+- [x] **Integrated Game Launcher & Debugger**
     - A "Play" button in the AdvEngine toolbar that automatically exports the
       latest data and runs the Unreal Engine project.
     - An "Interaction Log" panel that streams real-time data from the running
       game back into the tool (e.g., `[GAME] Player clicked on Hotspot 'Door'`,
       `[LOGIC] Condition 'player_has_key' is FALSE`).
 
-- [ ] **Localization Support**
+- [x] **Localization Support**
     - A utility to export all user-facing text (dialogue, item names, UI
       labels) to a CSV or PO file for easy translation.
     - A corresponding import function to load translated text back into the
       project.
 
-- [ ] **Project Templates**
+- [x] **Project Templates**
     - Ability to create new projects from a template (e.g., "Sierra Style",
       "Modern Minimalist") that comes with pre-configured UI, verbs, and example
       structures.
