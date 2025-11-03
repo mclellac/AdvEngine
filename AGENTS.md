@@ -131,6 +131,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | `[ProjectName]/Data/Verbs.json`          | Defines the verbs available to the player.        | JSON   | Used to build the in-game UI and parse interactions. |
 | `[ProjectName]/Data/GlobalState.json`    | Defines all global game variables and their initial values. | JSON   | Parsed by a global state manager in UE.           |
 | `[ProjectName]/Logic/Interactions.json`      | Defines all verb/item interactions.               | JSON   | Parsed by the `BP_InteractionComponent` at runtime. |
+| `[ProjectName]/Logic/Quests.json`            | Defines all quests and their steps.               | JSON   | Parsed by the `BP_QuestManager` at runtime.         |
 | `[ProjectName]/UI/WindowLayout.json`     | Defines the anchoring and contents of all custom menus. | JSON   | Used by the `BP_UIManager` to dynamically build the UI. |
 
 ### B. Core Action Commands (Mapped to UE Blueprint Functions)
@@ -199,6 +200,8 @@ The central logic file, an array of Interaction Objects.
 | is_merchant       | Boolean     | If True, this NPC can open the shop interface.        |
 | shop_id           | String/Null | The ID of the specific shop inventory they sell.      |
 | portrait_asset_id | String/Null | The ID of the asset for the character's portrait.     |
+| sprite_sheet_asset_id | String/Null | The ID of the asset for the character's sprite sheet. |
+| animations        | String      | A JSON string representing the character's animations. |
 
 #### D. Verb Database Schema (Export: Verbs.json)
 

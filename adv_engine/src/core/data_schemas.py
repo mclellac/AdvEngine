@@ -1,4 +1,5 @@
 import gi
+import json
 from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
 from gi.repository import GObject
@@ -66,6 +67,8 @@ class Character:
     is_merchant: bool
     shop_id: Optional[str]
     portrait_asset_id: Optional[str] = None
+    sprite_sheet_asset_id: Optional[str] = None
+    animations: Dict[str, str] = field(default_factory=dict)
 
 class CharacterGObject(GObject.Object):
     __gtype_name__ = 'CharacterGObject'
@@ -76,6 +79,9 @@ class CharacterGObject(GObject.Object):
     is_merchant = GObject.Property(type=bool, default=False)
     shop_id = GObject.Property(type=str)
     portrait_asset_id = GObject.Property(type=str)
+    sprite_sheet_asset_id = GObject.Property(type=str)
+    animations_str = GObject.Property(type=str)
+
 
     def __init__(self, character: Character):
         super().__init__()
@@ -86,6 +92,8 @@ class CharacterGObject(GObject.Object):
         self.is_merchant = character.is_merchant
         self.shop_id = character.shop_id
         self.portrait_asset_id = character.portrait_asset_id
+        self.sprite_sheet_asset_id = character.sprite_sheet_asset_id
+        self.animations_str = json.dumps(character.animations)
 
 # --- Scene Schemas ---
 
@@ -284,6 +292,35 @@ class InteractionGObject(GObject.Object):
         self.target_hotspot_id = interaction.target_hotspot_id
         self.logic_graph_id = interaction.logic_graph_id
 
+# --- Quest Schemas ---
+@dataclass
+class QuestStep:
+    id: str
+    description: str
+    # ID of a LogicGraph that must be completed to finish this step.
+    completion_logic_graph_id: Optional[str] = None
+
+@dataclass
+class Quest:
+    id: str
+    name: str
+    description: str
+    steps: List[QuestStep] = field(default_factory=list)
+
+class QuestGObject(GObject.Object):
+    __gtype_name__ = 'QuestGObject'
+
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    description = GObject.Property(type=str)
+
+    def __init__(self, quest: Quest):
+        super().__init__()
+        self.quest_data = quest
+        self.id = quest.id
+        self.name = quest.name
+        self.description = quest.description
+
 # A container for all project data
 @dataclass
 class ProjectData:
@@ -299,6 +336,7 @@ class ProjectData:
     dialogue_graphs: List[LogicGraph] = field(default_factory=list)
     cutscenes: List[Cutscene] = field(default_factory=list)
     interactions: List[Interaction] = field(default_factory=list)
+    quests: List[Quest] = field(default_factory=list)
     # UI layouts would also be added here.
 
 class StringGObject(GObject.Object):

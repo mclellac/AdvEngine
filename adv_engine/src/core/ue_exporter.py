@@ -73,10 +73,12 @@ def export_project(project_manager):
 
     # --- Export Characters to CharacterData.csv ---
     with open(os.path.join(data_dir, "CharacterData.csv"), "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id"])
+        writer = csv.DictWriter(f, fieldnames=["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id", "sprite_sheet_asset_id", "animations"])
         writer.writeheader()
         for char in data.characters:
-            writer.writerow(asdict(char))
+            char_dict = asdict(char)
+            char_dict["animations"] = json.dumps(char_dict["animations"])
+            writer.writerow(char_dict)
 
     # --- Export Attributes to Attributes.csv ---
     with open(os.path.join(data_dir, "Attributes.csv"), "w", newline="") as f:
@@ -92,6 +94,10 @@ def export_project(project_manager):
     # --- Export Interactions to Interactions.json ---
     with open(os.path.join(logic_dir, "Interactions.json"), "w") as f:
         json.dump([asdict(interaction) for interaction in data.interactions], f, indent=2)
+
+    # --- Export Quests to Quests.json ---
+    with open(os.path.join(logic_dir, "Quests.json"), "w") as f:
+        json.dump([asdict(quest) for quest in data.quests], f, indent=2)
 
     # --- Placeholder JSON files ---
     with open(os.path.join(dialogues_dir, "Graph_Placeholder.json"), "w") as f:

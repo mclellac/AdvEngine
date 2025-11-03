@@ -1,5 +1,6 @@
 import os
 import gi
+import json
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw
@@ -34,6 +35,14 @@ class CharacterEditorDialog(Adw.MessageDialog):
         self.portrait_preview.set_size_request(128, 128)
         self._update_portrait_preview(character.portrait_asset_id if character else None)
 
+        # Sprite Sheet Asset Dropdown
+        self.sprite_sheet_asset_id_dropdown = self._create_asset_dropdown(character, is_sprite_sheet=True)
+
+        # Animations Text View
+        self.animations_entry = Gtk.TextView()
+        if character and character.animations:
+            self.animations_entry.get_buffer().set_text(json.dumps(character.animations, indent=2))
+
         content.append(self._create_row("ID:", self.id_entry))
         content.append(self._create_row("Display Name:", self.display_name_entry))
         content.append(self._create_row("Dialogue Start ID:", self.dialogue_start_id_entry))
@@ -41,17 +50,28 @@ class CharacterEditorDialog(Adw.MessageDialog):
         content.append(self._create_row("Shop ID:", self.shop_id_entry))
         content.append(self._create_row("Portrait Asset:", self.portrait_asset_id_dropdown))
         content.append(self.portrait_preview)
+        content.append(self._create_row("Sprite Sheet Asset:", self.sprite_sheet_asset_id_dropdown))
+
+        animations_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        animations_box.append(Gtk.Label(label="Animations (JSON):", halign=Gtk.Align.START))
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_child(self.animations_entry)
+        scrolled_window.set_size_request(-1, 150)
+        animations_box.append(scrolled_window)
+        content.append(animations_box)
+
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
         self.set_default_response("ok")
         self.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
 
-    def _create_asset_dropdown(self, character):
+    def _create_asset_dropdown(self, character, is_sprite_sheet=False):
         image_assets = [asset.id for asset in self.project_manager.data.assets if asset.asset_type in ["sprite", "animation"]]
         dropdown = Gtk.DropDown.new_from_strings(["None"] + image_assets)
-        if character and character.portrait_asset_id in image_assets:
-            dropdown.set_selected(image_assets.index(character.portrait_asset_id) + 1)
+        asset_id = character.sprite_sheet_asset_id if is_sprite_sheet else character.portrait_asset_id
+        if character and asset_id in image_assets:
+            dropdown.set_selected(image_assets.index(asset_id) + 1)
         else:
             dropdown.set_selected(0)
         return dropdown
@@ -146,6 +166,8 @@ class CharacterEditor(Gtk.Box):
         self._create_column("Is Merchant", None, lambda char: "Yes" if char.is_merchant else "No")
         self._create_column("Shop ID", Gtk.StringSorter(), lambda char: char.shop_id or "")
         self._create_column("Portrait Asset ID", Gtk.StringSorter(), lambda char: char.portrait_asset_id or "")
+        self._create_column("Sprite Sheet Asset ID", Gtk.StringSorter(), lambda char: char.sprite_sheet_asset_id or "")
+        self._create_column("Animations", Gtk.StringSorter(), lambda char: char.animations_str or "")
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.column_view)
@@ -197,13 +219,27 @@ class CharacterEditor(Gtk.Box):
             portrait_asset_id = dialog.portrait_asset_id_dropdown.get_selected_item().get_string()
             if portrait_asset_id == "None":
                 portrait_asset_id = None
+
+            sprite_sheet_asset_id = dialog.sprite_sheet_asset_id_dropdown.get_selected_item().get_string()
+            if sprite_sheet_asset_id == "None":
+                sprite_sheet_asset_id = None
+
+            animations_text = dialog.animations_entry.get_buffer().get_text(
+                dialog.animations_entry.get_buffer().get_start_iter(),
+                dialog.animations_entry.get_buffer().get_end_iter(),
+                False
+            )
+            animations = json.loads(animations_text) if animations_text else {}
+
             new_char = Character(
                 id=dialog.id_entry.get_text(),
                 display_name=dialog.display_name_entry.get_text(),
                 dialogue_start_id=dialog.dialogue_start_id_entry.get_text(),
                 is_merchant=dialog.is_merchant_check.get_active(),
                 shop_id=dialog.shop_id_entry.get_text(),
-                portrait_asset_id=portrait_asset_id
+                portrait_asset_id=portrait_asset_id,
+                sprite_sheet_asset_id=sprite_sheet_asset_id,
+                animations=animations
             )
             self.project_manager.add_character(new_char)
             self.model.append(CharacterGObject(new_char))
@@ -236,6 +272,21 @@ class CharacterEditor(Gtk.Box):
                 portrait_asset_id = None
             char_gobject.character_data.portrait_asset_id = portrait_asset_id
             char_gobject.portrait_asset_id = portrait_asset_id
+
+            sprite_sheet_asset_id = dialog.sprite_sheet_asset_id_dropdown.get_selected_item().get_string()
+            if sprite_sheet_asset_id == "None":
+                sprite_sheet_asset_id = None
+            char_gobject.character_data.sprite_sheet_asset_id = sprite_sheet_asset_id
+            char_gobject.sprite_sheet_asset_id = sprite_sheet_asset_id
+
+            animations_text = dialog.animations_entry.get_buffer().get_text(
+                dialog.animations_entry.get_buffer().get_start_iter(),
+                dialog.animations_entry.get_buffer().get_end_iter(),
+                False
+            )
+            animations = json.loads(animations_text) if animations_text else {}
+            char_gobject.character_data.animations = animations
+            char_gobject.animations_str = json.dumps(animations)
 
             self.project_manager.set_dirty(True)
             # Find the item in the original model to notify of the change

@@ -9,7 +9,7 @@ from dataclasses import asdict
 from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction
+    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction, Quest
 )
 
 class ProjectManager:
@@ -32,6 +32,7 @@ class ProjectManager:
         self._load_dialogue_graphs()
         self._load_cutscenes()
         self._load_interactions()
+        self._load_quests()
         self.set_dirty(False) # Project is clean after loading
 
     def save_project(self):
@@ -39,6 +40,8 @@ class ProjectManager:
             self._save_global_variables()
         if self.data.verbs:
             self._save_verbs()
+        if self.data.quests:
+            self._save_quests()
         if self.data.interactions:
             self._save_interactions()
         if self.data.scenes:
@@ -379,6 +382,31 @@ class ProjectManager:
     def remove_interaction(self, interaction):
         if interaction in self.data.interactions:
             self.data.interactions.remove(interaction)
+            self.set_dirty()
+
+    def _load_quests(self):
+        file_path = os.path.join(self.project_path, "Logic", "Quests.json")
+        try:
+            with open(file_path, "r") as f:
+                self.data.quests = [Quest(**quest) for quest in json.load(f)]
+        except FileNotFoundError:
+            print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+
+    def _save_quests(self):
+        file_path = os.path.join(self.project_path, "Logic", "Quests.json")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump([asdict(quest) for quest in self.data.quests], f, indent=2)
+
+    def add_quest(self, quest):
+        self.data.quests.append(quest)
+        self.set_dirty()
+
+    def remove_quest(self, quest):
+        if quest in self.data.quests:
+            self.data.quests.remove(quest)
             self.set_dirty()
 
     def add_cutscene(self, name):

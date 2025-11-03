@@ -31,7 +31,7 @@ point-and-click adventure games.
     - Support for item combination logic (`COMBINE item_a WITH item_b TO CREATE
       item_c`).
 
-- [ ] **Quest & Objective Tracker**
+- [x] **Quest & Objective Tracker**
     - A simple system to define high-level quests or tasks (e.g., "Find a way
       into the abandoned warehouse").
     - Ability to link quest steps to the completion of specific logic graph
@@ -41,7 +41,7 @@ point-and-click adventure games.
 
 ## Content & Asset Management
 
-- [ ] **Character Manager**
+- [x] **Character Manager**
     - A central place to define player characters (PCs) and non-player
       characters (NPCs).
     - Assign sprite sheets for different animations (e.g., walk cycles, talk
