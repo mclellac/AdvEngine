@@ -8,10 +8,13 @@ from gi.repository import Gtk, Adw, Gio
 
 from .core.project_manager import ProjectManager
 from .ui.item_editor import ItemEditor
-from .ui.character_editor import CharacterEditor
 from .ui.attribute_editor import AttributeEditor
 from .ui.verb_editor import VerbEditor
 from .ui.module_character import CharacterManager
+from .ui.module_quest import QuestEditor
+from .ui.module_ui_builder import UIBuilder
+from .ui.module_font import FontManager
+from .ui.module_log import LogViewer
 from .ui.module_scene import SceneEditor
 from .ui.module_logic import LogicEditor
 from .ui.module_dialogue import DialogueEditor
@@ -45,11 +48,18 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         save_button.connect("clicked", self.on_save_clicked)
         self.header.pack_start(save_button)
 
+        play_button = Gtk.Button(label="Play")
+        play_button.set_tooltip_text("Launch game (Ctrl+P)")
+        play_button.connect("clicked", self._on_play_clicked)
+        self.header.pack_start(play_button)
+
         # Add a menu button to the header
         menu = Gio.Menu.new()
         menu.append("New Project", "app.new-project")
         menu.append("Preferences", "app.preferences")
         menu.append("Keyboard Shortcuts", "app.shortcuts")
+        menu.append("Export Localization", "app.export-localization")
+        menu.append("Import Localization", "app.import-localization")
         menu.append("About", "app.about")
 
         menu_button = Gtk.MenuButton(menu_model=menu)
@@ -107,6 +117,10 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.add_editor("Assets", "assets_editor", self.asset_editor)
         self.add_editor("Global State", "global_state_editor", self.global_state_editor)
         self.add_editor("Characters", "character_manager", CharacterManager(self.project_manager))
+        self.add_editor("Quests", "quest_editor", QuestEditor(self.project_manager))
+        self.add_editor("UI Builder", "ui_builder", UIBuilder(self.project_manager))
+        self.add_editor("Fonts", "font_manager", FontManager(self.project_manager))
+        self.add_editor("Log", "log_viewer", LogViewer(self.project_manager))
 
         # Verbs & Items container
         verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -215,6 +229,12 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         """Handler for the save button click."""
         self.get_application().save_project()
 
+    def _on_play_clicked(self, button):
+        """Handler for the play button click."""
+        self.get_application().save_project()
+        # This is a placeholder for running the Unreal Engine project
+        print(f"Running command: /path/to/unreal/engine/bin/editor {self.project_manager.project_path}/AdvEngine.uproject")
+
 
 class AdvEngine(Adw.Application):
     def __init__(self, **kwargs):
@@ -232,6 +252,11 @@ class AdvEngine(Adw.Application):
         self.add_action(save_action)
         self.set_accels_for_action("app.save-project", ["<Primary>s"])
 
+        play_action = Gio.SimpleAction.new("play-game", None)
+        play_action.connect("activate", lambda a, p: self.win._on_play_clicked(None))
+        self.add_action(play_action)
+        self.set_accels_for_action("app.play-game", ["<Primary>p"])
+
         new_project_action = Gio.SimpleAction.new("new-project", None)
         new_project_action.connect("activate", self.on_new_project_activate)
         self.add_action(new_project_action)
@@ -247,6 +272,54 @@ class AdvEngine(Adw.Application):
         about_action = Gio.SimpleAction.new("about", None)
         about_action.connect("activate", self.on_about_activate)
         self.add_action(about_action)
+
+        export_localization_action = Gio.SimpleAction.new("export-localization", None)
+        export_localization_action.connect("activate", self.on_export_localization)
+        self.add_action(export_localization_action)
+
+        import_localization_action = Gio.SimpleAction.new("import-localization", None)
+        import_localization_action.connect("activate", self.on_import_localization)
+        self.add_action(import_localization_action)
+
+    def on_export_localization(self, action, param):
+        """Handler for the export localization menu item."""
+        dialog = Gtk.FileChooserDialog(
+            title="Export Localization",
+            parent=self.win,
+            action=Gtk.FileChooserAction.SAVE,
+        )
+        dialog.add_buttons(
+            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+        )
+
+        def on_dialog_response(dialog, response):
+            if response == Gtk.ResponseType.OK:
+                file = dialog.get_file()
+                self.project_manager.export_localization(file.get_path())
+            dialog.destroy()
+
+        dialog.connect("response", on_dialog_response)
+        dialog.show()
+
+    def on_import_localization(self, action, param):
+        """Handler for the import localization menu item."""
+        dialog = Gtk.FileChooserDialog(
+            title="Import Localization",
+            parent=self.win,
+            action=Gtk.FileChooserAction.OPEN,
+        )
+        dialog.add_buttons(
+            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+        )
+
+        def on_dialog_response(dialog, response):
+            if response == Gtk.ResponseType.OK:
+                file = dialog.get_file()
+                self.project_manager.import_localization(file.get_path())
+            dialog.destroy()
+
+        dialog.connect("response", on_dialog_response)
+        dialog.show()
 
     def save_project(self):
         """Saves the current project if it's dirty."""
@@ -280,10 +353,21 @@ class AdvEngine(Adw.Application):
             "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
         )
 
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        dialog.get_content_area().append(content)
+
+        template_label = Gtk.Label(label="Template:")
+        content.append(template_label)
+
+        templates = ProjectManager.get_templates()
+        template_dropdown = Gtk.DropDown.new_from_strings(templates)
+        content.append(template_dropdown)
+
         def on_dialog_response(dialog, response):
             if response == Gtk.ResponseType.OK:
                 folder = dialog.get_file().get_path()
-                success, error = ProjectManager.create_project(folder)
+                template = template_dropdown.get_selected_item().get_string()
+                success, error = ProjectManager.create_project(folder, template)
                 if success:
                     self.load_project(folder)
                 else:
