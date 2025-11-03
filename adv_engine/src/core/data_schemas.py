@@ -65,6 +65,7 @@ class Character:
     dialogue_start_id: str
     is_merchant: bool
     shop_id: Optional[str]
+    portrait_asset_id: Optional[str] = None
 
 class CharacterGObject(GObject.Object):
     __gtype_name__ = 'CharacterGObject'
@@ -74,6 +75,7 @@ class CharacterGObject(GObject.Object):
     dialogue_start_id = GObject.Property(type=str)
     is_merchant = GObject.Property(type=bool, default=False)
     shop_id = GObject.Property(type=str)
+    portrait_asset_id = GObject.Property(type=str)
 
     def __init__(self, character: Character):
         super().__init__()
@@ -83,6 +85,7 @@ class CharacterGObject(GObject.Object):
         self.dialogue_start_id = character.dialogue_start_id
         self.is_merchant = character.is_merchant
         self.shop_id = character.shop_id
+        self.portrait_asset_id = character.portrait_asset_id
 
 # --- Scene Schemas ---
 

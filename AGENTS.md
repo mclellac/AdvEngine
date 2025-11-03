@@ -82,6 +82,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | **Scenes** | World Design | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
 | **Logic** | Puzzle & Narrative | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
 | **Assets** | Media Management | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
+| **Global State** | State Management | Create, edit, and delete global game variables (booleans, integers, strings) with categorization. |
 | **Verbs & Items** | Database | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens. |
 | **Audio** | Sound & Ambiance | Assignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters. |
 
@@ -109,6 +110,7 @@ The architecture is strictly modular to isolate UI logic from data logic.
 | Path | Purpose | Format | Notes (UE Consumer) |
 |---|---|---|---|
 | `[ProjectName]/Data/ItemData.csv` | List of all items, prices, and properties. | CSV | Loaded into the `BP_ItemData` Data Table. |
+| `[ProjectName]/Data/GlobalState.json` | Defines all global game variables and their initial values. | JSON | Parsed by a global state manager in UE. |
 | `[ProjectName]/Logic/InteractionMatrix.json` | **CRITICAL**: Full puzzle logic file. | JSON | Parsed by the `BP_InteractionComponent` at runtime. |
 | `[ProjectName]/UI/WindowLayout.json` | Defines the anchoring and contents of all custom menus. | JSON | Used by the `BP_UIManager` to dynamically build the UI. |
 
@@ -179,6 +181,7 @@ The central logic file, an array of Interaction Objects.
 | dialogue_start_id | String      | The ID of the first node in the Logic Graph for conversation start.|
 | is_merchant       | Boolean     | If True, this NPC can open the shop interface.                   |
 | shop_id           | String/Null | The ID of the specific shop inventory they sell.                 |
+| portrait_asset_id | String/Null | The ID of the asset to use for the character's portrait.         |
 
 #### D. Shop Database Schema (Implicit in CharacterData/ItemData)
 

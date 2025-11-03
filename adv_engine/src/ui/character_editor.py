@@ -23,12 +23,14 @@ class CharacterEditorDialog(Adw.MessageDialog):
         self.dialogue_start_id_entry = Gtk.Entry(text=character.dialogue_start_id if character else "")
         self.is_merchant_check = Gtk.CheckButton(active=character.is_merchant if character else False)
         self.shop_id_entry = Gtk.Entry(text=character.shop_id if character else "")
+        self.portrait_asset_id_entry = Gtk.Entry(text=character.portrait_asset_id if character else "")
 
         content.append(self._create_row("ID:", self.id_entry))
         content.append(self._create_row("Display Name:", self.display_name_entry))
         content.append(self._create_row("Dialogue Start ID:", self.dialogue_start_id_entry))
         content.append(self._create_row("Is Merchant:", self.is_merchant_check))
         content.append(self._create_row("Shop ID:", self.shop_id_entry))
+        content.append(self._create_row("Portrait Asset ID:", self.portrait_asset_id_entry))
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
@@ -104,6 +106,7 @@ class CharacterEditor(Gtk.Box):
         self._create_column("Dialogue Start ID", Gtk.StringSorter(), lambda char: char.dialogue_start_id)
         self._create_column("Is Merchant", None, lambda char: "Yes" if char.is_merchant else "No")
         self._create_column("Shop ID", Gtk.StringSorter(), lambda char: char.shop_id or "")
+        self._create_column("Portrait Asset ID", Gtk.StringSorter(), lambda char: char.portrait_asset_id or "")
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.column_view)
@@ -157,7 +160,8 @@ class CharacterEditor(Gtk.Box):
                 display_name=dialog.display_name_entry.get_text(),
                 dialogue_start_id=dialog.dialogue_start_id_entry.get_text(),
                 is_merchant=dialog.is_merchant_check.get_active(),
-                shop_id=dialog.shop_id_entry.get_text()
+                shop_id=dialog.shop_id_entry.get_text(),
+                portrait_asset_id=dialog.portrait_asset_id_entry.get_text()
             )
             self.project_manager.add_character(new_char)
             self.model.append(CharacterGObject(new_char))
@@ -178,6 +182,7 @@ class CharacterEditor(Gtk.Box):
             char_gobject.character_data.dialogue_start_id = dialog.dialogue_start_id_entry.get_text()
             char_gobject.character_data.is_merchant = dialog.is_merchant_check.get_active()
             char_gobject.character_data.shop_id = dialog.shop_id_entry.get_text()
+            char_gobject.character_data.portrait_asset_id = dialog.portrait_asset_id_entry.get_text()
             self.project_manager.set_dirty(True)
             pos = self.model.find(char_gobject)[1]
             if pos >= 0:
