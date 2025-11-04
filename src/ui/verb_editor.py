@@ -102,13 +102,17 @@ class VerbEditor(Gtk.Box):
 
         binding = widget.bind_property("text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
 
-        validation_handler = lambda w: self._validate_entry(w, verb_gobject, column_id)
+        validation_handler = lambda w, _: self._validate_entry(w, verb_gobject, column_id)
         handler_id = widget.connect("notify::text", validation_handler)
         widget.connect("apply", lambda w: self.project_manager.set_dirty(True))
         self._validate_entry(widget, verb_gobject, column_id) # Initial validation
 
-        list_item.bindings = [binding]
-        list_item.handler_ids = [handler_id]
+        # Store bindings and handlers to manage their lifecycle
+        if not hasattr(list_item, 'bindings'):
+            list_item.bindings = []
+            list_item.handler_ids = []
+        list_item.bindings.append(binding)
+        list_item.handler_ids.append(handler_id)
 
     def _validate_entry(self, entry_row, verb_gobject, column_id):
         is_valid = True

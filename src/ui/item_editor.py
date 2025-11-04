@@ -111,20 +111,23 @@ class ItemEditor(Gtk.Box):
 
         handler_id = None
         if isinstance(widget, Adw.EntryRow):
-            validation_handler = lambda w: self._validate_entry(w, item_gobject)
+            validation_handler = lambda w, _: self._validate_entry(w, item_gobject, column_id)
             handler_id = widget.connect("notify::text", validation_handler)
             widget.connect("apply", lambda w: self.project_manager.set_dirty(True))
-            self._validate_entry(widget, item_gobject) # Initial validation
+            self._validate_entry(widget, item_gobject, column_id) # Initial validation
         elif isinstance(widget, Adw.SpinRow):
             handler_id = widget.connect("notify::value", lambda w, _: self.project_manager.set_dirty(True))
 
-        list_item.bindings = [binding]
-        list_item.handler_ids = [handler_id]
+        # Store bindings and handlers to manage their lifecycle
+        if not hasattr(list_item, 'bindings'):
+            list_item.bindings = []
+            list_item.handler_ids = []
+        list_item.bindings.append(binding)
+        list_item.handler_ids.append(handler_id)
 
-    def _validate_entry(self, entry_row, item_gobject):
+    def _validate_entry(self, entry_row, item_gobject, column_id):
         is_valid = True
         text = entry_row.get_text()
-        column_id = next((prop.name for prop in item_gobject.list_properties() if "text" in prop.name), None) # A bit hacky way to find which column this is
 
         if not text.strip():
             is_valid = False

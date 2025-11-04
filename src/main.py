@@ -115,16 +115,19 @@ class EditorWindow(Adw.ApplicationWindow):
         self.add_editor("Fonts", "font_manager", FontManager(self.project_manager))
         self.add_editor("Log", "log_viewer", LogViewer(self.project_manager))
 
-        verbs_items_stack = Adw.ViewStack()
-        verbs_items_switcher = Adw.ViewSwitcher(stack=verbs_items_stack, policy=Adw.ViewSwitcherPolicy.WIDE)
-        verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        verbs_items_container.append(verbs_items_switcher)
-        verbs_items_container.append(verbs_items_stack)
+        db_header = Adw.HeaderBar()
+        db_stack = Adw.ViewStack()
+        db_switcher = Adw.ViewSwitcherBar(stack=db_stack)
+        db_header.set_title_widget(db_switcher)
 
-        verbs_items_stack.add_titled_with_icon(ItemEditor(self.project_manager), "items", "Items", "edit-find-replace-symbolic")
-        verbs_items_stack.add_titled_with_icon(AttributeEditor(self.project_manager), "attributes", "Attributes", "document-properties-symbolic")
-        verbs_items_stack.add_titled_with_icon(VerbEditor(self.project_manager), "verbs", "Verbs", "input-gaming-symbolic")
-        self.add_editor("Database", "verbs_items_editor", verbs_items_container)
+        db_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        db_container.append(db_header)
+        db_container.append(db_stack)
+
+        db_stack.add_titled_with_icon(ItemEditor(self.project_manager), "items", "Items", "edit-find-replace-symbolic")
+        db_stack.add_titled_with_icon(AttributeEditor(self.project_manager), "attributes", "Attributes", "document-properties-symbolic")
+        db_stack.add_titled_with_icon(VerbEditor(self.project_manager), "verbs", "Verbs", "input-gaming-symbolic")
+        self.add_editor("Database", "db_editor", db_container)
 
         self.add_editor("Audio", "audio_editor", AudioEditor(self.project_manager))
 
@@ -330,7 +333,7 @@ class AdvEngine(Adw.Application):
             "7": "global_state_editor",
             "8": "character_manager",
             "9": "quest_editor",
-            "0": "verbs_items_editor",
+            "0": "db_editor",
         }
         for key, view_name in shortcuts.items():
             action = Gio.SimpleAction(name=f"go-to-{view_name}")

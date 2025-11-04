@@ -66,14 +66,15 @@ class MiniMap(Gtk.DrawingArea):
             cr.fill()
 
 class DynamicNodeEditor(Gtk.Box):
-    def __init__(self):
+    def __init__(self, node):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.node = None
+        self.node = node
         self.widgets = {}
         self.params_group = Adw.PreferencesGroup()
         self.main_group = Adw.PreferencesGroup()
         self.append(self.main_group)
         self.append(self.params_group)
+        self.build_ui()
 
     def set_node(self, node):
         self.node = node
@@ -121,10 +122,8 @@ class DynamicNodeEditor(Gtk.Box):
         group.add(combo)
 
     def update_params_ui(self, *args):
-        # Clear existing parameter widgets safely
-        while child := self.params_group.get_first_child():
-            self.params_group.remove(child)
-
+        while self.params_group.get_first_child():
+            self.params_group.remove(self.params_group.get_first_child())
         if not isinstance(self.node, (ConditionNode, ActionNode)):
             self.params_group.set_visible(False)
             return
@@ -156,8 +155,10 @@ class DynamicNodeEditor(Gtk.Box):
         values = self.get_values()
         for key, value in values.items():
             setattr(self.node, key, value)
-        self.node.get_parent_editor().project_manager.set_dirty(True)
-        self.node.get_parent_editor().canvas.queue_draw()
+        if hasattr(self.node, 'parent_editor') and self.node.parent_editor and self.node.parent_editor.project_manager:
+            self.node.parent_editor.project_manager.set_dirty(True)
+            if hasattr(self.node.parent_editor, 'canvas'):
+                self.node.parent_editor.canvas.queue_draw()
 
     def get_values(self):
         values = {}
@@ -297,7 +298,7 @@ class LogicEditor(Gtk.Box):
         palette.add(action_row)
 
         # --- Properties Panel ---
-        self.props_panel = DynamicNodeEditor()
+        self.props_panel = DynamicNodeEditor(None)
         sidebar.append(self.props_panel)
 
         return sidebar
@@ -390,7 +391,6 @@ class LogicEditor(Gtk.Box):
             self.canvas.queue_draw()
             self.minimap.queue_draw()
             self.project_manager.set_dirty(True)
-
 
     def get_connector_pos(self, node, connector_type):
         if connector_type == "in":
@@ -558,4 +558,3 @@ class LogicEditor(Gtk.Box):
         menu.append("Delete Node", "app.delete_node")
         self.node_context_menu = Gtk.PopoverMenu.new_from_model(menu)
         self.node_context_menu.set_parent(self.canvas)
-
