@@ -435,17 +435,16 @@ class LogicEditor(Gtk.Box):
             self.canvas.queue_draw()
 
     def on_canvas_click(self, gesture, n_press, x, y):
+        if n_press == 2:
+            return  # Explicitly do nothing on double-click to prevent re-selection issues
+
         node = self.get_node_at(x, y)
         if node:
-            if n_press == 2:
-                # Could be used for quick inline edit later
-                pass
+            if not gesture.get_current_event_state() & Gdk.ModifierType.SHIFT_MASK:
+                self.selected_nodes = [node]
             else:
-                if not gesture.get_current_event_state() & Gdk.ModifierType.SHIFT_MASK:
-                    self.selected_nodes = [node]
-                else:
-                    if node in self.selected_nodes: self.selected_nodes.remove(node)
-                    else: self.selected_nodes.append(node)
+                if node in self.selected_nodes: self.selected_nodes.remove(node)
+                else: self.selected_nodes.append(node)
         else:
             self.selected_nodes = []
 
