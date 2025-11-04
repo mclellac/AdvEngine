@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, Gio
+from gi.repository import Gtk, Adw, Gio, GObject
 
 from .core.project_manager import ProjectManager
 from .core.data_schemas import DialogueNode
@@ -36,35 +36,36 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.project_manager = project_manager
         self.base_title = "AdvEngine"
         self.set_title(self.base_title)
-        self.set_default_size(1024, 768)
+        self.set_default_size(1280, 800)
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.set_content(self.main_box)
+        # Use a ToolbarView as the main content container
+        main_container = Adw.ToolbarView()
+        self.set_content(main_container)
 
-        self.header = Adw.HeaderBar()
-        self.main_box.append(self.header)
+        header = Adw.HeaderBar()
+        main_container.add_top_bar(header)
 
-        save_button = Gtk.Button(label="Save")
-        save_button.set_tooltip_text("Save project (Ctrl+S)")
-        save_button.get_style_context().add_class("flat")
+        # Sidebar Toggle
+        self.toggle_button = Gtk.ToggleButton(icon_name="sidebar-show-symbolic", tooltip_text="Toggle Sidebar")
+        header.pack_start(self.toggle_button)
+
+        save_button = Gtk.Button(label="Save", tooltip_text="Save project (Ctrl+S)")
+        save_button.set_css_classes(["flat"])
         save_button.connect("clicked", self.on_save_clicked)
-        self.header.pack_start(save_button)
+        header.pack_start(save_button)
 
-        play_button = Gtk.Button(label="Play")
-        play_button.set_tooltip_text("Launch game (Ctrl+P)")
-        play_button.get_style_context().add_class("flat")
+        play_button = Gtk.Button(label="Play", tooltip_text="Launch game (Ctrl+P)")
+        play_button.set_css_classes(["flat"])
         play_button.connect("clicked", self._on_play_clicked)
-        self.header.pack_start(play_button)
+        header.pack_start(play_button)
 
-        new_project_button = Gtk.Button(label="New Project")
-        new_project_button.set_tooltip_text("Create a new project")
-        new_project_button.get_style_context().add_class("flat")
+        new_project_button = Gtk.Button(label="New Project", tooltip_text="Create a new project")
+        new_project_button.set_css_classes(["flat"])
         new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
-        self.header.pack_start(new_project_button)
+        header.pack_start(new_project_button)
 
-        # Add a menu button to the header
         menu = Gio.Menu.new()
         menu.append("Preferences", "app.preferences")
         menu.append("Keyboard Shortcuts", "app.shortcuts")
@@ -72,96 +73,67 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         menu.append("Import Localization", "app.import-localization")
         menu.append("About", "app.about")
 
-        menu_button = Gtk.MenuButton(menu_model=menu)
-        menu_button.set_icon_name("open-menu-symbolic")
-        menu_button.set_tooltip_text("Application Menu")
-        self.header.pack_end(menu_button)
+        menu_button = Gtk.MenuButton(menu_model=menu, icon_name="open-menu-symbolic", tooltip_text="Application Menu")
+        header.pack_end(menu_button)
 
-        search_entry = Gtk.SearchEntry()
-        search_entry.set_placeholder_text("Search Project")
+        search_entry = Gtk.SearchEntry(placeholder_text="Search Project")
         search_entry.connect("search-changed", self.on_search_changed)
-        self.header.pack_end(search_entry)
+        header.pack_end(search_entry)
 
-        self.split_view = Adw.NavigationSplitView(vexpand=True)
-        self.main_box.append(self.split_view)
+        # Use Adw.OverlaySplitView for a modern layout
+        self.split_view = Adw.OverlaySplitView()
+        main_container.set_content(self.split_view)
+
+        self.toggle_button.bind_property("active", self.split_view, "show-sidebar", GObject.BindingFlags.BIDIRECTIONAL)
 
         self.content_stack = Adw.ViewStack()
-        content_container = Adw.ToolbarView()
-        content_container.set_content(self.content_stack)
+        self.split_view.set_content(self.content_stack)
 
-        self.split_view.set_content(
-            Adw.NavigationPage.new(content_container, "Content")
-        )
-
-        welcome_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER
-        )
-        welcome_box.append(
-            Gtk.Label(
-                label="Select an editor from the sidebar.", css_classes=["title-1"]
-            )
-        )
-        self.content_stack.add_named(welcome_box, "welcome")
-
-        # --- Instantiate editors with project_manager ---
-        self.scene_editor = SceneEditor(self.project_manager)
-        self.logic_editor = LogicEditor(self.project_manager)
-        self.dialogue_editor = DialogueEditor(self.project_manager)
-        self.cutscene_editor = CutsceneEditor(self.project_manager)
-        self.asset_editor = AssetEditor(self.project_manager)
-        self.audio_editor = AudioEditor(self.project_manager)
-        self.global_state_editor = GlobalStateEditor(self.project_manager)
-        self.interaction_editor = InteractionEditor(self.project_manager)
-        self.search_results_view = SearchResultsView()
-        self.content_stack.add_named(self.search_results_view, "search_results")
+        welcome_label = Gtk.Label(label="Select an editor from the sidebar.", css_classes=["title-1"])
+        welcome_page = Adw.StatusPage(child=welcome_label)
+        self.content_stack.add_named(welcome_page, "welcome")
 
         # --- Sidebar setup ---
-        sidebar_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.sidebar_list = Gtk.ListBox()
-        self.sidebar_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        sidebar_scroll = Gtk.ScrolledWindow()
+        self.sidebar_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE, css_classes=["boxed-list"])
         self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
-        sidebar_content.append(self.sidebar_list)
+        sidebar_scroll.set_child(self.sidebar_list)
+        self.split_view.set_sidebar(sidebar_scroll)
 
-        sidebar_page = Adw.NavigationPage.new(sidebar_content, "Editors")
-        self.split_view.set_sidebar(sidebar_page)
-        self.split_view.set_property("collapsed", False)
-        # --- Add actual editor widgets to sidebar and stack ---
-        self.add_editor("Scenes", "scenes_editor", self.scene_editor)
-        self.add_editor("Logic", "logic_editor", self.logic_editor)
-        self.add_editor("Interactions", "interaction_editor", self.interaction_editor)
-        self.add_editor("Dialogue", "dialogue_editor", self.dialogue_editor)
-        self.add_editor("Cutscenes", "cutscene_editor", self.cutscene_editor)
-        self.add_editor("Assets", "assets_editor", self.asset_editor)
-        self.add_editor("Global State", "global_state_editor", self.global_state_editor)
+        # --- Instantiate and Add Editors ---
+        self.add_editor("Scenes", "scenes_editor", SceneEditor(self.project_manager))
+        self.add_editor("Logic", "logic_editor", LogicEditor(self.project_manager))
+        self.add_editor("Interactions", "interaction_editor", InteractionEditor(self.project_manager))
+        self.add_editor("Dialogue", "dialogue_editor", DialogueEditor(self.project_manager))
+        self.add_editor("Cutscenes", "cutscene_editor", CutsceneEditor(self.project_manager))
+        self.add_editor("Assets", "assets_editor", AssetEditor(self.project_manager))
+        self.add_editor("Global State", "global_state_editor", GlobalStateEditor(self.project_manager))
         self.add_editor("Characters", "character_manager", CharacterManager(self.project_manager))
         self.add_editor("Quests", "quest_editor", QuestEditor(self.project_manager))
         self.add_editor("UI Builder", "ui_builder", UIBuilder(self.project_manager))
         self.add_editor("Fonts", "font_manager", FontManager(self.project_manager))
         self.add_editor("Log", "log_viewer", LogViewer(self.project_manager))
 
-        # Verbs & Items container
-        verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         verbs_items_stack = Adw.ViewStack()
-        verbs_items_switcher = Adw.ViewSwitcher(stack=verbs_items_stack)
+        verbs_items_switcher = Adw.ViewSwitcher(stack=verbs_items_stack, policy=Adw.ViewSwitcherPolicy.WIDE)
+        verbs_items_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         verbs_items_container.append(verbs_items_switcher)
         verbs_items_container.append(verbs_items_stack)
 
-        verbs_items_stack.add_titled(ItemEditor(self.project_manager), "items", "Items")
-        verbs_items_stack.add_titled(
-            AttributeEditor(self.project_manager), "attributes", "Attributes"
-        )
-        verbs_items_stack.add_titled(VerbEditor(self.project_manager), "verbs", "Verbs")
+        verbs_items_stack.add_titled_with_icon(ItemEditor(self.project_manager), "items", "Items", "edit-find-replace-symbolic")
+        verbs_items_stack.add_titled_with_icon(AttributeEditor(self.project_manager), "attributes", "Attributes", "document-properties-symbolic")
+        verbs_items_stack.add_titled_with_icon(VerbEditor(self.project_manager), "verbs", "Verbs", "input-gaming-symbolic")
+        self.add_editor("Database", "verbs_items_editor", verbs_items_container)
 
-        self.add_editor(
-            "Verbs &amp; Items", "verbs_items_editor", verbs_items_container
-        )
-        self.add_editor("Audio", "audio_editor", self.audio_editor)
+        self.add_editor("Audio", "audio_editor", AudioEditor(self.project_manager))
+
+        self.search_results_view = SearchResultsView()
+        self.content_stack.add_named(self.search_results_view, "search_results")
 
         # Set initial state
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
-        self.on_sidebar_activated(
-            self.sidebar_list, self.sidebar_list.get_selected_row()
-        )
+        self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
+        self.split_view.set_show_sidebar(True)
 
         self.setup_logic_editor_actions()
 
@@ -235,10 +207,8 @@ class AdvEngineWindow(Adw.ApplicationWindow):
             self.logic_editor.minimap.queue_draw()
 
     def add_editor(self, name, view_name, widget):
-        action_row = Adw.ActionRow(title=name)
-        list_box_row = Gtk.ListBoxRow()
-        list_box_row.set_child(action_row)
-        list_box_row.set_name(view_name)
+        row = Adw.ActionRow(title=name)
+        list_box_row = Gtk.ListBoxRow(name=view_name, child=row)
         self.sidebar_list.append(list_box_row)
         self.content_stack.add_named(widget, view_name)
 
@@ -246,16 +216,12 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         if row:
             view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
+            self.split_view.set_show_sidebar(False)
 
     def on_dirty_state_changed(self, is_dirty):
-        """Updates the window title to reflect the unsaved changes status."""
-        if is_dirty:
-            self.set_title(f"{self.base_title}*")
-        else:
-            self.set_title(self.base_title)
+        self.set_title(f"{self.base_title}{'*' if is_dirty else ''}")
 
     def on_save_clicked(self, button):
-        """Handler for the save button click."""
         self.get_application().save_project()
 
     def _on_play_clicked(self, button):
