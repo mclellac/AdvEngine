@@ -4,6 +4,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Gdk, Adw, GdkPixbuf
 from ..core.data_schemas import SceneGObject, Hotspot, HotspotGObject
+from ..core.project_manager import ProjectManager
 
 class SceneEditor(Gtk.Box):
     """A comprehensive editor for creating and managing game scenes, hotspots,
