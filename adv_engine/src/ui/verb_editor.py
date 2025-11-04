@@ -35,11 +35,16 @@ class VerbEditorDialog(Adw.MessageDialog):
         content.set_margin_end(10)
         self.set_extra_child(content)
 
-        self.id_entry = Gtk.Entry(text=verb.id if verb else "")
-        self.name_entry = Gtk.Entry(text=verb.name if verb else "")
+        group = Adw.PreferencesGroup()
+        content.append(group)
 
-        content.append(self._create_row("ID:", self.id_entry))
-        content.append(self._create_row("Name:", self.name_entry))
+        self.id_entry = Gtk.Entry(text=verb.id if verb else "")
+        self.id_entry.set_tooltip_text("A unique string identifier for the verb (e.g., 'use').")
+        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
+
+        self.name_entry = Gtk.Entry(text=verb.name if verb else "")
+        self.name_entry.set_tooltip_text("The in-game name of the verb.")
+        group.add(self._create_action_row("Name", "In-game display name", self.name_entry))
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
@@ -77,12 +82,11 @@ class VerbEditorDialog(Adw.MessageDialog):
 
         self.set_response_enabled("ok", is_valid)
 
-    def _create_row(self, label_text, widget):
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        label = Gtk.Label(label=label_text, halign=Gtk.Align.START, hexpand=True)
-        box.append(label)
-        box.append(widget)
-        return box
+    def _create_action_row(self, title, subtitle, widget):
+        row = Adw.ActionRow(title=title, subtitle=subtitle)
+        row.add_suffix(widget)
+        row.set_activatable_widget(widget)
+        return row
 
 class VerbEditor(Gtk.Box):
     def __init__(self, project_manager):

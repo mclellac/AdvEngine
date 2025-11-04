@@ -57,9 +57,12 @@ class DynamicNodeEditor(Gtk.Box):
         self.build_ui()
 
     def build_ui(self):
+        group = Adw.PreferencesGroup()
+        self.append(group)
+
         if isinstance(self.node, DialogueNode):
-            self.add_entry("character_id", "Character ID:", self.node.character_id)
-            self.add_entry("dialogue_text", "Dialogue Text:", self.node.dialogue_text)
+            self.add_entry(group, "character_id", "Character ID", "The ID of the character speaking.", self.node.character_id)
+            self.add_entry(group, "dialogue_text", "Dialogue Text", "The line of dialogue.", self.node.dialogue_text)
         elif isinstance(self.node, (ConditionNode, ActionNode)):
             defs = get_command_definitions()
             command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
@@ -67,32 +70,38 @@ class DynamicNodeEditor(Gtk.Box):
 
             # Dropdown for command type
             command_types = list(defs[command_key].keys())
-            self.add_dropdown(command_type_key, "Type:", command_types, getattr(self.node, command_type_key))
+            self.add_dropdown(group, command_type_key, "Type", "The type of command.", command_types, getattr(self.node, command_type_key))
 
             # Parameters Box
-            self.params_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-            self.append(self.params_box)
+            self.params_group = Adw.PreferencesGroup()
+            self.append(self.params_group)
             self.update_params_ui(None) # Initial population
 
-    def add_entry(self, key, label_text, default_value):
-        self.append(Gtk.Label(label=label_text, halign=Gtk.Align.START))
+    def add_entry(self, group, key, title, subtitle, default_value):
         entry = Gtk.Entry(text=str(default_value))
         self.widgets[key] = entry
-        self.append(entry)
+        row = self._create_action_row(title, subtitle, entry)
+        group.add(row)
 
-    def add_dropdown(self, key, label_text, options, default_value):
-        self.append(Gtk.Label(label=label_text, halign=Gtk.Align.START))
+    def add_dropdown(self, group, key, title, subtitle, options, default_value):
         dropdown = Gtk.DropDown.new_from_strings(options)
         self.widgets[key] = dropdown
         if default_value in options:
             dropdown.set_selected(options.index(default_value))
         dropdown.connect("notify::selected-item", self.update_params_ui)
-        self.append(dropdown)
+        row = self._create_action_row(title, subtitle, dropdown)
+        group.add(row)
+
+    def _create_action_row(self, title, subtitle, widget):
+        row = Adw.ActionRow(title=title, subtitle=subtitle)
+        row.add_suffix(widget)
+        row.set_activatable_widget(widget)
+        return row
 
     def update_params_ui(self, dropdown, _=None):
         # Clear existing params
-        for child in list(self.params_box.observe_children()):
-            self.params_box.remove(child)
+        for child in list(self.params_group.observe_children()):
+            self.params_group.remove(child)
 
         command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
         command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
@@ -100,23 +109,26 @@ class DynamicNodeEditor(Gtk.Box):
         selected_command = self.widgets[command_type_key].get_selected_item().get_string()
 
         if selected_command:
-            defs = get_command_definitions()[command_key][selected_command]["params"]
-            for param, p_type in defs.items():
+            defs = get_command_definitions()[command_key][selected_command]
+            self.params_group.set_title(f"{selected_command} Parameters")
+            self.params_group.set_description(defs.get("description", ""))
+            for param, p_type in defs["params"].items():
                 default = self.node.parameters.get(param, "")
                 self.add_param_widget(param, p_type, default)
 
     def add_param_widget(self, key, param_type, default_value):
-        self.params_box.append(Gtk.Label(label=f"{key}:", halign=Gtk.Align.START))
         if isinstance(param_type, list): # It's a dropdown
             dropdown = Gtk.DropDown.new_from_strings(param_type)
             if default_value in param_type:
                 dropdown.set_selected(param_type.index(default_value))
             self.widgets[key] = dropdown
-            self.params_box.append(dropdown)
+            row = self._create_action_row(key, "", dropdown)
+            self.params_group.add(row)
         else: # It's an entry
             entry = Gtk.Entry(text=str(default_value))
             self.widgets[key] = entry
-            self.params_box.append(entry)
+            row = self._create_action_row(key, "", entry)
+            self.params_group.add(row)
 
     def get_values(self):
         values = {}

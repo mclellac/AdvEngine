@@ -115,11 +115,13 @@ class SceneEditor(Gtk.Box):
         self.props_panel.set_visible(False)
         right_panel.append(self.props_panel)
 
-        self.props_panel.append(Gtk.Label(label="Hotspot Properties", css_classes=["title-3"]))
-        self.prop_x = self.create_spin_button("X:")
-        self.prop_y = self.create_spin_button("Y:")
-        self.prop_width = self.create_spin_button("Width:")
-        self.prop_height = self.create_spin_button("Height:")
+        group = Adw.PreferencesGroup()
+        self.props_panel.append(group)
+
+        self.prop_x = self._create_property_row("X", "X coordinate", 0, 8192)
+        self.prop_y = self._create_property_row("Y", "Y coordinate", 0, 8192)
+        self.prop_width = self._create_property_row("Width", "Width of the hotspot", 1, 8192)
+        self.prop_height = self._create_property_row("Height", "Height of the hotspot", 1, 8192)
 
         # Layer Management
         right_panel.append(Gtk.Separator())
@@ -147,14 +149,14 @@ class SceneEditor(Gtk.Box):
         self.refresh_scene_list()
 
 
-    def create_spin_button(self, label):
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        box.append(Gtk.Label(label=label))
-        adj = Gtk.Adjustment(lower=0, upper=2000, step_increment=1, page_increment=10)
+    def _create_property_row(self, title, subtitle, lower, upper):
+        adj = Gtk.Adjustment(lower=lower, upper=upper, step_increment=1, page_increment=10)
         spin_button = Gtk.SpinButton(adjustment=adj)
         spin_button.connect("value-changed", self.on_prop_changed)
-        box.append(spin_button)
-        self.props_panel.append(box)
+        row = Adw.ActionRow(title=title, subtitle=subtitle)
+        row.add_suffix(spin_button)
+        row.set_activatable_widget(spin_button)
+        self.props_panel.append(row)
         return spin_button
 
     def refresh_scene_list(self):

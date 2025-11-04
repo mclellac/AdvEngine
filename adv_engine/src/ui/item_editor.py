@@ -36,28 +36,41 @@ class ItemEditorDialog(Adw.MessageDialog):
         content.set_margin_end(10)
         self.set_extra_child(content)
 
+        group = Adw.PreferencesGroup()
+        content.append(group)
+
         self.id_entry = Gtk.Entry(text=item.id if item else "")
+        self.id_entry.set_tooltip_text("A unique string identifier for the item (e.g., 'key_01').")
+        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
+
         self.name_entry = Gtk.Entry(text=item.name if item else "")
+        self.name_entry.set_tooltip_text("The in-game name of the item.")
+        group.add(self._create_action_row("Name", "In-game display name", self.name_entry))
+
         self.type_entry = Gtk.Entry(text=item.type if item else "")
+        self.type_entry.set_tooltip_text("A category for the item (e.g., 'Key', 'Consumable').")
+        group.add(self._create_action_row("Type", "Item category", self.type_entry))
+
         self.buy_price_entry = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=-1, upper=99999, step_increment=1), value=item.buy_price if item else 0)
+        self.buy_price_entry.set_tooltip_text("The price to buy this item from a shop. -1 means it cannot be bought.")
+        group.add(self._create_action_row("Buy Price", "Price in shops (-1 for not buyable)", self.buy_price_entry))
+
         self.sell_price_entry = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=-1, upper=99999, step_increment=1), value=item.sell_price if item else 0)
+        self.sell_price_entry.set_tooltip_text("The price when selling this item. -1 means it cannot be sold.")
+        group.add(self._create_action_row("Sell Price", "Price when selling (-1 for not sellable)", self.sell_price_entry))
+
+        desc_group = Adw.PreferencesGroup(title="Description", description="Flavor text for the 'Look' action.")
+        content.append(desc_group)
+
         self.description_entry = Gtk.TextView()
+        self.description_entry.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.description_entry.set_size_request(-1, 100)
         if item and item.description:
             self.description_entry.get_buffer().set_text(item.description)
 
-        content.append(self._create_row("ID:", self.id_entry))
-        content.append(self._create_row("Name:", self.name_entry))
-        content.append(self._create_row("Type:", self.type_entry))
-        content.append(self._create_row("Buy Price:", self.buy_price_entry))
-        content.append(self._create_row("Sell Price:", self.sell_price_entry))
-
-        desc_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        desc_box.append(Gtk.Label(label="Description:", halign=Gtk.Align.START))
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.description_entry)
-        scrolled_window.set_size_request(-1, 100)
-        desc_box.append(scrolled_window)
-        content.append(desc_box)
+        desc_group.add(scrolled_window)
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
@@ -101,12 +114,11 @@ class ItemEditorDialog(Adw.MessageDialog):
         self.set_response_enabled("ok", is_valid)
 
 
-    def _create_row(self, label_text, widget):
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        label = Gtk.Label(label=label_text, halign=Gtk.Align.START, hexpand=True)
-        box.append(label)
-        box.append(widget)
-        return box
+    def _create_action_row(self, title, subtitle, widget):
+        row = Adw.ActionRow(title=title, subtitle=subtitle)
+        row.add_suffix(widget)
+        row.set_activatable_widget(widget)
+        return row
 
 class ItemEditor(Gtk.Box):
     def __init__(self, project_manager):

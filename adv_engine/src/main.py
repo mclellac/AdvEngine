@@ -104,9 +104,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.global_state_editor = GlobalStateEditor(self.project_manager)
         self.interaction_editor = InteractionEditor(self.project_manager)
         self.search_results_view = SearchResultsView()
-        self.content_stack.add_named(
-            self.search_results_view, "search_results"
-        )
+        self.content_stack.add_named(self.search_results_view, "search_results")
 
         # --- Sidebar setup ---
         sidebar_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -200,8 +198,6 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         """Handler for the search entry's search-changed signal."""
         query = search_entry.get_text()
         if not query:
-            # If the search query is empty, switch back to the welcome view or the previously active view.
-            # For simplicity, we'll go to the welcome view.
             if self.content_stack.get_visible_child_name() == "search_results":
                 self.content_stack.set_visible_child_name("welcome")
             return

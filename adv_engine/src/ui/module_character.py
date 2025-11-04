@@ -30,27 +30,39 @@ class CharacterEditorDialog(Adw.MessageDialog):
         content.set_margin_end(10)
         self.set_extra_child(content)
 
+        group = Adw.PreferencesGroup()
+        content.append(group)
+
         self.id_entry = Gtk.Entry(text=character.id if character else "")
+        self.id_entry.set_tooltip_text("A unique string identifier for the character (e.g., 'npc_bartender').")
+        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
+
         self.display_name_entry = Gtk.Entry(text=character.display_name if character else "")
+        self.display_name_entry.set_tooltip_text("The in-game name of the character.")
+        group.add(self._create_action_row("Display Name", "In-game display name", self.display_name_entry))
+
         self.dialogue_start_id_entry = Gtk.Entry(text=character.dialogue_start_id if character else "")
+        self.dialogue_start_id_entry.set_tooltip_text("The ID of the dialogue graph to start when talking to this character.")
+        group.add(self._create_action_row("Dialogue Start ID", "Starting dialogue graph ID", self.dialogue_start_id_entry))
+
         self.is_merchant_check = Gtk.CheckButton(active=character.is_merchant if character else False)
+        self.is_merchant_check.set_tooltip_text("Whether this character is a merchant.")
+        group.add(self._create_action_row("Is Merchant", "Can this character open a shop?", self.is_merchant_check))
+
         self.shop_id_entry = Gtk.Entry(text=character.shop_id if character else "")
+        self.shop_id_entry.set_tooltip_text("The ID of the shop this character opens.")
+        group.add(self._create_action_row("Shop ID", "Shop identifier", self.shop_id_entry))
 
         # Portrait Asset Dropdown
         self.portrait_asset_id_dropdown = self._create_asset_dropdown(character)
+        self.portrait_asset_id_dropdown.set_tooltip_text("The asset to use for the character's portrait.")
         self.portrait_asset_id_dropdown.connect("notify::selected-item", self._on_portrait_selection_changed)
+        group.add(self._create_action_row("Portrait Asset", "Asset for the character's portrait", self.portrait_asset_id_dropdown))
 
         # Portrait Preview
         self.portrait_preview = Gtk.Picture()
         self.portrait_preview.set_size_request(128, 128)
         self._update_portrait_preview(character.portrait_asset_id if character else None)
-
-        content.append(self._create_row("ID:", self.id_entry))
-        content.append(self._create_row("Display Name:", self.display_name_entry))
-        content.append(self._create_row("Dialogue Start ID:", self.dialogue_start_id_entry))
-        content.append(self._create_row("Is Merchant:", self.is_merchant_check))
-        content.append(self._create_row("Shop ID:", self.shop_id_entry))
-        content.append(self._create_row("Portrait Asset:", self.portrait_asset_id_dropdown))
         content.append(self.portrait_preview)
 
         self.add_response("cancel", "_Cancel")
@@ -121,12 +133,11 @@ class CharacterEditorDialog(Adw.MessageDialog):
         else:
             self.portrait_preview.set_filename(None)
 
-    def _create_row(self, label_text, widget):
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        label = Gtk.Label(label=label_text, halign=Gtk.Align.START, hexpand=True)
-        box.append(label)
-        box.append(widget)
-        return box
+    def _create_action_row(self, title, subtitle, widget):
+        row = Adw.ActionRow(title=title, subtitle=subtitle)
+        row.add_suffix(widget)
+        row.set_activatable_widget(widget)
+        return row
 
 class CharacterManager(Gtk.Box):
     def __init__(self, project_manager):

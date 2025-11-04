@@ -35,15 +35,24 @@ class AttributeEditorDialog(Adw.MessageDialog):
         content.set_margin_end(10)
         self.set_extra_child(content)
 
-        self.id_entry = Gtk.Entry(text=attribute.id if attribute else "")
-        self.name_entry = Gtk.Entry(text=attribute.name if attribute else "")
-        self.initial_value_entry = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=99999, step_increment=1), value=attribute.initial_value if attribute else 0)
-        self.max_value_entry = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=99999, step_increment=1), value=attribute.max_value if attribute else 100)
+        group = Adw.PreferencesGroup()
+        content.append(group)
 
-        content.append(self._create_row("ID:", self.id_entry))
-        content.append(self._create_row("Name:", self.name_entry))
-        content.append(self._create_row("Initial Value:", self.initial_value_entry))
-        content.append(self._create_row("Max Value:", self.max_value_entry))
+        self.id_entry = Gtk.Entry(text=attribute.id if attribute else "")
+        self.id_entry.set_tooltip_text("A unique string identifier for the attribute (e.g., 'strength').")
+        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
+
+        self.name_entry = Gtk.Entry(text=attribute.name if attribute else "")
+        self.name_entry.set_tooltip_text("The in-game name of the attribute.")
+        group.add(self._create_action_row("Name", "In-game display name", self.name_entry))
+
+        self.initial_value_entry = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=99999, step_increment=1), value=attribute.initial_value if attribute else 0)
+        self.initial_value_entry.set_tooltip_text("The starting value of the attribute.")
+        group.add(self._create_action_row("Initial Value", "Starting value", self.initial_value_entry))
+
+        self.max_value_entry = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=99999, step_increment=1), value=attribute.max_value if attribute else 100)
+        self.max_value_entry.set_tooltip_text("The maximum value of the attribute.")
+        group.add(self._create_action_row("Max Value", "Maximum value", self.max_value_entry))
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
@@ -81,12 +90,11 @@ class AttributeEditorDialog(Adw.MessageDialog):
 
         self.set_response_enabled("ok", is_valid)
 
-    def _create_row(self, label_text, widget):
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        label = Gtk.Label(label=label_text, halign=Gtk.Align.START, hexpand=True)
-        box.append(label)
-        box.append(widget)
-        return box
+    def _create_action_row(self, title, subtitle, widget):
+        row = Adw.ActionRow(title=title, subtitle=subtitle)
+        row.add_suffix(widget)
+        row.set_activatable_widget(widget)
+        return row
 
 class AttributeEditor(Gtk.Box):
     def __init__(self, project_manager):
