@@ -29,8 +29,10 @@ class PreferencesDialog(Adw.PreferencesWindow):
         style_manager = Adw.StyleManager.get_default()
         theme_row = Adw.ComboRow(
             title="Application Theme",
+            subtitle="Choose how the application should look.",
             model=Gtk.StringList.new(["System", "Light", "Dark"])
         )
+        theme_row.set_tooltip_text("Set the application theme to match the system, or force light or dark mode.")
         theme_group.add(theme_row)
 
         if style_manager.get_dark():
@@ -47,7 +49,11 @@ class PreferencesDialog(Adw.PreferencesWindow):
         appearance_page.add(editor_group)
 
         # Autosave Switch
-        autosave_row = Adw.SwitchRow(title="Enable Autosave")
+        autosave_row = Adw.SwitchRow(
+            title="Enable Autosave",
+            subtitle="Automatically save the project at a set interval."
+        )
+        autosave_row.set_tooltip_text("If enabled, the project will be saved automatically every 5 minutes.")
         autosave_row.set_active(self.settings_manager.get_app_setting("autosave_enabled"))
         autosave_row.connect("notify::active", self.on_autosave_toggled)
         editor_group.add(autosave_row)
@@ -61,7 +67,11 @@ class PreferencesDialog(Adw.PreferencesWindow):
             project_page.add(project_group)
 
             # Project Name
-            project_name_row = Adw.EntryRow(title="Project Name")
+            project_name_row = Adw.EntryRow(
+                title="Project Name",
+                subtitle="The name of the project."
+            )
+            project_name_row.set_tooltip_text("Set the name of the project.")
             project_name_row.set_text(self.settings_manager.get_project_setting("project_name"))
             project_name_row.connect("notify::text", self.on_project_name_changed)
             project_group.add(project_name_row)
@@ -72,8 +82,10 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
             default_scene_row = Adw.ComboRow(
                 title="Default Starting Scene",
+                subtitle="The scene to load when the game starts.",
                 model=Gtk.StringList.new(scene_names)
             )
+            default_scene_row.set_tooltip_text("Set the default scene that the game will load when it starts.")
 
             # Set initial selection
             default_scene_id = self.settings_manager.get_project_setting("default_scene")
