@@ -42,9 +42,10 @@ class MiniMap(Gtk.DrawingArea):
             cr.fill()
 
 class DynamicNodeEditor(Gtk.Box):
-    def __init__(self):
+    def __init__(self, project_manager=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.node = None
+        self.project_manager = project_manager
         self.widgets = {}
         self.params_group = Adw.PreferencesGroup()
         self.main_group = Adw.PreferencesGroup()
@@ -130,8 +131,14 @@ class DynamicNodeEditor(Gtk.Box):
         values = self.get_values()
         for key, value in values.items():
             setattr(self.node, key, value)
-        self.node.get_parent_editor().project_manager.set_dirty(True)
-        self.node.get_parent_editor().canvas.queue_draw()
+
+        if self.project_manager:
+            self.project_manager.set_dirty(True)
+
+        if hasattr(self.node, 'get_parent_editor'):
+            parent_editor = self.node.get_parent_editor()
+            if parent_editor and hasattr(parent_editor, 'canvas'):
+                parent_editor.canvas.queue_draw()
 
     def get_values(self):
         values = {}
@@ -256,7 +263,7 @@ class LogicEditor(Gtk.Box):
         palette.add(action_row)
 
         # --- Properties Panel ---
-        self.props_panel = DynamicNodeEditor()
+        self.props_panel = DynamicNodeEditor(project_manager=self.project_manager)
         sidebar.append(self.props_panel)
 
         return sidebar
