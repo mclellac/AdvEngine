@@ -13,7 +13,8 @@ class ActionEditorDialog(Adw.MessageDialog):
         self.project_manager = project_manager
         self.action_node = action_node
 
-        self.editor = DynamicNodeEditor(self.action_node or ActionNode(id="", node_type="Action", x=0, y=0))
+        self.editor = DynamicNodeEditor(project_manager=self.project_manager)
+        self.editor.set_node(self.action_node or ActionNode(id="", node_type="Action", x=0, y=0))
 
         self.set_extra_child(self.editor)
 
