@@ -1,4 +1,5 @@
 import sys
+import subprocess
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -7,6 +8,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
 from .core.project_manager import ProjectManager
+from .core.data_schemas import DialogueNode
 from .ui.item_editor import ItemEditor
 from .ui.attribute_editor import AttributeEditor
 from .ui.verb_editor import VerbEditor
@@ -38,7 +40,7 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_content(self.main_box)
 
         self.header = Adw.HeaderBar()
@@ -46,16 +48,19 @@ class AdvEngineWindow(Adw.ApplicationWindow):
 
         save_button = Gtk.Button(label="Save")
         save_button.set_tooltip_text("Save project (Ctrl+S)")
+        save_button.get_style_context().add_class("flat")
         save_button.connect("clicked", self.on_save_clicked)
         self.header.pack_start(save_button)
 
         play_button = Gtk.Button(label="Play")
         play_button.set_tooltip_text("Launch game (Ctrl+P)")
+        play_button.get_style_context().add_class("flat")
         play_button.connect("clicked", self._on_play_clicked)
         self.header.pack_start(play_button)
 
         new_project_button = Gtk.Button(label="New Project")
         new_project_button.set_tooltip_text("Create a new project")
+        new_project_button.get_style_context().add_class("flat")
         new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
         self.header.pack_start(new_project_button)
 
@@ -254,10 +259,41 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.get_application().save_project()
 
     def _on_play_clicked(self, button):
-        """Handler for the play button click."""
+        """
+        Handler for the play button click.
+        Saves the project and attempts to launch the Unreal Engine editor.
+        """
         self.get_application().save_project()
-        # This is a placeholder for running the Unreal Engine project
-        print(f"Running command: /path/to/unreal/engine/bin/editor {self.project_manager.project_path}/AdvEngine.uproject")
+
+        # This is a placeholder for running the Unreal Engine project.
+        # In a real scenario, you'd fetch the UE path from settings.
+        ue_path = "/path/to/unreal/engine/bin/editor"
+        project_file = f"{self.project_manager.project_path}/AdvEngine.uproject"
+
+        try:
+            subprocess.Popen([ue_path, project_file])
+            print(f"Launching Unreal Engine with project: {project_file}")
+        except FileNotFoundError:
+            print(f"Error: Could not find the Unreal Engine editor at '{ue_path}'.")
+            # In a real app, you'd show a user-friendly error dialog.
+            error_dialog = Adw.MessageDialog(
+                transient_for=self,
+                heading="Unreal Engine Not Found",
+                body=f"Could not find the Unreal Engine editor at the specified path: {ue_path}. Please configure the correct path in the application settings.",
+            )
+            error_dialog.add_response("ok", "OK")
+            error_dialog.connect("response", lambda d, r: d.close())
+            error_dialog.present()
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            error_dialog = Adw.MessageDialog(
+                transient_for=self,
+                heading="Error Launching Engine",
+                body=f"An unexpected error occurred while trying to launch Unreal Engine: {e}",
+            )
+            error_dialog.add_response("ok", "OK")
+            error_dialog.connect("response", lambda d, r: d.close())
+            error_dialog.present()
 
 
 class AdvEngine(Adw.Application):
