@@ -21,6 +21,7 @@ class ProjectManager:
         self.settings = SettingsManager(project_path)
         self.is_dirty = False
         self.dirty_state_changed_callbacks = []
+        self.project_loaded_callbacks = []
 
     def load_project(self):
         self._load_csv("ItemData.csv", Item, self.data.items)
@@ -39,6 +40,16 @@ class ProjectManager:
         self._load_ui_layouts()
         self._load_fonts()
         self.set_dirty(False) # Project is clean after loading
+        self._notify_project_loaded()
+
+    def register_project_loaded_callback(self, callback):
+        """Register a function to be called when the project is loaded."""
+        self.project_loaded_callbacks.append(callback)
+
+    def _notify_project_loaded(self):
+        """Notify all registered callbacks that the project has been loaded."""
+        for callback in self.project_loaded_callbacks:
+            callback()
 
     def save_project(self):
         if self.data.global_variables:

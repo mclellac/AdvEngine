@@ -35,7 +35,7 @@ class SceneEditor(Gtk.Box):
         self.split_view.connect("notify::show-sidebar", self._on_view_changed)
 
         self._update_visibility()
-        self.project_manager.connect("project-loaded", self._on_project_loaded)
+        self.project_manager.register_project_loaded_callback(self._on_project_loaded)
 
 
     def _on_project_loaded(self, *args):
