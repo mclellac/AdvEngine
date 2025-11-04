@@ -25,6 +25,7 @@ from .ui.module_state import GlobalStateEditor
 from .ui.module_interaction import InteractionEditor
 from .ui.preferences import PreferencesDialog
 from .ui.shortcuts import ShortcutsDialog
+from .ui.search_results import SearchResultsView
 
 
 class AdvEngineWindow(Adw.ApplicationWindow):
@@ -67,6 +68,11 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         menu_button.set_tooltip_text("Application Menu")
         self.header.pack_end(menu_button)
 
+        search_entry = Gtk.SearchEntry()
+        search_entry.set_placeholder_text("Search Project")
+        search_entry.connect("search-changed", self.on_search_changed)
+        self.header.pack_end(search_entry)
+
         self.split_view = Adw.NavigationSplitView(vexpand=True)
         self.main_box.append(self.split_view)
 
@@ -97,6 +103,10 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.audio_editor = AudioEditor(self.project_manager)
         self.global_state_editor = GlobalStateEditor(self.project_manager)
         self.interaction_editor = InteractionEditor(self.project_manager)
+        self.search_results_view = SearchResultsView()
+        self.content_stack.add_named(
+            self.search_results_view, "search_results"
+        )
 
         # --- Sidebar setup ---
         sidebar_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -185,6 +195,20 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         add_action_to_dialogue_action = Gio.SimpleAction.new("add-action-to-dialogue", None)
         add_action_to_dialogue_action.connect("activate", self.on_add_action_to_dialogue)
         self.add_action(add_action_to_dialogue_action)
+
+    def on_search_changed(self, search_entry):
+        """Handler for the search entry's search-changed signal."""
+        query = search_entry.get_text()
+        if not query:
+            # If the search query is empty, switch back to the welcome view or the previously active view.
+            # For simplicity, we'll go to the welcome view.
+            if self.content_stack.get_visible_child_name() == "search_results":
+                self.content_stack.set_visible_child_name("welcome")
+            return
+
+        results = self.project_manager.search(query)
+        self.search_results_view.update_results(results)
+        self.content_stack.set_visible_child_name("search_results")
 
     def on_add_action_to_dialogue(self, action, param):
         if self.logic_editor.selected_nodes and isinstance(self.logic_editor.selected_nodes[0], DialogueNode):

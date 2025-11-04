@@ -10,7 +10,7 @@ from .data_schemas import (
     ProjectData, Item, Attribute, Character, Scene, Hotspot,
     LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
     Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction,
-    Quest, Objective, UILayout, UIElement, Font
+    Quest, Objective, UILayout, UIElement, Font, SearchResult
 )
 from .settings_manager import SettingsManager
 
@@ -742,3 +742,35 @@ class ProjectManager:
             return True, None
         except Exception as e:
             return False, str(e)
+
+    def search(self, query):
+        """Searches all project data for a given query."""
+        results = []
+        query_lower = query.lower()
+
+        # Search Items
+        for item in self.data.items:
+            if query_lower in item.name.lower() or query_lower in item.id.lower():
+                results.append(SearchResult(id=item.id, name=item.name, type="Item"))
+
+        # Search Characters
+        for char in self.data.characters:
+            if query_lower in char.display_name.lower() or query_lower in char.id.lower():
+                results.append(SearchResult(id=char.id, name=char.display_name, type="Character"))
+
+        # Search Scenes
+        for scene in self.data.scenes:
+            if query_lower in scene.name.lower() or query_lower in scene.id.lower():
+                results.append(SearchResult(id=scene.id, name=scene.name, type="Scene"))
+
+        # Search Quests
+        for quest in self.data.quests:
+            if query_lower in quest.name.lower() or query_lower in quest.id.lower():
+                results.append(SearchResult(id=quest.id, name=quest.name, type="Quest"))
+
+        # Search Assets
+        for asset in self.data.assets:
+            if query_lower in asset.name.lower() or query_lower in asset.id.lower():
+                results.append(SearchResult(id=asset.id, name=asset.name, type="Asset"))
+
+        return results

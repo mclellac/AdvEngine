@@ -293,14 +293,16 @@ class LogicEditor(Gtk.Box):
                 if (x >= node.x + node.width - 10 and x <= node.x + node.width and
                         y >= node.y + node.height - 10 and y <= node.y + node.height):
                     self.resizing_node = node
+                    self.initial_node_width = node.width
+                    self.initial_node_height = node.height
                     gesture.set_state(Gtk.EventSequenceState.CLAIMED)
                     return
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
             success, start_x, start_y = gesture.get_start_point()
-            self.resizing_node.width = max(100, self.resizing_node.width + x)
-            self.resizing_node.height = max(50, self.resizing_node.height + y)
+            self.resizing_node.width = max(100, self.initial_node_width + x)
+            self.resizing_node.height = max(50, self.initial_node_height + y)
             self.canvas.queue_draw()
 
     def on_resize_drag_end(self, gesture, x, y):
@@ -357,7 +359,8 @@ class LogicEditor(Gtk.Box):
 
         # Header text
         cr.set_source_rgb(1, 1, 1)
-        layout.set_text(f"{node.node_type}: {node.id}", -1)
+        header_text = f"<b>{node.node_type}</b>: {node.id}"
+        layout.set_markup(header_text, -1)
         cr.move_to(node.x + 10, node.y + 5)
         PangoCairo.show_layout(cr, layout)
 
@@ -379,19 +382,19 @@ class LogicEditor(Gtk.Box):
                             print(f"Error loading portrait: {e}")
 
         cr.set_source_rgb(0.9, 0.9, 0.9)
-        cr.move_to(node.x + text_x_offset, node.y + 30)
+        cr.move_to(node.x + text_x_offset, node.y + 35)
 
         body_text = ""
         if isinstance(node, DialogueNode):
-            body_text = f"Character: {node.character_id}\n\"{node.dialogue_text}\""
+            body_text = f"<b>Char:</b> {node.character_id}\n<i>\"{node.dialogue_text}\"</i>"
         elif isinstance(node, ConditionNode):
-            params_str = "\n".join([f"- {k}: {v}" for k, v in node.parameters.items()])
-            body_text = f"Type: {node.condition_type}\nParams:\n{params_str}"
+            params_str = "\n".join([f"  - {k}: <i>{v}</i>" for k, v in node.parameters.items()])
+            body_text = f"<b>If:</b> {node.condition_type}\n{params_str}"
         elif isinstance(node, ActionNode):
-            params_str = "\n".join([f"- {k}: {v}" for k, v in node.parameters.items()])
-            body_text = f"Command: {node.action_command}\nParams:\n{params_str}"
+            params_str = "\n".join([f"  - {k}: <i>{v}</i>" for k, v in node.parameters.items()])
+            body_text = f"<b>Do:</b> {node.action_command}\n{params_str}"
 
-        layout.set_text(body_text, -1)
+        layout.set_markup(body_text, -1)
         PangoCairo.show_layout(cr, layout)
 
 
