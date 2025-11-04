@@ -121,8 +121,10 @@ class DynamicNodeEditor(Gtk.Box):
         group.add(combo)
 
     def update_params_ui(self, *args):
-        while self.params_group.get_first_child():
-            self.params_group.remove(self.params_group.get_first_child())
+        # Clear existing parameter widgets safely
+        while child := self.params_group.get_first_child():
+            self.params_group.remove(child)
+
         if not isinstance(self.node, (ConditionNode, ActionNode)):
             self.params_group.set_visible(False)
             return
