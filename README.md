@@ -9,7 +9,7 @@ target game engine to consume at runtime.
 
 *   **Scene Editor:** Design your game world by creating scenes, defining walk
     meshes, placing hotspots, and setting up camera safe areas.
-*   **Logic Editor:** A powerful node-graph editor for creating puzzle logic,
+*   **Logic Editor:** A node-graph editor for creating puzzle logic,
     dialogue trees, and quest branching.
 *   **Asset Manager:** Import and manage game assets like sprites and
     animations.
@@ -20,9 +20,9 @@ target game engine to consume at runtime.
     sound effects.
 *   **Quest Editor:** A dedicated editor for creating and managing quests and
     their objectives.
-*   **Global Search:** A powerful search feature to quickly find assets, logic
+*   **Global Search:** A search feature to quickly find assets, logic
     nodes, and database entries.
-*   **Modern UI:** A modern, HIG-compliant user interface built with Libadwaita
+*   **Modern UI:** A modern, GNOME HIG-compliant user interface built with Libadwaita
     for a polished and consistent look and feel.
 
 ## Installation

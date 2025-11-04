@@ -1,0 +1,575 @@
+[
+  {
+    "id": "scene_1",
+    "name": "Fantasy world",
+    "background_image": "../../../../../../.local/share/hypr/themes/vancouver/backgrounds/1-vancouver.jpg",
+    "hotspots": [
+      {
+        "id": "hs_1",
+        "name": "New Hotspot",
+        "x": 600,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_2",
+        "name": "New Hotspot",
+        "x": 700,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_3",
+        "name": "New Hotspot",
+        "x": 650,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_4",
+        "name": "New Hotspot",
+        "x": 750,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_5",
+        "name": "New Hotspot",
+        "x": 800,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_6",
+        "name": "New Hotspot",
+        "x": 850,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_7",
+        "name": "New Hotspot",
+        "x": 900,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_8",
+        "name": "New Hotspot",
+        "x": 950,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_9",
+        "name": "New Hotspot",
+        "x": 950,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_10",
+        "name": "New Hotspot",
+        "x": 950,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_11",
+        "name": "New Hotspot",
+        "x": 900,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_12",
+        "name": "New Hotspot",
+        "x": 850,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_13",
+        "name": "New Hotspot",
+        "x": 800,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_14",
+        "name": "New Hotspot",
+        "x": 750,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_15",
+        "name": "New Hotspot",
+        "x": 650,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_16",
+        "name": "New Hotspot",
+        "x": 700,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_17",
+        "name": "New Hotspot",
+        "x": 750,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_18",
+        "name": "New Hotspot",
+        "x": 800,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_19",
+        "name": "New Hotspot",
+        "x": 800,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_20",
+        "name": "New Hotspot",
+        "x": 850,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_21",
+        "name": "New Hotspot",
+        "x": 850,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_22",
+        "name": "New Hotspot",
+        "x": 950,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_23",
+        "name": "New Hotspot",
+        "x": 900,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_24",
+        "name": "New Hotspot",
+        "x": 1000,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_25",
+        "name": "New Hotspot",
+        "x": 1100,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_26",
+        "name": "New Hotspot",
+        "x": 1050,
+        "y": 1250,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_27",
+        "name": "New Hotspot",
+        "x": 1050,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_28",
+        "name": "New Hotspot",
+        "x": 1000,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_29",
+        "name": "New Hotspot",
+        "x": 1100,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_30",
+        "name": "New Hotspot",
+        "x": 1150,
+        "y": 1200,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_31",
+        "name": "New Hotspot",
+        "x": 1150,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_32",
+        "name": "New Hotspot",
+        "x": 1100,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_33",
+        "name": "New Hotspot",
+        "x": 1000,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_34",
+        "name": "New Hotspot",
+        "x": 1050,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_35",
+        "name": "New Hotspot",
+        "x": 850,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_36",
+        "name": "New Hotspot",
+        "x": 900,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_37",
+        "name": "New Hotspot",
+        "x": 950,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_38",
+        "name": "New Hotspot",
+        "x": 1050,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_39",
+        "name": "New Hotspot",
+        "x": 1000,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_40",
+        "name": "New Hotspot",
+        "x": 1100,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_41",
+        "name": "New Hotspot",
+        "x": 1150,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_42",
+        "name": "New Hotspot",
+        "x": 1200,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_43",
+        "name": "New Hotspot",
+        "x": 1200,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_44",
+        "name": "New Hotspot",
+        "x": 1250,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_45",
+        "name": "New Hotspot",
+        "x": 1250,
+        "y": 1150,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_46",
+        "name": "New Hotspot",
+        "x": 1300,
+        "y": 1100,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_47",
+        "name": "New Hotspot",
+        "x": 1350,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_48",
+        "name": "New Hotspot",
+        "x": 1300,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_49",
+        "name": "New Hotspot",
+        "x": 1250,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_50",
+        "name": "New Hotspot",
+        "x": 1200,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_51",
+        "name": "New Hotspot",
+        "x": 1150,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_52",
+        "name": "New Hotspot",
+        "x": 1050,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_53",
+        "name": "New Hotspot",
+        "x": 1100,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_54",
+        "name": "New Hotspot",
+        "x": 1000,
+        "y": 1050,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_55",
+        "name": "New Hotspot",
+        "x": 1450,
+        "y": 750,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_56",
+        "name": "New Hotspot",
+        "x": 1500,
+        "y": 750,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_57",
+        "name": "New Hotspot",
+        "x": 1550,
+        "y": 750,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_58",
+        "name": "New Hotspot",
+        "x": 1600,
+        "y": 750,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_59",
+        "name": "New Hotspot",
+        "x": 1650,
+        "y": 750,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_60",
+        "name": "New Hotspot",
+        "x": 1700,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_61",
+        "name": "New Hotspot",
+        "x": 1700,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_62",
+        "name": "New Hotspot",
+        "x": 1650,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_63",
+        "name": "New Hotspot",
+        "x": 1550,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_64",
+        "name": "New Hotspot",
+        "x": 1450,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_65",
+        "name": "New Hotspot",
+        "x": 1450,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_66",
+        "name": "New Hotspot",
+        "x": 1500,
+        "y": 800,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_67",
+        "name": "New Hotspot",
+        "x": 1500,
+        "y": 850,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_68",
+        "name": "New Hotspot",
+        "x": 1450,
+        "y": 850,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_69",
+        "name": "New Hotspot",
+        "x": 1650,
+        "y": 850,
+        "width": 50,
+        "height": 50
+      },
+      {
+        "id": "hs_70",
+        "name": "New Hotspot",
+        "x": 1550,
+        "y": 850,
+        "width": 50,
+        "height": 50
+      }
+    ]
+  },
+  {
+    "id": "scene_2",
+    "name": "dasdsa",
+    "background_image": "../../../../../../.local/share/hypr/themes/vancouver/backgrounds/5-vancouver.jpg",
+    "hotspots": []
+  }
+]

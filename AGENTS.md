@@ -6,10 +6,9 @@
 
 *   Project Name (Tool): **AdvEngine**
 *   Purpose: A modern adventure game editor focused on **rapid creation and
-    iteration** of atmospheric 2.5D cyberpunk detective/noir adventure games
-    by a one-man team.
+    iteration** of atmospheric 2D Point and Click Sierra styled adventure games.
 *   Function: AdvEngine is a **Data and Configuration Manager**. It provides a
-    superior, cross-platform UI/UX for design and exports structured data files
+    cross-platform UI/UX for design and exports structured data files
     for the target game engine to consume at runtime.
 *   Target Game Engine: **Unreal Engine 5.6**
 *   Core Principle: Abstraction—hide all UE complexity behind a clean,

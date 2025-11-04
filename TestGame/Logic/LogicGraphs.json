@@ -1,0 +1,59 @@
+[
+  {
+    "id": "default_graph",
+    "name": "Default",
+    "nodes": [
+      {
+        "id": "node_0",
+        "node_type": "Dialogue",
+        "x": 51.94532012939453,
+        "y": 32.992191314697266,
+        "width": 256.01959228515625,
+        "height": 131.01954650878906,
+        "inputs": [],
+        "outputs": [
+          "node_1"
+        ],
+        "character_id": "Player",
+        "dialogue_text": "Holy crap, here we go argain!"
+      },
+      {
+        "id": "node_1",
+        "node_type": "Condition",
+        "x": 364.99607849121094,
+        "y": 276.03126335144043,
+        "width": 312.02734375,
+        "height": 123.01950073242188,
+        "inputs": [
+          "node_0"
+        ],
+        "outputs": [
+          "node_2"
+        ],
+        "condition_type": "VARIABLE_EQUALS",
+        "parameters": {
+          "VarName": "Player",
+          "Value": "Awake"
+        }
+      },
+      {
+        "id": "node_2",
+        "node_type": "Action",
+        "x": 719.0391540527344,
+        "y": 30.992189407348633,
+        "width": 338.0078125,
+        "height": 134.99610900878906,
+        "inputs": [
+          "node_1"
+        ],
+        "outputs": [],
+        "action_command": "SHOW_ENTITY",
+        "parameters": {
+          "EntityID": "11",
+          "X": "45",
+          "Y": "800"
+        }
+      }
+    ]
+  }
+]
