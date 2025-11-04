@@ -1,200 +1,164 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GObject
+
 from ..core.data_schemas import Verb, VerbGObject
-
-import gi
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, Adw, Gdk
-from ..core.data_schemas import Verb, VerbGObject
-
-class VerbEditorDialog(Adw.MessageDialog):
-    def __init__(self, parent, project_manager, verb=None):
-        super().__init__(transient_for=parent, modal=True)
-        self.set_heading("Add New Verb" if verb is None else "Edit Verb")
-        self.project_manager = project_manager
-        self.verb = verb
-
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
-        .error {
-            border: 1px solid red;
-            border-radius: 6px;
-        }
-        """)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        content.set_margin_top(10)
-        content.set_margin_bottom(10)
-        content.set_margin_start(10)
-        content.set_margin_end(10)
-        self.set_extra_child(content)
-
-        group = Adw.PreferencesGroup()
-        content.append(group)
-
-        self.id_entry = Gtk.Entry(text=verb.id if verb else "")
-        self.id_entry.set_tooltip_text("A unique string identifier for the verb (e.g., 'use').")
-        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
-
-        self.name_entry = Gtk.Entry(text=verb.name if verb else "")
-        self.name_entry.set_tooltip_text("The in-game name of the verb.")
-        group.add(self._create_action_row("Name", "In-game display name", self.name_entry))
-
-        self.add_response("cancel", "_Cancel")
-        self.add_response("ok", "_OK")
-        self.set_default_response("ok")
-        self.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
-
-        self.id_entry.connect("changed", self._validate)
-        self.name_entry.connect("changed", self._validate)
-        self._validate(None)
-
-    def _validate(self, entry):
-        is_valid = True
-        id_text = self.id_entry.get_text()
-        is_new_verb = self.verb is None
-        id_is_duplicate = any(v.id == id_text for v in self.project_manager.data.verbs if (is_new_verb or v.id != self.verb.id))
-
-        if not id_text or id_is_duplicate:
-            self.id_entry.add_css_class("error")
-            if not id_text:
-                self.id_entry.set_tooltip_text("ID cannot be empty.")
-            else:
-                self.id_entry.set_tooltip_text("This ID is already in use.")
-            is_valid = False
-        else:
-            self.id_entry.remove_css_class("error")
-            self.id_entry.set_tooltip_text("")
-
-        if not self.name_entry.get_text():
-            self.name_entry.add_css_class("error")
-            self.name_entry.set_tooltip_text("Name cannot be empty.")
-            is_valid = False
-        else:
-            self.name_entry.remove_css_class("error")
-            self.name_entry.set_tooltip_text("")
-
-        self.set_response_enabled("ok", is_valid)
-
-    def _create_action_row(self, title, subtitle, widget):
-        row = Adw.ActionRow(title=title, subtitle=subtitle)
-        row.add_suffix(widget)
-        row.set_activatable_widget(widget)
-        return row
+from ..core.project_manager import ProjectManager
 
 class VerbEditor(Gtk.Box):
-    def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+    """A widget for editing verbs in a project, following HIG."""
+
+    def __init__(self, project_manager: ProjectManager):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.project_manager = project_manager
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+        clamp = Adw.Clamp()
+        self.append(clamp)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, hexpand=True, vexpand=True)
-        self.append(self.main_box)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.main_box.set_margin_top(12)
+        self.main_box.set_margin_bottom(12)
+        clamp.set_child(self.main_box)
 
-        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        title = Gtk.Label(label="Verb Editor", halign=Gtk.Align.START, hexpand=True, css_classes=["title-2"])
-        header_box.append(title)
+        header = Adw.HeaderBar()
+        self.main_box.append(header)
 
-        toolbar = Gtk.Box(spacing=5)
-        self.add_button = Gtk.Button(label="Add")
+        self.add_button = Gtk.Button(icon_name="list-add-symbolic")
+        self.add_button.set_tooltip_text("Add New Verb")
         self.add_button.connect("clicked", self._on_add_clicked)
-        self.edit_button = Gtk.Button(label="Edit")
-        self.edit_button.connect("clicked", self._on_edit_clicked)
-        self.delete_button = Gtk.Button(label="Delete")
+        header.pack_start(self.add_button)
+
+        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
+        self.delete_button.set_tooltip_text("Delete Selected Verb")
         self.delete_button.connect("clicked", self._on_delete_clicked)
-
-        toolbar.append(self.add_button)
-        toolbar.append(self.edit_button)
-        toolbar.append(self.delete_button)
-        header_box.append(toolbar)
-        self.main_box.append(header_box)
-
-        self.column_view = Gtk.ColumnView()
-        self.column_view.set_vexpand(True)
+        self.delete_button.set_sensitive(False)
+        header.pack_end(self.delete_button)
 
         self.model = Gio.ListStore(item_type=VerbGObject)
         for verb in self.project_manager.data.verbs:
             self.model.append(VerbGObject(verb))
 
         self.selection = Gtk.SingleSelection(model=self.model)
-        self.column_view.set_model(self.selection)
+        self.selection.connect("selection-changed", self._on_selection_changed)
 
-        self._create_column("ID", Gtk.StringSorter(), lambda verb: verb.id)
-        self._create_column("Name", Gtk.StringSorter(), lambda verb: verb.name)
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self._setup_list_item)
+        factory.connect("bind", self._bind_list_item)
+        factory.connect("unbind", self._unbind_list_item)
 
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_child(self.column_view)
+        self.list_view = Gtk.ListView(model=self.selection, factory=factory)
+        self.list_view.set_vexpand(True)
+        self.list_view.set_css_classes(["boxed-list"])
+
+        scrolled_window = Gtk.ScrolledWindow(child=self.list_view)
+        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.main_box.append(scrolled_window)
 
-    def _create_column(self, title, sorter, expression_func):
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
-        factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
+        self.empty_state = Adw.StatusPage(
+            title="No Verbs",
+            description="Create a new verb to get started.",
+            icon_name="input-gaming-symbolic"
+        )
+        self.append(self.empty_state)
 
-        col = Gtk.ColumnViewColumn(title=title, factory=factory, sorter=sorter)
-        self.column_view.append_column(col)
+        self.model.connect("items-changed", self._update_visibility)
+        self._update_visibility()
+
+    def _update_visibility(self, *args):
+        has_items = self.model.get_n_items() > 0
+        self.main_box.set_visible(has_items)
+        self.empty_state.set_visible(not has_items)
+
+    def _setup_list_item(self, factory, list_item):
+        """Set up the structure of a list item and store widget references."""
+        group = Adw.PreferencesGroup()
+
+        id_entry = Adw.EntryRow(title="ID")
+        name_entry = Adw.EntryRow(title="Name")
+
+        group.add(id_entry)
+        group.add(name_entry)
+
+        list_item._id_entry = id_entry
+        list_item._name_entry = name_entry
+        list_item._handler_ids = []
+        list_item.set_child(group)
+
+    def _bind_list_item(self, factory, list_item):
+        """Bind a verb object to the stored widgets for inline editing."""
+        verb_gobject = list_item.get_item()
+
+        id_entry = list_item._id_entry
+        name_entry = list_item._name_entry
+
+        id_entry.bind_property("text", verb_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        name_entry.bind_property("text", verb_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+
+        def on_applied(*args):
+            if list_item.get_item():
+                self.project_manager.set_dirty(True)
+
+        list_item._handler_ids.extend([
+            id_entry.connect("apply", on_applied),
+            name_entry.connect("apply", on_applied)
+        ])
+
+    def _unbind_list_item(self, factory, list_item):
+        """Disconnect all handlers on unbind."""
+        id_entry = list_item._id_entry
+        name_entry = list_item._name_entry
+
+        for handler_id in list_item._handler_ids:
+            if id_entry.is_connected(handler_id): id_entry.disconnect(handler_id)
+            if name_entry.is_connected(handler_id): name_entry.disconnect(handler_id)
+        list_item._handler_ids = []
 
     def _on_add_clicked(self, button):
-        dialog = VerbEditorDialog(self.get_root(), self.project_manager)
-        dialog.connect("response", self._on_add_dialog_response)
-        dialog.present()
+        """Add a new, empty verb to the list."""
+        new_id_base = "new_verb"
+        new_id = new_id_base
+        count = 1
+        existing_ids = {v.id for v in self.project_manager.data.verbs}
+        while new_id in existing_ids:
+            new_id = f"{new_id_base}_{count}"
+            count += 1
 
-    def _on_add_dialog_response(self, dialog, response):
-        if response == "ok":
-            new_verb = self.project_manager.add_verb(
-                id=dialog.id_entry.get_text(),
-                name=dialog.name_entry.get_text()
-            )
-            self.model.append(VerbGObject(new_verb))
-        dialog.destroy()
+        new_verb = self.project_manager.add_verb(id=new_id, name="New Verb")
+        gobject = VerbGObject(new_verb)
+        self.model.append(gobject)
 
-    def _on_edit_clicked(self, button):
-        selected_verb_gobject = self.selection.get_selected_item()
-        if selected_verb_gobject:
-            dialog = VerbEditorDialog(self.get_root(), self.project_manager, verb=selected_verb_gobject.verb_data)
-            dialog.connect("response", self._on_edit_dialog_response, selected_verb_gobject)
-            dialog.present()
-
-    def _on_edit_dialog_response(self, dialog, response, verb_gobject):
-        if response == "ok":
-            verb_gobject.verb_data.id = dialog.id_entry.get_text()
-            verb_gobject.verb_data.name = dialog.name_entry.get_text()
-            self.project_manager.set_dirty(True)
-            pos = self.model.find(verb_gobject)[1]
-            if pos >= 0:
-                self.model.items_changed(pos, 1, 1)
-        dialog.destroy()
+        self.selection.set_selected(self.model.get_n_items() - 1)
 
     def _on_delete_clicked(self, button):
-        selected_verb_gobject = self.selection.get_selected_item()
-        if selected_verb_gobject:
-            dialog = Adw.MessageDialog(
-                transient_for=self.get_root(),
-                modal=True,
-                heading="Delete Verb?",
-                body=f"Are you sure you want to delete '{selected_verb_gobject.name}'?"
-            )
-            dialog.add_response("cancel", "_Cancel")
-            dialog.add_response("delete", "_Delete")
-            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-            dialog.connect("response", self._on_delete_dialog_response, selected_verb_gobject)
-            dialog.present()
+        """Delete the selected verb."""
+        selected_pos = self.selection.get_selected()
+        if selected_pos == Gtk.INVALID_LIST_POSITION:
+            return
+
+        verb_gobject = self.model.get_item(selected_pos)
+
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            modal=True,
+            heading="Delete Verb?",
+            body=f"Are you sure you want to delete '{verb_gobject.name}'?"
+        )
+        dialog.add_response("cancel", "_Cancel")
+        dialog.add_response("delete", "_Delete")
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_delete_dialog_response, verb_gobject)
+        dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, verb_gobject):
         if response == "delete":
-            self.project_manager.data.verbs.remove(verb_gobject.verb_data)
-            self.project_manager.set_dirty()
-            pos = self.model.find(verb_gobject)[1]
-            if pos >= 0:
-                self.model.remove(pos)
+            if self.project_manager.remove_verb(verb_gobject.verb_data):
+                is_found, pos = self.model.find(verb_gobject)
+                if is_found:
+                    self.model.remove(pos)
         dialog.destroy()
+
+    def _on_selection_changed(self, selection_model, position, n_items):
+        """Enable or disable the delete button based on selection."""
+        is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
+        self.delete_button.set_sensitive(is_selected)
