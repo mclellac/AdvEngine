@@ -3,10 +3,9 @@ import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Gdk, Adw, GdkPixbuf
-from ..core.data_schemas import SceneGObject, Hotspot
-from ..core.project_manager import ProjectManager
+from ..core.data_schemas import SceneGObject, Hotspot, HotspotGObject
 
-class SceneEditor(Adw.OverlaySplitView):
+class SceneEditor(Gtk.Box):
     """A comprehensive editor for creating and managing game scenes, hotspots,
     and layers, built with a modern Adwaita layout."""
 
@@ -24,12 +23,15 @@ class SceneEditor(Adw.OverlaySplitView):
         self.pan_y = 0
 
         # --- UI Structure ---
-        self.set_sidebar_position(Gtk.PackType.START)
-        self.set_content(self._create_canvas_area())
-        self.set_sidebar(self._create_scene_list_panel())
+        self.split_view = Adw.OverlaySplitView()
+        self.append(self.split_view)
+
+        self.split_view.set_sidebar_position(Gtk.PackType.START)
+        self.split_view.set_content(self._create_canvas_area())
+        self.split_view.set_sidebar(self._create_scene_list_panel())
         self.props_panel = self._create_properties_panel()
 
-        self.connect("notify::show-sidebar", self._on_view_changed)
+        self.split_view.connect("notify::show-sidebar", self._on_view_changed)
 
         self._update_visibility()
         self.project_manager.connect("project-loaded", self._on_project_loaded)
@@ -38,7 +40,7 @@ class SceneEditor(Adw.OverlaySplitView):
     def _on_project_loaded(self, *args):
         self._update_scene_list()
         self._update_visibility()
-        self.set_sidebar_visible(True)
+        self.split_view.set_sidebar_visible(True)
 
 
     def _create_scene_list_panel(self):
@@ -208,12 +210,12 @@ class SceneEditor(Adw.OverlaySplitView):
     # --- UI Updates ---
     def _update_visibility(self):
         has_scenes = self.scene_model.get_n_items() > 0
-        self.set_show_sidebar(has_scenes)
+        self.split_view.set_show_sidebar(has_scenes)
         if not has_scenes:
             # A proper empty state would be better, but this works for now
-            self.set_sidebar(Adw.StatusPage(title="No Scenes", icon_name="video-display-symbolic"))
+            self.split_view.set_sidebar(Adw.StatusPage(title="No Scenes", icon_name="video-display-symbolic"))
         else:
-            self.set_sidebar(self._create_scene_list_panel())
+            self.split_view.set_sidebar(self._create_scene_list_panel())
 
     def _update_scene_list(self):
         self.scene_model.remove_all()
@@ -242,8 +244,8 @@ class SceneEditor(Adw.OverlaySplitView):
 
     # --- Event Handlers ---
     def _on_view_changed(self, *args):
-        if self.get_show_sidebar():
-            self.set_sidebar_visible(True)
+        if self.split_view.get_show_sidebar():
+            self.split_view.set_sidebar_visible(True)
 
     def _on_scene_selected(self, selection, position, n_items):
         self.selected_scene_gobject = selection.get_selected_item()
@@ -251,14 +253,14 @@ class SceneEditor(Adw.OverlaySplitView):
         self.selected_hotspot = None
 
         if self.selected_scene_gobject:
-            self.set_show_content(True)
-            self.set_content(self._create_canvas_area()) # Recreate to clear state, could be optimized
-            self.set_sidebar_visible(False)
-            self.set_show_sidebar(True)
-            self.set_sidebar(self.props_panel)
+            self.split_view.set_show_content(True)
+            self.split_view.set_content(self._create_canvas_area()) # Recreate to clear state, could be optimized
+            self.split_view.set_sidebar_visible(False)
+            self.split_view.set_show_sidebar(True)
+            self.split_view.set_sidebar(self.props_panel)
             self._update_background_preview()
         else:
-            self.set_content(Adw.StatusPage(title="Select a Scene", icon_name="media-optical-dvd-symbolic"))
+            self.split_view.set_content(Adw.StatusPage(title="Select a Scene", icon_name="media-optical-dvd-symbolic"))
 
         self._update_props_panel()
         self._update_layer_list()
@@ -457,4 +459,3 @@ class SceneEditor(Adw.OverlaySplitView):
         if scene:
             for hotspot in scene.hotspots:
                 self.hotspot_model.append(HotspotGObject(hotspot))
-
