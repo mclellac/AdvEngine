@@ -69,89 +69,12 @@ The project has a split source structure. Python modules are in `adv_engine/src/
 
 ---
 
-## 4. AdvEngine Feature Specification
+## 4. Feature and Data Model Documentation
 
-### A. Core Editor Modules
+For a complete and exhaustive understanding of the application's features, editor workflows, and data schemas, consult the comprehensive user documentation located in the `/docs` directory.
 
-| Module Name | Functionality Focus | Key Feature |
-| :--- | :--- | :--- |
-| **Scenes** | World Design | Canvas editor with hotspot creation, properties panel, and layer list. |
-| **Logic** | Puzzle & Narrative | General-purpose node-graph editor for `LogicGraph` data. |
-| **Interactions** | Gameplay Logic | Defines `Verb + Item` and `Item + Item` interactions, linking them to a `LogicGraph`. |
-| **Dialogue** | Narrative Design | A tree-based editor for creating branching conversations. |
-| **Cutscenes** | Cinematic Scripting| A simple, text-based editor for creating sequential `CutsceneAction` scripts. |
-| **Characters** | Character Creation | Spreadsheet-style editor for characters with a portrait preview. |
-| **Quests** | Objective Tracking | Editor for defining multi-step quests. |
-| **Assets** | Media Management | Manages sprites and animations with a preview panel. |
-| **Global State** | State Management | Spreadsheet-style editor for global variables. |
-| **Database** | Core Game Data | A combined view for Items, Attributes, and Verbs editors. |
-| **Audio** | Sound & Ambiance | Manages background music and sound effects, with an embedded player. |
-
----
-
-## 5. Data Persistence & File Formats
-
-Project data is saved into a series of JSON and CSV files within the project directory.
-
-### A. Project File Structure
-
-| Path | Purpose | Format |
-| :--- | :--- | :--- |
-| `[ProjectName]/Logic/Scenes.json` | All scene definitions and hotspot data. | JSON |
-| `[ProjectName]/Logic/LogicGraphs.json` | All generic logic graphs. | JSON |
-| `[ProjectName]/Logic/DialogueGraphs.json` | All dialogue trees. | JSON |
-| `[ProjectName]/Logic/Interactions.json` | All verb/item interaction rules. | JSON |
-| `[ProjectName]/Logic/Quests.json` | All quest and quest step definitions. | JSON |
-| `[ProjectName]/Logic/Cutscenes.json` | All cutscene scripts. | JSON |
-| `[ProjectName]/Data/ItemData.csv` | List of all game items. | CSV |
-| `[ProjectName]/Data/CharacterData.csv` | List of all characters. | CSV |
-| `[ProjectName]/Data/GlobalState.json` | Global variable definitions. | JSON |
-| `[ProjectName]/Data/Verbs.json` | All defined verbs. | JSON |
-| `[ProjectName]/Assets.json` | Asset library metadata. | JSON |
-| `[ProjectName]/Audio.json` | Audio library metadata. | JSON |
-| `[ProjectName]/settings.json` | Project-specific settings. | JSON |
-
-
-### B. Core `LogicGraph` Structure (JSON)
-
-The `LogicGraph` is the central data structure for all node-based logic. It consists of a list of nodes and connections.
-
-```json
-{
-  "id": "String",
-  "nodes": [
-    {
-      "id": "String",
-      "type": "NodeType", // e.g., DialogueNode, ConditionNode, ActionNode
-      "x": "float",
-      "y": "float",
-      "width": "float",
-      "height": "float",
-      "inputs": ["String"], // List of connected node IDs
-      "outputs": ["String"], // List of connected node IDs
-      // ... other node-specific properties
-    }
-  ]
-}
-```
-
----
-
-## 6. Database Schema Documentation
-
-#### A. Character Schema (`CharacterData.csv`)
-
-| Field Name | Data Type | Description |
-| :--- | :--- | :--- |
-| id | String | Unique character identifier. |
-| display_name | String | Name shown in dialogue. |
-| portrait_asset_id | String | ID of the asset for the character's portrait. |
-| sprite_sheet_asset_id| String | ID of the asset for the character's sprite sheet. |
-| animations | String (JSON) | A JSON string defining character animations. |
-
-#### B. Other Schemas
-
-Refer to `src/core/data_schemas.py` for the definitive structure of all other data types, including `Item`, `Attribute`, `Verb`, `Quest`, `Interaction`, etc. The dataclasses in this file are the source of truth for all data models.
+-   The **`/docs/reference/`** directory contains detailed, up-to-date guides for every editor and data model. This should be considered the primary source of truth.
+-   The Python dataclasses in **`src/core/data_schemas.py`** are the definitive source for the structure of all data models.
 
 ---
 
