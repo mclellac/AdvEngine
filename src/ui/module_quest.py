@@ -411,5 +411,5 @@ class QuestEditor(Gtk.Box):
         dialog.destroy()
 
     def _clear_quest_details(self):
-        for child in self.quest_details.observe_children():
+        while child := self.quest_details.get_first_child():
             self.quest_details.remove(child)
