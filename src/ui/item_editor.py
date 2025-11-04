@@ -107,41 +107,12 @@ class ItemEditor(Gtk.Box):
         widget = list_item.get_child()
 
         prop_name = "value" if cell_type == "numeric" else "text"
-        binding = widget.bind_property(prop_name, item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        widget.bind_property(prop_name, item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
 
-        handler_id = None
-        if isinstance(widget, Adw.EntryRow):
-            validation_handler = lambda w, _: self._validate_entry(w, item_gobject, column_id)
-            handler_id = widget.connect("notify::text", validation_handler)
-            widget.connect("apply", lambda w: self.project_manager.set_dirty(True))
-            self._validate_entry(widget, item_gobject, column_id) # Initial validation
-        elif isinstance(widget, Adw.SpinRow):
-            handler_id = widget.connect("notify::value", lambda w, _: self.project_manager.set_dirty(True))
+        event_name = "notify::value" if cell_type == "numeric" else "apply"
+        handler_id = widget.connect(event_name, lambda w: self.project_manager.set_dirty(True))
 
-        # Store bindings and handlers to manage their lifecycle
-        if not hasattr(list_item, 'bindings'):
-            list_item.bindings = []
-            list_item.handler_ids = []
-        list_item.bindings.append(binding)
-        list_item.handler_ids.append(handler_id)
-
-    def _validate_entry(self, entry_row, item_gobject, column_id):
-        is_valid = True
-        text = entry_row.get_text()
-
-        if not text.strip():
-            is_valid = False
-        elif column_id == "id":
-             # Check for duplicates, ignoring the current item
-             is_duplicate = any(item.id == text for item in self.project_manager.data.items if item != item_gobject.item)
-             if is_duplicate:
-                 is_valid = False
-
-        if is_valid:
-            entry_row.remove_css_class("error")
-        else:
-            entry_row.add_css_class("error")
-        entry_row.set_property("show_apply_button", is_valid)
+        list_item.disconnect_handler = handler_id
 
     def _on_search_changed(self, search_entry):
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
