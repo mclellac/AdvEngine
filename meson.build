@@ -14,12 +14,6 @@ subdir('data')
 subdir('src')
 subdir('po')
 
-install_subdir(
-  'TestGame',
-  install_dir: get_option('datadir') / 'advengine',
-  strip_directory: true
-)
-
 gnome.post_install(
      glib_compile_schemas: true,
     gtk_update_icon_cache: true,
