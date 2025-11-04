@@ -112,6 +112,7 @@ class ItemEditor(Gtk.Box):
         list_item._buy_row = buy_price_entry
         list_item._sell_row = sell_price_entry
         list_item._desc_view = desc_view
+        list_item._bindings = []
         list_item._handler_ids = []
 
         list_item.set_child(group)
@@ -127,28 +128,36 @@ class ItemEditor(Gtk.Box):
         sell_row = list_item._sell_row
         desc_view = list_item._desc_view
 
-        id_entry.bind_property("text", item_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        name_entry.bind_property("text", item_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        type_entry.bind_property("text", item_gobject, "type", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        buy_row.bind_property("value", item_gobject, "buy_price", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        sell_row.bind_property("value", item_gobject, "sell_price", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        desc_view.get_buffer().bind_property("text", item_gobject, "description", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        bindings = [
+            id_entry.bind_property("text", item_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            name_entry.bind_property("text", item_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            type_entry.bind_property("text", item_gobject, "type", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            buy_row.bind_property("value", item_gobject, "buy_price", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            sell_row.bind_property("value", item_gobject, "sell_price", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            desc_view.get_buffer().bind_property("text", item_gobject, "description", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        ]
+        list_item._bindings.extend(bindings)
 
         def on_applied(*args):
             if list_item.get_item():
                 self.project_manager.set_dirty(True)
 
-        list_item._handler_ids.extend([
+        handlers = [
             id_entry.connect("apply", on_applied),
             name_entry.connect("apply", on_applied),
             type_entry.connect("apply", on_applied),
             buy_row.connect("notify::value", on_applied),
             sell_row.connect("notify::value", on_applied),
             desc_view.get_buffer().connect("changed", on_applied)
-        ])
+        ]
+        list_item._handler_ids.extend(handlers)
 
     def _unbind_list_item(self, factory, list_item):
-        """Disconnect all handlers on unbind."""
+        """Disconnect all handlers and unbind all properties on unbind."""
+        for binding in list_item._bindings:
+            binding.unbind()
+        list_item._bindings = []
+
         widgets = [
             list_item._id_entry,
             list_item._name_entry,

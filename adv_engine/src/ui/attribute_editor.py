@@ -102,6 +102,7 @@ class AttributeEditor(Gtk.Box):
         list_item._name_entry = name_entry
         list_item._initial_value_row = initial_value_entry
         list_item._max_value_row = max_value_entry
+        list_item._bindings = []
         list_item._handler_ids = []
 
         list_item.set_child(group)
@@ -115,10 +116,13 @@ class AttributeEditor(Gtk.Box):
         initial_value_row = list_item._initial_value_row
         max_value_row = list_item._max_value_row
 
-        id_entry.bind_property("text", attr_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        name_entry.bind_property("text", attr_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        initial_value_row.bind_property("value", attr_gobject, "initial_value", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        max_value_row.bind_property("value", attr_gobject, "max_value", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        bindings = [
+            id_entry.bind_property("text", attr_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            name_entry.bind_property("text", attr_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            initial_value_row.bind_property("value", attr_gobject, "initial_value", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
+            max_value_row.bind_property("value", attr_gobject, "max_value", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        ]
+        list_item._bindings.extend(bindings)
 
         def on_applied(*args):
             if list_item.get_item():
@@ -132,7 +136,11 @@ class AttributeEditor(Gtk.Box):
         ])
 
     def _unbind_list_item(self, factory, list_item):
-        """Disconnect all handlers on unbind."""
+        """Disconnect all handlers and unbind all properties on unbind."""
+        for binding in list_item._bindings:
+            binding.unbind()
+        list_item._bindings = []
+
         id_entry = list_item._id_entry
         name_entry = list_item._name_entry
         initial_value_row = list_item._initial_value_row
