@@ -132,10 +132,25 @@ class DynamicNodeEditor(Gtk.Box):
 
     def get_values(self):
         values = {}
-        # ... implementation to get values from widgets
+        if isinstance(self.node, (ConditionNode, ActionNode)):
+            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
+            values[command_type_key] = self.widgets[command_type_key].get_selected_item().get_string()
+            values['parameters'] = {}
+            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
+            selected_command = self.widgets[command_type_key].get_selected_item().get_string()
+            if selected_command:
+                defs = get_command_definitions()[command_key][selected_command]["params"]
+                for param, p_type in defs.items():
+                    if isinstance(p_type, list):
+                        values['parameters'][param] = self.widgets[param].get_selected_item().get_string()
+                    else:
+                         values['parameters'][param] = self.widgets[param].get_text()
+        else:
+            for key, widget in self.widgets.items():
+                values[key] = widget.get_text()
         return values
 
-class LogicEditor(Adw.OverlaySplitView):
+class LogicEditor(Gtk.Box):
     def __init__(self, project_manager):
         super().__init__()
         self.project_manager = project_manager
@@ -149,9 +164,12 @@ class LogicEditor(Adw.OverlaySplitView):
         self.initial_node_width = 0
         self.initial_node_height = 0
 
-        self.set_sidebar_position(Gtk.PackType.START)
-        self.set_content(self._create_canvas_area())
-        self.set_sidebar(self._create_sidebar())
+        self.split_view = Adw.OverlaySplitView()
+        self.append(self.split_view)
+
+        self.split_view.set_sidebar_position(Gtk.PackType.START)
+        self.split_view.set_content(self._create_canvas_area())
+        self.split_view.set_sidebar(self._create_sidebar())
 
         if self.project_manager.data.logic_graphs:
             self.active_graph = self.project_manager.data.logic_graphs[0]
@@ -200,7 +218,6 @@ class LogicEditor(Adw.OverlaySplitView):
         canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.canvas.set_draw_func(self.on_canvas_draw, None)
-        # ... add controllers to canvas
         canvas_container.append(self.canvas)
         self.minimap = MiniMap(self)
         canvas_container.append(self.minimap)
@@ -216,18 +233,24 @@ class LogicEditor(Adw.OverlaySplitView):
         # --- Tool Palette ---
         palette = Adw.PreferencesGroup(title="Tool Palette")
         sidebar.append(palette)
-        # ... add tool buttons to palette
 
-        # --- Properties Panel ---
-        self.props_panel = DynamicNodeEditor()
-        sidebar.append(self.props_panel)
-        action_button = Gtk.Button(label="Add")
+        dialogue_button = Gtk.Button(label="Add Dialogue")
+        dialogue_button.connect("clicked", self.on_add_dialogue_node)
+        dialogue_row = Adw.ActionRow(title="Add Dialogue Node", activatable_widget=dialogue_button)
+        dialogue_row.add_suffix(dialogue_button)
+        palette.add(dialogue_row)
+
+        condition_button = Gtk.Button(label="Add Condition")
+        condition_button.connect("clicked", self.on_add_condition_node)
+        condition_row = Adw.ActionRow(title="Add Condition Node", activatable_widget=condition_button)
+        condition_row.add_suffix(condition_button)
+        palette.add(condition_row)
+
+        action_button = Gtk.Button(label="Add Action")
         action_button.connect("clicked", self.on_add_action_node)
         action_row = Adw.ActionRow(title="Add Action Node", activatable_widget=action_button)
         action_row.add_suffix(action_button)
         palette.add(action_row)
-
-        sidebar.append(palette)
 
         # --- Properties Panel ---
         self.props_panel = DynamicNodeEditor()
@@ -253,7 +276,8 @@ class LogicEditor(Adw.OverlaySplitView):
                 cr.stroke()
             if self.drag_selection_rect:
                 cr.set_source_rgba(0.2, 0.5, 1.0, 0.3)
-                cr.rectangle(*self.drag_selection_rect)
+                x1, y1, x2, y2 = self.drag_selection_rect
+                cr.rectangle(min(x1,x2), min(y1,y2), abs(x1-x2), abs(y1-y2))
                 cr.fill()
 
     def draw_node(self, cr, node):
@@ -323,6 +347,22 @@ class LogicEditor(Adw.OverlaySplitView):
             self.minimap.queue_draw()
             self.project_manager.set_dirty(True)
 
+    def on_add_condition_node(self, button):
+        if self.active_graph:
+            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50, parent_editor=self)
+            self.active_graph.nodes.append(new_node)
+            self.canvas.queue_draw()
+            self.minimap.queue_draw()
+            self.project_manager.set_dirty(True)
+
+    def on_add_action_node(self, button):
+        if self.active_graph:
+            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50, parent_editor=self)
+            self.active_graph.nodes.append(new_node)
+            self.canvas.queue_draw()
+            self.minimap.queue_draw()
+            self.project_manager.set_dirty(True)
+
     def get_connector_pos(self, node, connector_type):
         if connector_type == "in":
             return node.x, node.y + node.height / 2
@@ -339,7 +379,7 @@ class LogicEditor(Adw.OverlaySplitView):
             self.drag_offsets = {n.id: (x - n.x, y - n.y) for n in self.selected_nodes}
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
-            self.drag_selection_rect = [x, y, 0, 0]
+            self.drag_selection_rect = [x, y, x, y]
 
     def on_drag_update(self, gesture, x, y):
         if self.drag_offsets:
