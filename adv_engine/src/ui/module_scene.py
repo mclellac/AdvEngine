@@ -3,291 +3,346 @@ import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Gdk, Adw, GdkPixbuf
-from ..core.data_schemas import SceneGObject, Scene, Hotspot, HotspotGObject
+from ..core.data_schemas import SceneGObject, Hotspot
+from ..core.project_manager import ProjectManager
 
-class SceneEditor(Gtk.Box):
-    def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+class SceneEditor(Adw.OverlaySplitView):
+    """A comprehensive editor for creating and managing game scenes, hotspots,
+    and layers, built with a modern Adwaita layout."""
+
+    def __init__(self, project_manager: ProjectManager):
+        super().__init__()
         self.project_manager = project_manager
-        self.selected_scene = None
+        self.selected_scene_gobject = None
         self.selected_hotspot = None
+
+        # --- Canvas State ---
         self.hotspot_mode = False
         self.show_grid = True
         self.zoom_level = 1.0
         self.pan_x = 0
         self.pan_y = 0
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+        # --- UI Structure ---
+        self.set_sidebar_position(Gtk.PackType.START)
+        self.set_content(self._create_canvas_area())
+        self.set_sidebar(self._create_scene_list_panel())
+        self.props_panel = self._create_properties_panel()
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10, hexpand=True, vexpand=True)
-        self.append(self.main_box)
+        self.connect("notify::show-sidebar", self._on_view_changed)
 
-        # --- Left Panel ---
-        left_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        left_panel.set_size_request(200, -1)
-        self.main_box.append(left_panel)
+        self._update_visibility()
+        self.project_manager.connect("project-loaded", self._on_project_loaded)
+
+
+    def _on_project_loaded(self, *args):
+        self._update_scene_list()
+        self._update_visibility()
+        self.set_sidebar_visible(True)
+
+
+    def _create_scene_list_panel(self):
+        """Creates the left panel with the list of scenes and tools."""
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        panel.set_margin_top(12)
+        panel.set_margin_bottom(12)
+        panel.set_margin_start(12)
+        panel.set_margin_end(12)
+
+        header = Adw.HeaderBar()
+        panel.append(header)
+
+        add_button = Gtk.Button(icon_name="list-add-symbolic")
+        add_button.set_tooltip_text("Create New Scene")
+        add_button.connect("clicked", self._on_add_scene)
+        header.pack_start(add_button)
+
+        self.delete_scene_button = Gtk.Button(icon_name="edit-delete-symbolic")
+        self.delete_scene_button.set_tooltip_text("Delete Selected Scene")
+        self.delete_scene_button.connect("clicked", self._on_remove_scene)
+        self.delete_scene_button.set_sensitive(False)
+        header.pack_end(self.delete_scene_button)
 
         # Scene List
-        left_panel.append(Gtk.Label(label="Scenes", css_classes=["title-3"]))
-        self.scene_list_box = Gtk.ListBox()
-        self.scene_list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.scene_list_box.connect("row-activated", self.on_scene_selected)
+        self.scene_model = Gio.ListStore(item_type=SceneGObject)
+        self.scene_selection = Gtk.SingleSelection(model=self.scene_model)
+        self.scene_selection.connect("selection-changed", self._on_scene_selected)
 
-        scrolled_scenes = Gtk.ScrolledWindow()
-        scrolled_scenes.set_child(self.scene_list_box)
-        scrolled_scenes.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_scenes.set_vexpand(True)
-        left_panel.append(scrolled_scenes)
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self._setup_scene_list_item)
+        factory.connect("bind", self._bind_scene_list_item)
 
-        self.model = Gio.ListStore(item_type=SceneGObject)
+        list_view = Gtk.ListView(model=self.scene_selection, factory=factory)
+        list_view.set_css_classes(["boxed-list"])
 
-        self.scene_list_box.bind_model(self.model, self.create_scene_row)
+        scrolled = Gtk.ScrolledWindow(child=list_view)
+        scrolled.set_vexpand(True)
+        panel.append(scrolled)
 
-        scene_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        self.add_scene_button = Gtk.Button(label="Add")
-        self.add_scene_button.set_tooltip_text("Create a new scene")
-        self.add_scene_button.connect("clicked", self.on_add_scene)
-        remove_scene_button = Gtk.Button(label="Remove")
-        remove_scene_button.set_tooltip_text("Delete the selected scene")
-        remove_scene_button.connect("clicked", self.on_remove_scene)
-        scene_button_box.append(self.add_scene_button)
-        scene_button_box.append(remove_scene_button)
-        left_panel.append(scene_button_box)
+        return panel
 
-        left_panel.append(Gtk.Separator())
+    def _setup_scene_list_item(self, factory, list_item):
+        label = Gtk.Label(halign=Gtk.Align.START, margin_start=10, margin_top=10, margin_bottom=10)
+        list_item.set_child(label)
 
-        self.background_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, visible=False)
-        self.background_box.append(Gtk.Label(label="Background", css_classes=["title-4"]))
+    def _bind_scene_list_item(self, factory, list_item):
+        label = list_item.get_child()
+        scene_gobject = list_item.get_item()
+        label.set_text(scene_gobject.name)
 
-        self.background_preview = Gtk.Image(width_request=150, height_request=100, icon_name="image-missing-symbolic", css_classes=["card"])
-        self.background_box.append(self.background_preview)
+    def _create_canvas_area(self):
+        """Creates the central canvas and its toolbar."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-        set_background_button = Gtk.Button(label="Set Background...")
-        set_background_button.connect("clicked", self.on_set_background_clicked)
-        self.background_box.append(set_background_button)
-        left_panel.append(self.background_box)
+        header = Adw.HeaderBar()
+        box.append(header)
 
-        # Tools
-        left_panel.append(Gtk.Separator())
-        hotspot_toggle = Gtk.ToggleButton(label="Add Hotspot")
-        hotspot_toggle.set_tooltip_text("Enable/disable hotspot creation mode")
-        hotspot_toggle.connect("toggled", self.on_hotspot_toggled)
-        left_panel.append(hotspot_toggle)
+        # --- Toolbar ---
+        hotspot_toggle = Gtk.ToggleButton(icon_name="object-select-symbolic", tooltip_text="Add Hotspot")
+        hotspot_toggle.connect("toggled", lambda b: setattr(self, 'hotspot_mode', b.get_active()))
+        header.pack_start(hotspot_toggle)
 
-        grid_toggle = Gtk.CheckButton(label="Show Grid")
-        grid_toggle.set_active(self.show_grid)
-        grid_toggle.set_tooltip_text("Toggle grid visibility")
-        grid_toggle.connect("toggled", self.on_grid_toggled)
-        left_panel.append(grid_toggle)
+        grid_toggle = Gtk.ToggleButton(icon_name="view-grid-symbolic", tooltip_text="Show Grid")
+        grid_toggle.set_active(True)
+        grid_toggle.connect("toggled", lambda b: setattr(self, 'show_grid', b.get_active()) or self.canvas.queue_draw())
+        header.pack_start(grid_toggle)
 
         # --- Canvas ---
-        self.canvas = Gtk.DrawingArea()
-        self.canvas.set_hexpand(True)
-        self.canvas.set_vexpand(True)
-        self.canvas.set_draw_func(self.on_canvas_draw, None)
+        self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)
+        self.canvas.set_draw_func(self._on_canvas_draw, None)
 
-        click_gesture = Gtk.GestureClick.new()
-        click_gesture.connect("pressed", self.on_canvas_click)
-        self.canvas.add_controller(click_gesture)
+        click = Gtk.GestureClick.new()
+        click.connect("pressed", self._on_canvas_click)
+        self.canvas.add_controller(click)
 
-        scroll_controller = Gtk.EventControllerScroll.new(flags=Gtk.EventControllerScrollFlags.VERTICAL)
-        scroll_controller.connect("scroll", self.on_scroll)
-        self.canvas.add_controller(scroll_controller)
+        scroll = Gtk.EventControllerScroll.new(flags=Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll.connect("scroll", self._on_scroll)
+        self.canvas.add_controller(scroll)
 
-        pan_gesture = Gtk.GestureDrag.new()
-        pan_gesture.set_button(Gdk.BUTTON_MIDDLE)
-        pan_gesture.connect("drag-begin", self.on_pan_begin)
-        pan_gesture.connect("drag-update", self.on_pan_update)
-        self.canvas.add_controller(pan_gesture)
+        pan = Gtk.GestureDrag.new()
+        pan.set_button(Gdk.BUTTON_MIDDLE)
+        pan.connect("drag-begin", lambda g, x, y: (setattr(self, 'pan_start_x', self.pan_x), setattr(self, 'pan_start_y', self.pan_y)))
+        pan.connect("drag-update", self._on_pan_update)
+        self.canvas.add_controller(pan)
 
-        self.main_box.append(self.canvas)
+        box.append(self.canvas)
+        return box
 
-        # --- Right Panel ---
-        right_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        right_panel.set_size_request(200, -1)
-        self.main_box.append(right_panel)
-
-        # Properties Panel
-        self.props_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.props_panel.set_visible(False)
-        right_panel.append(self.props_panel)
+    def _create_properties_panel(self):
+        """Creates the right-side panel for editing hotspot properties."""
+        clamp = Adw.Clamp()
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        panel.set_margin_top(12)
+        panel.set_margin_bottom(12)
+        panel.set_margin_start(12)
+        panel.set_margin_end(12)
+        clamp.set_child(panel)
 
         group = Adw.PreferencesGroup()
-        self.props_panel.append(group)
+        panel.append(group)
 
-        self.prop_x = self._create_property_row("X", "X coordinate", 0, 8192)
-        self.prop_y = self._create_property_row("Y", "Y coordinate", 0, 8192)
-        self.prop_width = self._create_property_row("Width", "Width of the hotspot", 1, 8192)
-        self.prop_height = self._create_property_row("Height", "Height of the hotspot", 1, 8192)
+        # Background Image
+        self.background_preview = Gtk.Picture(content_fit=Gtk.ContentFit.CONTAIN, height_request=150)
+        self.background_preview.set_css_classes(["card"])
+        bg_row = Adw.ActionRow(title="Background Image")
+        bg_row.add_suffix(self.background_preview)
+        group.add(bg_row)
+
+        set_bg_button = Gtk.Button(label="Choose Image...")
+        set_bg_button.connect("clicked", self._on_set_background)
+        set_bg_row = Adw.ActionRow()
+        set_bg_row.set_center_widget(set_bg_button)
+        group.add(set_bg_row)
+
+        # Hotspot Properties
+        self.props_group = Adw.PreferencesGroup(title="Hotspot Properties")
+        self.props_group.set_visible(False)
+        panel.append(self.props_group)
+
+        self.prop_name = Adw.EntryRow(title="Name")
+        self.prop_name.connect("apply", self._on_prop_changed)
+        self.props_group.add(self.prop_name)
+
+        adj_x = Gtk.Adjustment(lower=0, upper=8192, step_increment=1)
+        self.prop_x = Adw.SpinRow(title="X", adjustment=adj_x)
+        self.prop_x.connect("notify::value", self._on_prop_changed)
+        self.props_group.add(self.prop_x)
+
+        # ... Add other properties (Y, Width, Height) similarly
+        adj_y = Gtk.Adjustment(lower=0, upper=8192, step_increment=1)
+        self.prop_y = Adw.SpinRow(title="Y", adjustment=adj_y)
+        self.prop_y.connect("notify::value", self._on_prop_changed)
+        self.props_group.add(self.prop_y)
+
+        adj_w = Gtk.Adjustment(lower=1, upper=8192, step_increment=1)
+        self.prop_w = Adw.SpinRow(title="Width", adjustment=adj_w)
+        self.prop_w.connect("notify::value", self._on_prop_changed)
+        self.props_group.add(self.prop_w)
+
+        adj_h = Gtk.Adjustment(lower=1, upper=8192, step_increment=1)
+        self.prop_h = Adw.SpinRow(title="Height", adjustment=adj_h)
+        self.prop_h.connect("notify::value", self._on_prop_changed)
+        self.props_group.add(self.prop_h)
 
         # Layer Management
-        right_panel.append(Gtk.Separator())
-        right_panel.append(Gtk.Label(label="Layers", css_classes=["title-3"]))
+        self.layer_group = Adw.PreferencesGroup(title="Layers")
+        panel.append(self.layer_group)
 
-        self.layer_list_box = Gtk.ListBox()
-        self.layer_list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.layer_list_box.connect("row-activated", self.on_layer_selected)
+        self.hotspot_model = Gio.ListStore(item_type=HotspotGObject)
+        self.hotspot_selection = Gtk.SingleSelection(model=self.hotspot_model)
+        self.hotspot_selection.connect("selection-changed", self._on_layer_selected)
 
-        scrolled_layers = Gtk.ScrolledWindow()
-        scrolled_layers.set_child(self.layer_list_box)
-        scrolled_layers.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_layers.set_vexpand(True)
-        right_panel.append(scrolled_layers)
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self._setup_layer_item)
+        factory.connect("bind", self._bind_layer_item)
 
-        # --- Empty State ---
-        self.empty_state = Adw.StatusPage(title="No Scenes",
-                                          description="Create a new scene to begin.",
-                                          icon_name="document-new-symbolic")
-        self.add_scene_button_empty = Gtk.Button(label="Create Scene")
-        self.add_scene_button_empty.connect("clicked", self.on_add_scene)
-        self.empty_state.set_child(self.add_scene_button_empty)
-        self.append(self.empty_state)
+        self.layer_list = Gtk.ListView(model=self.hotspot_selection, factory=factory)
+        self.layer_list.set_css_classes(["boxed-list"])
 
-        self.refresh_scene_list()
+        scrolled = Gtk.ScrolledWindow(child=self.layer_list)
+        scrolled.set_vexpand(True)
+        self.layer_group.add(scrolled)
 
+        return clamp
 
-    def _create_property_row(self, title, subtitle, lower, upper):
-        adj = Gtk.Adjustment(lower=lower, upper=upper, step_increment=1, page_increment=10)
-        spin_button = Gtk.SpinButton(adjustment=adj)
-        spin_button.connect("value-changed", self.on_prop_changed)
-        row = Adw.ActionRow(title=title, subtitle=subtitle)
-        row.add_suffix(spin_button)
-        row.set_activatable_widget(spin_button)
-        self.props_panel.append(row)
-        return spin_button
-
-    def refresh_scene_list(self):
-        self.model.remove_all()
-        for scene in self.project_manager.data.scenes:
-            self.model.append(SceneGObject(scene))
-        self.update_visibility()
-
-    def update_visibility(self):
-        has_scenes = self.model.get_n_items() > 0
-        self.main_box.set_visible(has_scenes)
-        self.empty_state.set_visible(not has_scenes)
-
-    def create_scene_row(self, scene_gobject):
-        row = Gtk.ListBoxRow()
-        label = Gtk.Label(label=scene_gobject.name, halign=Gtk.Align.START, margin_start=10)
-        row.set_child(label)
-        return row
-
-    def refresh_layer_list(self):
-        # Clear existing rows
-        while child := self.layer_list_box.get_first_child():
-            self.layer_list_box.remove(child)
-
-        if self.selected_scene:
-            for hotspot in self.selected_scene.hotspots:
-                row = self._create_layer_row(HotspotGObject(hotspot))
-                self.layer_list_box.append(row)
-
-    def _create_layer_row(self, hotspot_gobject):
-        row = Gtk.ListBoxRow()
-        label = Gtk.Label(label=hotspot_gobject.name, halign=Gtk.Align.START, margin_start=10)
-        row.set_child(label)
-
-        # Add Drag and Drop controllers to the ROW
-        drag_source = Gtk.DragSource.new()
-        drag_source.set_actions(Gdk.DragAction.MOVE)
-        drag_source.connect("prepare", self._on_layer_drag_prepare, hotspot_gobject)
-        drag_source.connect("drag-begin", self._on_layer_drag_begin)
-        row.add_controller(drag_source)
-
-        drop_target = Gtk.DropTarget.new(type=HotspotGObject, actions=Gdk.DragAction.MOVE)
-        drop_target.connect("drop", self._on_layer_drop, hotspot_gobject)
-        row.add_controller(drop_target)
-        return row
-
-
-    def on_scene_selected(self, listbox, row):
-        if row:
-            scene_gobject = self.model.get_item(row.get_index())
-            self.selected_scene = scene_gobject.scene_data
-            self.background_box.set_visible(True)
+    # --- UI Updates ---
+    def _update_visibility(self):
+        has_scenes = self.scene_model.get_n_items() > 0
+        self.set_show_sidebar(has_scenes)
+        if not has_scenes:
+            # A proper empty state would be better, but this works for now
+            self.set_sidebar(Adw.StatusPage(title="No Scenes", icon_name="video-display-symbolic"))
         else:
-            self.selected_scene = None
-            self.background_box.set_visible(False)
+            self.set_sidebar(self._create_scene_list_panel())
 
-        self.update_background_preview()
+    def _update_scene_list(self):
+        self.scene_model.remove_all()
+        for scene in self.project_manager.data.scenes:
+            self.scene_model.append(SceneGObject(scene))
+
+    def _update_background_preview(self):
+        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        if scene and scene.background_image and self.project_manager.project_path:
+            full_path = os.path.join(self.project_manager.project_path, scene.background_image)
+            if os.path.exists(full_path):
+                self.background_preview.set_filename(full_path)
+                return
+        self.background_preview.set_filename(None) # Clear if no image
+
+    def _update_props_panel(self):
+        if self.selected_hotspot:
+            self.prop_name.set_text(self.selected_hotspot.name)
+            self.prop_x.set_value(self.selected_hotspot.x)
+            self.prop_y.set_value(self.selected_hotspot.y)
+            self.prop_w.set_value(self.selected_hotspot.width)
+            self.prop_h.set_value(self.selected_hotspot.height)
+            self.props_group.set_visible(True)
+        else:
+            self.props_group.set_visible(False)
+
+    # --- Event Handlers ---
+    def _on_view_changed(self, *args):
+        if self.get_show_sidebar():
+            self.set_sidebar_visible(True)
+
+    def _on_scene_selected(self, selection, position, n_items):
+        self.selected_scene_gobject = selection.get_selected_item()
+        self.delete_scene_button.set_sensitive(self.selected_scene_gobject is not None)
         self.selected_hotspot = None
-        self.props_panel.set_visible(False)
-        self.refresh_layer_list()
+
+        if self.selected_scene_gobject:
+            self.set_show_content(True)
+            self.set_content(self._create_canvas_area()) # Recreate to clear state, could be optimized
+            self.set_sidebar_visible(False)
+            self.set_show_sidebar(True)
+            self.set_sidebar(self.props_panel)
+            self._update_background_preview()
+        else:
+            self.set_content(Adw.StatusPage(title="Select a Scene", icon_name="media-optical-dvd-symbolic"))
+
+        self._update_props_panel()
+        self._update_layer_list()
         self.canvas.queue_draw()
 
-    def on_set_background_clicked(self, button):
-        if not self.selected_scene:
-            return
-
-        dialog = Gtk.FileChooserDialog(
-            title="Please choose a file",
-            transient_for=self.get_native(),
-            action=Gtk.FileChooserAction.OPEN,
-        )
-        dialog.add_buttons(
-            "_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK
+    def _on_add_scene(self, button):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            modal=True,
+            heading="Create New Scene",
         )
 
-        file_filter = Gtk.FileFilter()
-        file_filter.set_name("Image files")
-        file_filter.add_pixbuf_formats()
-        dialog.add_filter(file_filter)
+        entry = Adw.EntryRow(title="Scene Name")
+        dialog.set_extra_child(entry)
 
-        def on_response(dialog, response_id):
-            if response_id == Gtk.ResponseType.OK:
-                file_path = dialog.get_file().get_path()
-                try:
-                    # Make path relative to the project directory
-                    relative_path = os.path.relpath(file_path, self.project_manager.project_path)
-                    self.selected_scene.background_image = relative_path
-                    self.project_manager.set_dirty()
-                    self.update_background_preview()
-                    self.canvas.queue_draw()
-                except ValueError:
-                    # This can happen if the file is on a different drive on Windows
-                    # In this case, we'll have to store the absolute path. A better solution
-                    # would be to copy the asset into the project folder. For now, we'll warn.
-                    error_dialog = Adw.MessageDialog(
-                        transient_for=self.get_native(),
-                        modal=True,
-                        heading="Cannot create relative path",
-                        body="The selected image is outside of the project directory. The absolute path will be stored, but this may cause issues with project portability."
-                    )
-                    error_dialog.add_response("ok", "_OK")
-                    error_dialog.connect("response", lambda d, r: d.destroy())
-                    error_dialog.present()
-                    self.selected_scene.background_image = file_path
-                    self.project_manager.set_dirty()
-                    self.update_background_preview()
-                    self.canvas.queue_draw()
+        dialog.add_response("cancel", "_Cancel")
+        dialog.add_response("create", "_Create")
+        dialog.set_default_response("create")
 
-
-            dialog.destroy()
+        def on_response(d, response_id):
+            if response_id == "create":
+                name = entry.get_text()
+                if name:
+                    self.project_manager.create_scene(name)
+                    self._update_scene_list()
+            d.destroy()
 
         dialog.connect("response", on_response)
         dialog.present()
 
-    def update_background_preview(self):
-        if self.selected_scene and self.selected_scene.background_image:
-            full_path = os.path.join(self.project_manager.project_path, self.selected_scene.background_image)
-            if os.path.exists(full_path):
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(full_path, 150, 100, True)
-                self.background_preview.set_from_pixbuf(pixbuf)
-            else:
-                self.background_preview.set_from_icon_name("image-missing-symbolic")
-        else:
-            self.background_preview.set_from_icon_name("image-missing-symbolic")
+    def _on_remove_scene(self, button):
+        if not self.selected_scene_gobject: return
 
-    def on_canvas_draw(self, drawing_area, cr, width, height, data):
-        cr.set_source_rgb(0.1, 0.1, 0.1)
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            modal=True,
+            heading="Delete Scene?",
+            body=f"Are you sure you want to delete '{self.selected_scene_gobject.name}'?"
+        )
+        dialog.add_response("cancel", "_Cancel")
+        dialog.add_response("delete", "_Delete")
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_delete_scene_response)
+        dialog.present()
+
+    def _on_delete_scene_response(self, dialog, response):
+        if response == "delete":
+            self.project_manager.delete_scene(self.selected_scene_gobject.scene_data.id)
+            self._update_scene_list()
+
+    def _on_set_background(self, button):
+        if not self.selected_scene_gobject: return
+        dialog = Gtk.FileChooserNative.new("Select a Background Image", self.get_root(), Gtk.FileChooserAction.OPEN)
+
+        file_filter = Gtk.FileFilter()
+        file_filter.add_pixbuf_formats()
+        dialog.add_filter(file_filter)
+
+        dialog.connect("response", self._on_file_chooser_response)
+        dialog.show()
+
+    def _on_file_chooser_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.ACCEPT:
+            file_path = dialog.get_file().get_path()
+            relative_path = os.path.relpath(file_path, self.project_manager.project_path)
+
+            scene = self.selected_scene_gobject.scene_data
+            scene.background_image = relative_path
+            self.project_manager.set_dirty(True)
+            self._update_background_preview()
+            self.canvas.queue_draw()
+
+    def _on_canvas_draw(self, area, cr, w, h, _):
+        # Fill background
+        cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
 
-        if self.selected_scene and self.selected_scene.background_image:
-            full_path = os.path.join(self.project_manager.project_path, self.selected_scene.background_image)
+        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        if not scene:
+            return
+
+        # Draw background image
+        if scene.background_image and self.project_manager.project_path:
+            full_path = os.path.join(self.project_manager.project_path, scene.background_image)
             if os.path.exists(full_path):
                 try:
                     pixbuf = GdkPixbuf.Pixbuf.new_from_file(full_path)
@@ -300,191 +355,106 @@ class SceneEditor(Gtk.Box):
         cr.translate(self.pan_x, self.pan_y)
         cr.scale(self.zoom_level, self.zoom_level)
 
+        # Draw grid
         if self.show_grid:
-            cr.set_source_rgb(0.3, 0.3, 0.3)
+            cr.set_source_rgba(0.8, 0.8, 0.8, 0.2)
             cr.set_line_width(1 / self.zoom_level)
             grid_size = 50
-            # TODO: Only draw grid for the visible area
-            for i in range(-10, 40):
-                cr.move_to(i * grid_size, -10 * grid_size)
-                cr.line_to(i * grid_size, 40 * grid_size)
+            for i in range(0, w, grid_size):
+                cr.move_to(i, 0)
+                cr.line_to(i, h)
                 cr.stroke()
-            for i in range(-10, 40):
-                cr.move_to(-10 * grid_size, i * grid_size)
-                cr.line_to(40 * grid_size, i * grid_size)
+            for i in range(0, h, grid_size):
+                cr.move_to(0, i)
+                cr.line_to(w, i)
                 cr.stroke()
 
-        if self.selected_scene:
-            # Draw all hotspots in order
-            for hotspot in self.selected_scene.hotspots:
-                if hotspot == self.selected_hotspot:
-                    cr.set_source_rgba(1.0, 1.0, 0.0, 0.6)  # Yellow for selected
-                else:
-                    cr.set_source_rgba(0.5, 0.5, 1.0, 0.5)  # Blue for others
-                cr.rectangle(hotspot.x, hotspot.y, hotspot.width, hotspot.height)
-                cr.fill()
+        # Draw hotspots
+        for hotspot in scene.hotspots:
+            if hotspot == self.selected_hotspot:
+                cr.set_source_rgba(1.0, 1.0, 0.0, 0.6)  # Yellow for selected
+            else:
+                cr.set_source_rgba(0.2, 0.5, 1.0, 0.5)  # Blue for others
+            cr.rectangle(hotspot.x, hotspot.y, hotspot.width, hotspot.height)
+            cr.fill()
 
         cr.restore()
 
-        cr.set_source_rgb(0.9, 0.9, 0.9)
-        cr.select_font_face("Sans", 0, 1)
-        cr.set_font_size(14)
-        text = f"Zoom: {self.zoom_level:.2f}"
-        cr.move_to(10, 20)
-        cr.show_text(text)
-
-    def on_grid_toggled(self, button):
-        self.show_grid = button.get_active()
-        self.canvas.queue_draw()
-
-    def on_hotspot_toggled(self, button):
-        self.hotspot_mode = button.get_active()
-
-    def on_canvas_click(self, gesture, n_press, x, y):
+    def _on_canvas_click(self, gesture, n_press, x, y):
         world_x = (x - self.pan_x) / self.zoom_level
         world_y = (y - self.pan_y) / self.zoom_level
+        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
 
-        if self.hotspot_mode and self.selected_scene:
+        if self.hotspot_mode and scene:
             grid_size = 50
-            hotspot_width = 50
-            hotspot_height = 50
+            snapped_x = round(world_x / grid_size) * grid_size
+            snapped_y = round(world_y / grid_size) * grid_size
 
-            # Snap to grid and center on cursor
-            snapped_x = round((world_x - hotspot_width / 2) / grid_size) * grid_size
-            snapped_y = round((world_y - hotspot_height / 2) / grid_size) * grid_size
-
-            self.project_manager.add_hotspot_to_scene(self.selected_scene.id, "New Hotspot", int(snapped_x), int(snapped_y), hotspot_width, hotspot_height)
-            self.refresh_layer_list()
+            self.project_manager.add_hotspot_to_scene(scene.id, "New Hotspot", snapped_x, snapped_y, 100, 50)
+            self._update_layer_list()
             self.canvas.queue_draw()
-        elif self.selected_scene:
+
+        elif scene:
             # Check if a hotspot was clicked
-            for hotspot in reversed(self.selected_scene.hotspots):
-                if world_x >= hotspot.x and world_x <= hotspot.x + hotspot.width and world_y >= hotspot.y and world_y <= hotspot.y + hotspot.height:
+            for hotspot in reversed(scene.hotspots):
+                if world_x >= hotspot.x and world_x <= hotspot.x + hotspot.width and \
+                   world_y >= hotspot.y and world_y <= hotspot.y + hotspot.height:
                     self.selected_hotspot = hotspot
-                    self.update_props_panel()
+                    self._update_props_panel()
                     self.canvas.queue_draw()
                     return
 
-            # If no hotspot was clicked, deselect
             self.selected_hotspot = None
-            self.props_panel.set_visible(False)
+            self._update_props_panel()
             self.canvas.queue_draw()
 
-    def on_scroll(self, controller, dx, dy):
+    def _on_scroll(self, controller, dx, dy):
         if controller.get_current_event_state() & Gdk.ModifierType.CONTROL_MASK:
-            # Zoom
             self.zoom_level *= 1.1 if dy < 0 else 1 / 1.1
-            self.zoom_level = max(0.1, min(self.zoom_level, 5.0)) # Clamp zoom
+            self.zoom_level = max(0.1, min(self.zoom_level, 5.0))
             self.canvas.queue_draw()
             return True
         return False
 
-    def on_pan_begin(self, gesture, x, y):
-        self.pan_start_x = self.pan_x
-        self.pan_start_y = self.pan_y
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-
-    def on_pan_update(self, gesture, x, y):
+    def _on_pan_update(self, gesture, x, y):
         self.pan_x = self.pan_start_x + x
         self.pan_y = self.pan_start_y + y
         self.canvas.queue_draw()
 
-    def update_props_panel(self):
-        if self.selected_hotspot:
-            self.prop_x.set_value(self.selected_hotspot.x)
-            self.prop_y.set_value(self.selected_hotspot.y)
-            self.prop_width.set_value(self.selected_hotspot.width)
-            self.prop_height.set_value(self.selected_hotspot.height)
-            self.props_panel.set_visible(True)
-        else:
-            self.props_panel.set_visible(False)
+    def _on_prop_changed(self, widget, *args):
+        if not self.selected_hotspot: return
 
-    def on_prop_changed(self, spin_button):
-        if self.selected_hotspot:
-            self.selected_hotspot.x = int(self.prop_x.get_value())
-            self.selected_hotspot.y = int(self.prop_y.get_value())
-            self.selected_hotspot.width = int(self.prop_width.get_value())
-            self.selected_hotspot.height = int(self.prop_height.get_value())
-            self.project_manager.set_dirty()
-            self.canvas.queue_draw()
+        self.selected_hotspot.name = self.prop_name.get_text()
+        self.selected_hotspot.x = int(self.prop_x.get_value())
+        self.selected_hotspot.y = int(self.prop_y.get_value())
+        self.selected_hotspot.width = int(self.prop_w.get_value())
+        self.selected_hotspot.height = int(self.prop_h.get_value())
 
-    def on_add_scene(self, button):
-        dialog = Adw.MessageDialog(transient_for=self.get_native(), modal=True,
-                                   heading="Create New Scene")
-
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        entry = Gtk.Entry(placeholder_text="Enter scene name...")
-        content.append(entry)
-        dialog.set_extra_child(content)
-
-        dialog.add_response("cancel", "_Cancel")
-        dialog.add_response("ok", "_OK")
-        dialog.set_default_response("ok")
-
-        def response(dialog, response_id):
-            if response_id == "ok":
-                scene_name = entry.get_text()
-                if scene_name:
-                    self.project_manager.create_scene(scene_name)
-                    self.refresh_scene_list()
-            dialog.destroy()
-        dialog.connect("response", response)
-        dialog.present()
-
-
-    def on_remove_scene(self, button):
-        selected_row = self.scene_list_box.get_selected_row()
-        if selected_row:
-            scene_gobject = self.model.get_item(selected_row.get_index())
-
-            dialog = Adw.MessageDialog(
-                transient_for=self.get_native(),
-                modal=True,
-                heading="Delete Scene?",
-                body=f"Are you sure you want to delete '{scene_gobject.name}'? This action cannot be undone."
-            )
-            dialog.add_response("cancel", "_Cancel")
-            dialog.add_response("delete", "_Delete")
-            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-
-            def on_response(dialog, response_id):
-                if response_id == "delete":
-                    self.project_manager.delete_scene(scene_gobject.scene_data.id)
-                    self.refresh_scene_list()
-                    self.on_scene_selected(self.scene_list_box, None)
-                dialog.destroy()
-
-            dialog.connect("response", on_response)
-            dialog.present()
-
-    def on_layer_selected(self, listbox, row):
-        if row:
-            self.selected_hotspot = row.get_child().get_data("hotspot_obj").hotspot_data
-        else:
-            self.selected_hotspot = None
-        self.update_props_panel()
+        self.project_manager.set_dirty(True)
         self.canvas.queue_draw()
 
-    def _on_layer_drag_prepare(self, source, x, y, hotspot_gobject):
-        return Gdk.ContentProvider.new_for_value(hotspot_gobject)
+    def _setup_layer_item(self, factory, list_item):
+        label = Gtk.Label(halign=Gtk.Align.START, margin_start=10, margin_top=10, margin_bottom=10)
+        list_item.set_child(label)
 
-    def _on_layer_drag_begin(self, source, drag):
-        list_row = source.get_widget()
-        source.set_icon(Gtk.WidgetPaintable.new(list_row), 0, 0)
+    def _bind_layer_item(self, factory, list_item):
+        label = list_item.get_child()
+        hotspot_gobject = list_item.get_item()
+        label.set_text(hotspot_gobject.name)
 
-    def _on_layer_drop(self, target, value, x, y, target_hotspot_gobject):
-        dragged_hotspot_gobject = value
+    def _on_layer_selected(self, selection, position, n_items):
+        hotspot_gobject = selection.get_selected_item()
+        if hotspot_gobject:
+            self.selected_hotspot = hotspot_gobject.hotspot_data
+        else:
+            self.selected_hotspot = None
+        self._update_props_panel()
+        self.canvas.queue_draw()
 
-        if dragged_hotspot_gobject and target_hotspot_gobject and dragged_hotspot_gobject != target_hotspot_gobject:
-            # Reorder the list in the project data
-            dragged_index = self.selected_scene.hotspots.index(dragged_hotspot_gobject.hotspot_data)
-            target_index = self.selected_scene.hotspots.index(target_hotspot_gobject.hotspot_data)
+    def _update_layer_list(self):
+        self.hotspot_model.remove_all()
+        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        if scene:
+            for hotspot in scene.hotspots:
+                self.hotspot_model.append(HotspotGObject(hotspot))
 
-            self.selected_scene.hotspots.pop(dragged_index)
-            self.selected_scene.hotspots.insert(target_index, dragged_hotspot_gobject.hotspot_data)
-
-            self.project_manager.set_dirty()
-            self.refresh_layer_list()
-            self.canvas.queue_draw()
-            return True
-        return False

@@ -1,127 +1,208 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, GObject
-from ..core.data_schemas import GlobalVariableGObject
+from gi.repository import Gtk, Gio, Adw, GObject
+
+from ..core.data_schemas import GlobalVariable, GlobalVariableGObject
+from ..core.project_manager import ProjectManager
 
 class GlobalStateEditor(Gtk.Box):
-    def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+    """A widget for editing global variables, using a ColumnView for a
+    structured, inline editing experience."""
+
+    def __init__(self, project_manager: ProjectManager):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.project_manager = project_manager
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.main_box.set_margin_top(12)
+        self.main_box.set_margin_bottom(12)
 
+        clamp = Adw.Clamp()
+        clamp.set_child(self.main_box)
+        self.append(clamp)
+
+        header = Adw.HeaderBar()
+        self.main_box.append(header)
+
+        # --- Toolbar ---
+        self.add_button = Gtk.Button(icon_name="list-add-symbolic")
+        self.add_button.set_tooltip_text("Add New Variable")
+        self.add_button.connect("clicked", self._on_add_clicked)
+        header.pack_start(self.add_button)
+
+        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
+        self.delete_button.set_tooltip_text("Delete Selected Variable")
+        self.delete_button.connect("clicked", self._on_delete_clicked)
+        self.delete_button.set_sensitive(False)
+        header.pack_end(self.delete_button)
+
+        # --- Search ---
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Search Variables")
+        self.search_entry.connect("search-changed", self._on_search_changed)
+        self.main_box.append(self.search_entry)
+
+        # --- Data Model ---
         self.model = Gio.ListStore(item_type=GlobalVariableGObject)
-
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", self._on_factory_setup)
-        factory.connect("bind", self._on_factory_bind)
-
-        self.list_view = Gtk.ListView(model=Gtk.SingleSelection(model=self.model), factory=factory)
-
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_child(self.list_view)
-        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_window.set_vexpand(True)
-        self.append(scrolled_window)
-
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        add_button = Gtk.Button(label="Add")
-        add_button.connect("clicked", self.on_add_clicked)
-        edit_button = Gtk.Button(label="Edit")
-        edit_button.connect("clicked", self.on_edit_clicked)
-        remove_button = Gtk.Button(label="Remove")
-        remove_button.connect("clicked", self.on_remove_clicked)
-        button_box.append(add_button)
-        button_box.append(edit_button)
-        button_box.append(remove_button)
-        self.append(button_box)
-
-        self.refresh_variables()
-
-    def refresh_variables(self):
-        self.model.remove_all()
         for var in self.project_manager.data.global_variables:
             self.model.append(GlobalVariableGObject(var))
 
-    def _on_factory_setup(self, factory, list_item):
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        box.set_margin_top(5)
-        box.set_margin_bottom(5)
-        box.set_margin_start(5)
-        box.set_margin_end(5)
+        self.filter_model = Gtk.FilterListModel(model=self.model)
+        self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
+        self.filter_model.set_filter(self.filter)
 
-        box.append(Gtk.Label(width_request=100, xalign=0)) # ID
-        box.append(Gtk.Label(hexpand=True, xalign=0)) # Name
-        box.append(Gtk.Label(width_request=80, xalign=0)) # Type
-        box.append(Gtk.Label(width_request=100, xalign=0)) # Initial Value
-        box.append(Gtk.Label(width_request=150, xalign=0)) # Category
-        list_item.set_child(box)
+        self.selection = Gtk.SingleSelection(model=self.filter_model)
+        self.selection.connect("selection-changed", self._on_selection_changed)
 
-    def _on_factory_bind(self, factory, list_item):
-        box = list_item.get_child()
-        gobj = list_item.get_item()
+        # --- Column View ---
+        self.column_view = Gtk.ColumnView(model=self.selection)
+        self.column_view.set_vexpand(True)
+        self.column_view.set_css_classes(["boxed-list"])
+        self._create_columns()
 
-        box.get_first_child().set_text(gobj.id)
-        box.get_children()[1].set_text(gobj.name)
-        box.get_children()[2].set_text(gobj.type)
-        box.get_children()[3].set_text(gobj.initial_value_str)
-        box.get_children()[4].set_text(gobj.category)
+        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
+        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.main_box.append(scrolled_window)
 
-    def on_add_clicked(self, button):
-        dialog = self.create_variable_dialog("Create New Variable")
+        # --- Empty State ---
+        self.empty_state = Adw.StatusPage(
+            title="No Global Variables",
+            description="Create a new variable to manage game state.",
+            icon_name="preferences-system-symbolic"
+        )
+        self.append(self.empty_state)
 
-        def on_response(dialog, response_id):
-            if response_id == Gtk.ResponseType.OK:
-                name, type, value, category = self.get_dialog_values(dialog)
-                if name:
-                    self.project_manager.add_global_variable(name, type, value, category)
-                    self.refresh_variables()
-            dialog.destroy()
+        self.model.connect("items-changed", self._update_visibility)
+        self._update_visibility()
 
-        dialog.connect("response", on_response)
-        dialog.present()
+    def _create_columns(self):
+        """Create and append all columns to the ColumnView."""
+        # ID Column
+        id_factory = Gtk.SignalListItemFactory()
+        id_factory.connect("setup", self._setup_text_cell)
+        id_factory.connect("bind", self._bind_text_cell, "id")
+        id_column = Gtk.ColumnViewColumn(title="ID", factory=id_factory)
+        id_column.set_expand(True)
+        self.column_view.append_column(id_column)
 
-    def on_edit_clicked(self, button):
-        selected_item = self.list_view.get_model().get_selected_item()
-        if not selected_item:
-            return
+        # Name Column
+        name_factory = Gtk.SignalListItemFactory()
+        name_factory.connect("setup", self._setup_text_cell)
+        name_factory.connect("bind", self._bind_text_cell, "name")
+        name_column = Gtk.ColumnViewColumn(title="Name", factory=name_factory)
+        name_column.set_expand(True)
+        self.column_view.append_column(name_column)
 
-        dialog = self.create_variable_dialog("Edit Variable", variable=selected_item.variable_data)
+        # Category Column
+        category_factory = Gtk.SignalListItemFactory()
+        category_factory.connect("setup", self._setup_text_cell)
+        category_factory.connect("bind", self._bind_text_cell, "category")
+        category_column = Gtk.ColumnViewColumn(title="Category", factory=category_factory)
+        category_column.set_expand(True)
+        self.column_view.append_column(category_column)
 
-        # Populate dialog with existing data
-        widgets = dialog.get_data("widgets")
-        widgets[0].set_text(selected_item.name)
-        widgets[1].set_selected(0 if selected_item.type == "bool" else 1 if selected_item.type == "int" else 2)
-        widgets[2].set_text(selected_item.initial_value_str)
-        widgets[3].set_text(selected_item.category)
+        # Type Column
+        type_factory = Gtk.SignalListItemFactory()
+        type_factory.connect("setup", self._setup_type_cell)
+        type_factory.connect("bind", self._bind_type_cell)
+        type_column = Gtk.ColumnViewColumn(title="Type", factory=type_factory)
+        self.column_view.append_column(type_column)
 
-        def on_response(dialog, response_id):
-            if response_id == Gtk.ResponseType.OK:
-                name, type, value, category = self.get_dialog_values(dialog)
-                if name:
-                    selected_item.variable_data.name = name
-                    selected_item.variable_data.type = type
-                    selected_item.variable_data.initial_value = value
-                    selected_item.variable_data.category = category
-                    self.project_manager.set_dirty()
-                    self.refresh_variables() # This is inefficient, but will work for now
-            dialog.destroy()
+        # Initial Value Column
+        value_factory = Gtk.SignalListItemFactory()
+        value_factory.connect("setup", self._setup_text_cell)
+        value_factory.connect("bind", self._bind_text_cell, "initial_value_str")
+        value_column = Gtk.ColumnViewColumn(title="Initial Value", factory=value_factory)
+        value_column.set_expand(True)
+        self.column_view.append_column(value_column)
 
-        dialog.connect("response", on_response)
-        dialog.present()
+    def _setup_text_cell(self, factory, list_item):
+        entry = Adw.EntryRow()
+        entry.set_show_apply_button(True)
+        list_item.set_child(entry)
 
+    def _bind_text_cell(self, factory, list_item, column_id):
+        var_gobject = list_item.get_item()
+        entry = list_item.get_child()
+        entry.bind_property("text", var_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        handler_id = entry.connect("apply", self._on_value_changed, var_gobject)
+        list_item.disconnect_handler = handler_id
 
-    def on_remove_clicked(self, button):
-        selected_item = self.list_view.get_model().get_selected_item()
-        if not selected_item:
-            return
+    def _setup_type_cell(self, factory, list_item):
+        combo = Adw.ComboRow(model=Gtk.StringList.new(["bool", "int", "str"]))
+        list_item.set_child(combo)
+
+    def _bind_type_cell(self, factory, list_item):
+        var_gobject = list_item.get_item()
+        combo = list_item.get_child()
+
+        # Custom binding for ComboRow
+        def update_combo_from_gobject(*args):
+            type_str = var_gobject.get_property("type")
+            if type_str == "bool": combo.set_selected(0)
+            elif type_str == "int": combo.set_selected(1)
+            else: combo.set_selected(2)
+
+        def update_gobject_from_combo(*args):
+            selected_str = combo.get_selected_item().get_string()
+            var_gobject.set_property("type", selected_str)
+            self._on_value_changed(combo, var_gobject)
+
+        update_combo_from_gobject()
+        gobject_handler_id = var_gobject.connect("notify::type", update_combo_from_gobject)
+        combo_handler_id = combo.connect("notify::selected", update_gobject_from_combo)
+
+        list_item.disconnect_handlers = [
+            (var_gobject, gobject_handler_id),
+            (combo, combo_handler_id)
+        ]
+
+    def _on_value_changed(self, widget, var_gobject: GlobalVariableGObject):
+        """Callback to update the underlying data and mark project as dirty."""
+        self.project_manager.update_global_variable(var_gobject.variable_data, var_gobject)
+        self.project_manager.set_dirty(True)
+
+    def _on_search_changed(self, search_entry):
+        self.filter.changed(Gtk.FilterChange.DIFFERENT)
+
+    def _filter_func(self, item, search_entry):
+        search_text = search_entry.get_text().lower()
+        if not search_text:
+            return True
+        return (search_text in item.id.lower() or
+                search_text in item.name.lower() or
+                search_text in item.category.lower())
+
+    def _update_visibility(self, *args):
+        has_items = self.model.get_n_items() > 0
+        self.main_box.set_visible(has_items)
+        self.empty_state.set_visible(not has_items)
+
+    def _on_add_clicked(self, button):
+        new_id_base = "new_variable"
+        new_id = new_id_base
+        count = 1
+        existing_ids = {v.id for v in self.project_manager.data.global_variables}
+        while new_id in existing_ids:
+            new_id = f"{new_id_base}_{count}"
+            count += 1
+
+        new_var_data = GlobalVariable(id=new_id, name="New Variable", type="bool", initial_value=False, category="Default")
+        self.project_manager.add_global_variable(new_var_data)
+        gobject = GlobalVariableGObject(new_var_data)
+        self.model.append(gobject)
+
+        is_found, pos = self.filter_model.get_model().find(gobject)
+        if is_found:
+             self.selection.set_selected(pos)
+
+    def _on_delete_clicked(self, button):
+        selected_item = self.selection.get_selected_item()
+        if not selected_item: return
 
         dialog = Adw.MessageDialog(
-            transient_for=self.get_native(),
+            transient_for=self.get_root(),
             modal=True,
             heading="Delete Variable?",
             body=f"Are you sure you want to delete '{selected_item.name}'?"
@@ -129,59 +210,17 @@ class GlobalStateEditor(Gtk.Box):
         dialog.add_response("cancel", "_Cancel")
         dialog.add_response("delete", "_Delete")
         dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-
-        def on_response(dialog, response_id):
-            if response_id == "delete":
-                self.project_manager.data.global_variables.remove(selected_item.variable_data)
-                self.project_manager.set_dirty()
-                self.refresh_variables()
-            dialog.destroy()
-
-        dialog.connect("response", on_response)
+        dialog.connect("response", self._on_delete_dialog_response, selected_item)
         dialog.present()
 
-    def create_variable_dialog(self, title, variable=None):
-        dialog = Adw.MessageDialog(
-            transient_for=self.get_native(),
-            modal=True,
-            heading=title
-        )
+    def _on_delete_dialog_response(self, dialog, response, var_gobject):
+        if response == "delete":
+            if self.project_manager.remove_global_variable(var_gobject.variable_data):
+                is_found, pos = self.model.find(var_gobject)
+                if is_found:
+                    self.model.remove(pos)
+        dialog.destroy()
 
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-
-        name_entry = Gtk.Entry(placeholder_text="Variable Name")
-        type_dropdown = Gtk.DropDown.new_from_strings(["bool", "int", "str"])
-        value_entry = Gtk.Entry(placeholder_text="Initial Value")
-        category_entry = Gtk.Entry(placeholder_text="Category (optional)")
-
-        content.append(name_entry)
-        content.append(type_dropdown)
-        content.append(value_entry)
-        content.append(category_entry)
-
-        dialog.set_extra_child(content)
-        dialog.add_response("cancel", "_Cancel")
-        dialog.add_response("ok", "_OK")
-        dialog.set_default_response("ok")
-
-        # Store widgets for later access
-        dialog.set_data("widgets", [name_entry, type_dropdown, value_entry, category_entry])
-
-        return dialog
-
-    def get_dialog_values(self, dialog):
-        widgets = dialog.get_data("widgets")
-        name = widgets[0].get_text()
-        type = widgets[1].get_selected_item().get_string()
-        value_str = widgets[2].get_text()
-        category = widgets[3].get_text() or "Default"
-
-        # Coerce value to the correct type
-        if type == "bool":
-            value = value_str.lower() in ["true", "1"]
-        elif type == "int":
-            value = int(value_str) if value_str else 0
-        else:
-            value = value_str
-
-        return name, type, value, category
+    def _on_selection_changed(self, selection_model, position, n_items):
+        is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
+        self.delete_button.set_sensitive(is_selected)

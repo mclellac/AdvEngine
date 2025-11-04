@@ -7,23 +7,25 @@ from ..core.data_schemas import Item, ItemGObject
 from ..core.project_manager import ProjectManager
 
 class ItemEditor(Gtk.Box):
-    """A widget for editing items in a project, following HIG for inline editing."""
+    """A widget for editing items in a project, using a ColumnView for a
+    structured editing experience."""
 
     def __init__(self, project_manager: ProjectManager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.project_manager = project_manager
 
-        clamp = Adw.Clamp()
-        self.append(clamp)
-
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.main_box.set_margin_top(12)
         self.main_box.set_margin_bottom(12)
+
+        clamp = Adw.Clamp()
         clamp.set_child(self.main_box)
+        self.append(clamp)
 
         header = Adw.HeaderBar()
         self.main_box.append(header)
 
+        # --- Toolbar ---
         self.add_button = Gtk.Button(icon_name="list-add-symbolic")
         self.add_button.set_tooltip_text("Add New Item")
         self.add_button.connect("clicked", self._on_add_clicked)
@@ -35,33 +37,48 @@ class ItemEditor(Gtk.Box):
         self.delete_button.set_sensitive(False)
         header.pack_end(self.delete_button)
 
+        # --- Search ---
         self.search_entry = Gtk.SearchEntry()
-        self.search_entry.set_placeholder_text("Search items...")
+        self.search_entry.set_placeholder_text("Search Items")
         self.search_entry.connect("search-changed", self._on_search_changed)
         self.main_box.append(self.search_entry)
 
-        # --- Data Models ---
+        # --- Data Model ---
         self.model = Gio.ListStore(item_type=ItemGObject)
         for item in self.project_manager.data.items:
             self.model.append(ItemGObject(item))
 
         self.filter_model = Gtk.FilterListModel(model=self.model)
-        self.filter = Gtk.CustomFilter.new(self._filter_func)
+        self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         self.filter_model.set_filter(self.filter)
 
         self.selection = Gtk.SingleSelection(model=self.filter_model)
         self.selection.connect("selection-changed", self._on_selection_changed)
 
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", self._setup_list_item)
-        factory.connect("bind", self._bind_list_item)
-        factory.connect("unbind", self._unbind_list_item)
+        # --- Column View ---
+        self.column_view = Gtk.ColumnView(model=self.selection)
+        self.column_view.set_vexpand(True)
+        self.column_view.set_css_classes(["boxed-list"])
 
-        self.list_view = Gtk.ListView(model=self.selection, factory=factory)
-        self.list_view.set_vexpand(True)
-        self.list_view.set_css_classes(["boxed-list"])
+        # Define columns
+        columns_def = {
+            "id": {"title": "ID", "expand": True, "type": "text"},
+            "name": {"title": "Name", "expand": True, "type": "text"},
+            "type": {"title": "Type", "expand": True, "type": "text"},
+            "buy_price": {"title": "Buy Price", "expand": False, "type": "numeric"},
+            "sell_price": {"title": "Sell Price", "expand": False, "type": "numeric"},
+            "description": {"title": "Description", "expand": True, "type": "text"}
+        }
 
-        scrolled_window = Gtk.ScrolledWindow(child=self.list_view)
+        for col_id, col_info in columns_def.items():
+            factory = Gtk.SignalListItemFactory()
+            factory.connect("setup", self._setup_cell, col_info["type"])
+            factory.connect("bind", self._bind_cell, col_id, col_info["type"])
+            column = Gtk.ColumnViewColumn(title=col_info["title"], factory=factory)
+            column.set_expand(col_info["expand"])
+            self.column_view.append_column(column)
+
+        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.main_box.append(scrolled_window)
 
@@ -76,104 +93,44 @@ class ItemEditor(Gtk.Box):
         self.model.connect("items-changed", self._update_visibility)
         self._update_visibility()
 
+    def _setup_cell(self, factory, list_item, cell_type):
+        if cell_type == "numeric":
+            widget = Adw.SpinRow()
+            widget.set_adjustment(Gtk.Adjustment(lower=-1, upper=99999, step_increment=1))
+        else: # text
+            widget = Adw.EntryRow()
+            widget.set_show_apply_button(True)
+        list_item.set_child(widget)
+
+    def _bind_cell(self, factory, list_item, column_id, cell_type):
+        item_gobject = list_item.get_item()
+        widget = list_item.get_child()
+
+        prop_name = "value" if cell_type == "numeric" else "text"
+        widget.bind_property(prop_name, item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+
+        event_name = "notify::value" if cell_type == "numeric" else "apply"
+        handler_id = widget.connect(event_name, lambda w: self.project_manager.set_dirty(True))
+
+        list_item.disconnect_handler = handler_id
+
+    def _on_search_changed(self, search_entry):
+        self.filter.changed(Gtk.FilterChange.DIFFERENT)
+
+    def _filter_func(self, item, search_entry):
+        search_text = search_entry.get_text().lower()
+        if not search_text:
+            return True
+        return (search_text in item.id.lower() or
+                search_text in item.name.lower() or
+                search_text in item.type.lower())
+
     def _update_visibility(self, *args):
         has_items = self.model.get_n_items() > 0
         self.main_box.set_visible(has_items)
         self.empty_state.set_visible(not has_items)
 
-    def _setup_list_item(self, factory, list_item):
-        """Set up the structure of a list item and store widget references."""
-        group = Adw.PreferencesGroup()
-
-        id_entry = Adw.EntryRow(title="ID")
-        name_entry = Adw.EntryRow(title="Name")
-        type_entry = Adw.EntryRow(title="Type")
-        buy_price_entry = Adw.SpinRow(title="Buy Price", subtitle="Price in shops (-1 for not buyable)")
-        sell_price_entry = Adw.SpinRow(title="Sell Price", subtitle="Price when selling (-1 for not sellable)")
-
-        buy_price_entry.set_adjustment(Gtk.Adjustment(lower=-1, upper=99999, step_increment=1))
-        sell_price_entry.set_adjustment(Gtk.Adjustment(lower=-1, upper=99999, step_increment=1))
-
-        desc_view = Gtk.TextView(wrap_mode=Gtk.WrapMode.WORD_CHAR, height_request=100)
-        desc_scroll = Gtk.ScrolledWindow(child=desc_view)
-        desc_row = Adw.ExpanderRow(title="Description", subtitle="Flavor text for the 'Look' action.")
-        desc_row.add_row(desc_scroll)
-
-        group.add(id_entry)
-        group.add(name_entry)
-        group.add(type_entry)
-        group.add(buy_price_entry)
-        group.add(sell_price_entry)
-        group.add(desc_row)
-
-        list_item._id_entry = id_entry
-        list_item._name_entry = name_entry
-        list_item._type_entry = type_entry
-        list_item._buy_row = buy_price_entry
-        list_item._sell_row = sell_price_entry
-        list_item._desc_view = desc_view
-        list_item._bindings = []
-        list_item._handler_ids = []
-
-        list_item.set_child(group)
-
-    def _bind_list_item(self, factory, list_item):
-        """Bind an ItemGObject to the stored widgets for inline editing."""
-        item_gobject = list_item.get_item()
-
-        id_entry = list_item._id_entry
-        name_entry = list_item._name_entry
-        type_entry = list_item._type_entry
-        buy_row = list_item._buy_row
-        sell_row = list_item._sell_row
-        desc_view = list_item._desc_view
-
-        bindings = [
-            id_entry.bind_property("text", item_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            name_entry.bind_property("text", item_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            type_entry.bind_property("text", item_gobject, "type", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            buy_row.bind_property("value", item_gobject, "buy_price", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            sell_row.bind_property("value", item_gobject, "sell_price", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            desc_view.get_buffer().bind_property("text", item_gobject, "description", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        ]
-        list_item._bindings.extend(bindings)
-
-        def on_applied(*args):
-            if list_item.get_item():
-                self.project_manager.set_dirty(True)
-
-        handlers = [
-            id_entry.connect("apply", on_applied),
-            name_entry.connect("apply", on_applied),
-            type_entry.connect("apply", on_applied),
-            buy_row.connect("notify::value", on_applied),
-            sell_row.connect("notify::value", on_applied),
-            desc_view.get_buffer().connect("changed", on_applied)
-        ]
-        list_item._handler_ids.extend(handlers)
-
-    def _unbind_list_item(self, factory, list_item):
-        """Disconnect all handlers and unbind all properties on unbind."""
-        for binding in list_item._bindings:
-            binding.unbind()
-        list_item._bindings = []
-
-        widgets = [
-            list_item._id_entry,
-            list_item._name_entry,
-            list_item._type_entry,
-            list_item._buy_row,
-            list_item._sell_row,
-            list_item._desc_view.get_buffer()
-        ]
-        for i, widget in enumerate(widgets):
-            handler_id = list_item._handler_ids[i]
-            if widget.is_connected(handler_id):
-                widget.disconnect(handler_id)
-        list_item._handler_ids = []
-
     def _on_add_clicked(self, button):
-        """Add a new, empty item."""
         new_id_base = "new_item"
         new_id = new_id_base
         count = 1
@@ -187,12 +144,9 @@ class ItemEditor(Gtk.Box):
         gobject = ItemGObject(new_item_data)
         self.model.append(gobject)
 
-        self.filter.changed(Gtk.FilterChange.DIFFERENT)
-
-        for i in range(self.filter_model.get_n_items()):
-            if self.filter_model.get_item(i) == gobject:
-                self.selection.set_selected(i)
-                break
+        is_found, pos = self.filter_model.get_model().find(gobject)
+        if is_found:
+             self.selection.set_selected(pos)
 
     def _on_delete_clicked(self, button):
         selected_item = self.selection.get_selected_item()
@@ -222,14 +176,3 @@ class ItemEditor(Gtk.Box):
     def _on_selection_changed(self, selection_model, position, n_items):
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
         self.delete_button.set_sensitive(is_selected)
-
-    def _filter_func(self, item):
-        search_text = self.search_entry.get_text().lower()
-        if not search_text:
-            return True
-        return (search_text in item.id.lower() or
-                search_text in item.name.lower() or
-                search_text in item.type.lower())
-
-    def _on_search_changed(self, entry):
-        self.filter.changed(Gtk.FilterChange.DIFFERENT)

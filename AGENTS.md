@@ -103,15 +103,15 @@ The architecture is strictly modular to isolate UI logic from data logic.
 
 | Module Name    | Functionality Focus | Key Feature                                                                                              |
 | -------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Scenes**     | World Design        | Walk Mesh drawing, Hotspot placement with property editor, Camera Safe Area preview. Canvas supports zoom and pan. |
-| **Logic**      | Puzzle & Narrative  | Node-graph editor with distinct header colors, right-click context menus for quick actions, Condition/Action definition, Dialogue/Quest branching. |
-| **Characters** | Character Creation  | Define player characters (PCs) and non-player characters (NPCs) with editable properties, sprite assignments, and default inventories. |
+| **Scenes**     | World Design        | A canvas-based editor with an `Adw.OverlaySplitView` layout. Features include hotspot creation, a properties panel for editing, a layer list for Z-ordering, and zoom/pan functionality. |
+| **Logic**      | Puzzle & Narrative  | A node-graph editor with an `Adw.OverlaySplitView` layout. Features include multi-node selection and dragging, resizable nodes, a properties panel for non-modal editing, and context menus. |
+| **Characters** | Character Creation  | A modern, spreadsheet-style editor for managing characters, with a portrait preview. Features full inline editing and search. |
 | **Quests**     | Quest & Objective   | A simple system to define high-level quests or tasks.                                                     |
 | **UI Builder** | UI Design           | A visual editor to design the main in-game user interface.                                                |
 | **Fonts**      | Font Management     | A system to import and manage bitmap fonts for in-game text.                                              |
 | **Assets**     | Media Management    | Sprite import, Animation sequence definition, asset preview panel, Normal Map texture pairing (for UE lighting). |
-| **Global State** | State Management    | Create, edit, and delete global game variables (booleans, integers, strings) with categorization.      |
-| **Verbs & Items**| Database            | Editing Item, Attribute, NPC, and Shop schemas. Defines UI anchoring for Inventory/Stat screens.         |
+| **Global State** | State Management    | A modern, spreadsheet-style editor for managing global variables, with full inline editing and search. |
+| **Verbs & Items**| Database            | Modern, spreadsheet-style editors for managing verbs, items, and attributes, with full inline editing and search. |
 | **Audio**      | Sound & Ambiance    | Assignment of background music and ambient loops to scenes. Placement of localized 3D SFX emitters.        |
 
 ### B. Rapid Development & Debugging Features
