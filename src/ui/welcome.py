@@ -3,6 +3,20 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
+class WelcomeWindow(Adw.ApplicationWindow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.set_default_size(600, 400)
+        self.set_title("AdvEngine - Welcome")
+
+        self.content = WelcomeWidget()
+        self.set_content(self.content)
+
+        settings = self.get_application().settings_manager
+        recent_projects = settings.get_app_setting("recent_projects")
+        self.content.populate_recent_projects(recent_projects)
+
+
 class WelcomeWidget(Adw.Bin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
