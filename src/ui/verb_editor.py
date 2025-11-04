@@ -98,16 +98,34 @@ class VerbEditor(Gtk.Box):
 
     def _bind_cell(self, factory, list_item, column_id):
         verb_gobject = list_item.get_item()
-        entry = list_item.get_child()
+        widget = list_item.get_child()
 
-        # Bind the entry row's text to the corresponding property of the VerbGObject
-        entry.bind_property("text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        binding = widget.bind_property("text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
 
-        # Mark project as dirty when edit is applied
-        handler_id = entry.connect("apply", lambda e: self.project_manager.set_dirty(True))
+        validation_handler = lambda w: self._validate_entry(w, verb_gobject, column_id)
+        handler_id = widget.connect("notify::text", validation_handler)
+        widget.connect("apply", lambda w: self.project_manager.set_dirty(True))
+        self._validate_entry(widget, verb_gobject, column_id) # Initial validation
 
-        # Store handler to disconnect on unbind
-        list_item.disconnect_handler = handler_id
+        list_item.bindings = [binding]
+        list_item.handler_ids = [handler_id]
+
+    def _validate_entry(self, entry_row, verb_gobject, column_id):
+        is_valid = True
+        text = entry_row.get_text()
+
+        if not text.strip():
+            is_valid = False
+        elif column_id == "id":
+             is_duplicate = any(verb.id == text for verb in self.project_manager.data.verbs if verb != verb_gobject.verb_data)
+             if is_duplicate:
+                 is_valid = False
+
+        if is_valid:
+            entry_row.remove_css_class("error")
+        else:
+            entry_row.add_css_class("error")
+        entry_row.set_property("show_apply_button", is_valid)
 
     def _on_search_changed(self, search_entry):
         """Called when the search text changes. Invalidates the filter."""

@@ -107,12 +107,38 @@ class ItemEditor(Gtk.Box):
         widget = list_item.get_child()
 
         prop_name = "value" if cell_type == "numeric" else "text"
-        widget.bind_property(prop_name, item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        binding = widget.bind_property(prop_name, item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
 
-        event_name = "notify::value" if cell_type == "numeric" else "apply"
-        handler_id = widget.connect(event_name, lambda w: self.project_manager.set_dirty(True))
+        handler_id = None
+        if isinstance(widget, Adw.EntryRow):
+            validation_handler = lambda w: self._validate_entry(w, item_gobject)
+            handler_id = widget.connect("notify::text", validation_handler)
+            widget.connect("apply", lambda w: self.project_manager.set_dirty(True))
+            self._validate_entry(widget, item_gobject) # Initial validation
+        elif isinstance(widget, Adw.SpinRow):
+            handler_id = widget.connect("notify::value", lambda w, _: self.project_manager.set_dirty(True))
 
-        list_item.disconnect_handler = handler_id
+        list_item.bindings = [binding]
+        list_item.handler_ids = [handler_id]
+
+    def _validate_entry(self, entry_row, item_gobject):
+        is_valid = True
+        text = entry_row.get_text()
+        column_id = next((prop.name for prop in item_gobject.list_properties() if "text" in prop.name), None) # A bit hacky way to find which column this is
+
+        if not text.strip():
+            is_valid = False
+        elif column_id == "id":
+             # Check for duplicates, ignoring the current item
+             is_duplicate = any(item.id == text for item in self.project_manager.data.items if item != item_gobject.item)
+             if is_duplicate:
+                 is_valid = False
+
+        if is_valid:
+            entry_row.remove_css_class("error")
+        else:
+            entry_row.add_css_class("error")
+        entry_row.set_property("show_apply_button", is_valid)
 
     def _on_search_changed(self, search_entry):
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
