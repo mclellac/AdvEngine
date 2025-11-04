@@ -216,7 +216,6 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         if row:
             view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
-            self.split_view.set_show_sidebar(False)
 
     def on_dirty_state_changed(self, is_dirty):
         self.set_title(f"{self.base_title}{'*' if is_dirty else ''}")
@@ -307,42 +306,65 @@ class AdvEngine(Adw.Application):
         import_localization_action.connect("activate", self.on_import_localization)
         self.add_action(import_localization_action)
 
+        self.setup_navigation_shortcuts()
+
+    def setup_navigation_shortcuts(self):
+        shortcuts = {
+            "1": "scenes_editor",
+            "2": "logic_editor",
+            "3": "interaction_editor",
+            "4": "dialogue_editor",
+            "5": "cutscenes_editor",
+            "6": "assets_editor",
+            "7": "global_state_editor",
+            "8": "character_manager",
+            "9": "quest_editor",
+            "0": "verbs_items_editor",
+        }
+        for key, view_name in shortcuts.items():
+            action = Gio.SimpleAction(name=f"go-to-{view_name}")
+            action.connect("activate", self.on_go_to, view_name)
+            self.add_action(action)
+            self.set_accels_for_action(f"app.go-to-{view_name}", [f"<Primary>{key}"])
+
+    def on_go_to(self, action, param, view_name):
+        if self.win:
+            self.win.content_stack.set_visible_child_name(view_name)
+            for row in self.win.sidebar_list:
+                if row.get_name() == view_name:
+                    self.win.sidebar_list.select_row(row)
+                    break
+
     def on_export_localization(self, action, param):
         """Handler for the export localization menu item."""
-        dialog = Gtk.FileChooserDialog(
+        dialog = Gtk.FileChooserNative(
             title="Export Localization",
-            parent=self.win,
+            transient_for=self.win,
             action=Gtk.FileChooserAction.SAVE,
-        )
-        dialog.add_buttons(
-            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+            accept_label="_Save"
         )
 
         def on_dialog_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
+            if response == Gtk.ResponseType.ACCEPT:
                 file = dialog.get_file()
                 self.project_manager.export_localization(file.get_path())
-            dialog.destroy()
 
         dialog.connect("response", on_dialog_response)
         dialog.show()
 
     def on_import_localization(self, action, param):
         """Handler for the import localization menu item."""
-        dialog = Gtk.FileChooserDialog(
+        dialog = Gtk.FileChooserNative(
             title="Import Localization",
-            parent=self.win,
+            transient_for=self.win,
             action=Gtk.FileChooserAction.OPEN,
-        )
-        dialog.add_buttons(
-            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+            accept_label="_Open"
         )
 
         def on_dialog_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
+            if response == Gtk.ResponseType.ACCEPT:
                 file = dialog.get_file()
                 self.project_manager.import_localization(file.get_path())
-            dialog.destroy()
 
         dialog.connect("response", on_dialog_response)
         dialog.show()
@@ -370,36 +392,28 @@ class AdvEngine(Adw.Application):
         self.win = new_win
 
     def on_new_project_activate(self, action, param):
-        dialog = Gtk.FileChooserDialog(
+        dialog = Gtk.FileChooserNative(
             title="Create a New Project",
-            parent=self.win,
+            transient_for=self.win,
             action=Gtk.FileChooserAction.SELECT_FOLDER,
-        )
-        dialog.add_buttons(
-            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+            accept_label="_Create"
         )
 
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        dialog.get_content_area().append(content)
-
-        template_label = Gtk.Label(label="Template:")
-        content.append(template_label)
-
-        templates = ProjectManager.get_templates()
-        template_dropdown = Gtk.DropDown.new_from_strings(templates)
-        content.append(template_dropdown)
+        # The DropDown for templates can't be easily added to a native dialog.
+        # For now, we'll simplify and always use the default template.
+        # A better solution might involve a custom dialog before opening the file chooser.
 
         def on_dialog_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
+            if response == Gtk.ResponseType.ACCEPT:
                 folder = dialog.get_file().get_path()
-                template = template_dropdown.get_selected_item().get_string()
+                # TODO: Re-implement template selection. For now, use default.
+                template = ProjectManager.get_templates()[0]
                 success, error = ProjectManager.create_project(folder, template)
                 if success:
                     self.load_project(folder)
                 else:
                     # You might want to show an error dialog here
                     print(f"Error creating project: {error}")
-            dialog.destroy()
 
         dialog.connect("response", on_dialog_response)
         dialog.show()
