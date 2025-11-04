@@ -7,15 +7,39 @@ import os
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
 
+# Constants
+MINI_MAP_WIDTH = 200
+MINI_MAP_HEIGHT = 150
+NODE_HEADER_HEIGHT = 25
+CONNECTOR_SIZE = 10
+RESIZE_HANDLE_SIZE = 10
+NODE_MIN_WIDTH = 150
+NODE_MIN_HEIGHT = 100
+
+# Colors
+COLOR_BACKGROUND = (0.15, 0.15, 0.15)
+COLOR_NODE_BODY = (0.2, 0.2, 0.2)
+COLOR_NODE_HEADER_DIALOGUE = (0.4, 0.6, 0.4)
+COLOR_NODE_HEADER_CONDITION = (0.6, 0.4, 0.4)
+COLOR_NODE_HEADER_ACTION = (0.4, 0.4, 0.6)
+COLOR_NODE_HEADER_DEFAULT = (0.5, 0.5, 0.5)
+COLOR_NODE_SELECTED_BORDER = (1.0, 1.0, 0.0)
+COLOR_NODE_TEXT = (1.0, 1.0, 1.0)
+COLOR_NODE_TEXT_SECONDARY = (0.9, 0.9, 0.9)
+COLOR_CONNECTOR = (0.8, 0.8, 0.2)
+COLOR_CONNECTION_LINE = (0.8, 0.8, 0.2)
+COLOR_RESIZE_HANDLE = (0.5, 0.5, 0.5)
+COLOR_SELECTION_RECT = (0.2, 0.5, 1.0, 0.3)
+
 class MiniMap(Gtk.DrawingArea):
     def __init__(self, logic_editor_canvas):
         super().__init__()
         self.logic_editor_canvas = logic_editor_canvas
         self.set_draw_func(self.on_draw, None)
-        self.set_size_request(200, 150)
+        self.set_size_request(MINI_MAP_WIDTH, MINI_MAP_HEIGHT)
 
     def on_draw(self, drawing_area, cr, width, height, data):
-        cr.set_source_rgb(0.1, 0.1, 0.1)
+        cr.set_source_rgb(*COLOR_BACKGROUND)
         cr.paint()
 
         active_graph = self.logic_editor_canvas.active_graph
@@ -135,22 +159,37 @@ class DynamicNodeEditor(Gtk.Box):
 
     def get_values(self):
         values = {}
-        if isinstance(self.node, (ConditionNode, ActionNode)):
-            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
-            values[command_type_key] = self.widgets[command_type_key].get_selected_item().get_string()
-            values['parameters'] = {}
-            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
-            selected_command = self.widgets[command_type_key].get_selected_item().get_string()
-            if selected_command:
-                defs = get_command_definitions()[command_key][selected_command]["params"]
-                for param, p_type in defs.items():
-                    if isinstance(p_type, list):
-                        values['parameters'][param] = self.widgets[param].get_selected_item().get_string()
-                    else:
-                         values['parameters'][param] = self.widgets[param].get_text()
-        else:
+        # Handle DialogueNode and other simple nodes
+        if not isinstance(self.node, (ConditionNode, ActionNode)):
             for key, widget in self.widgets.items():
-                values[key] = widget.get_text()
+                if isinstance(widget, Adw.EntryRow):
+                    values[key] = widget.get_text()
+            return values
+
+        # Handle ConditionNode and ActionNode
+        command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
+        command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
+
+        command_type_widget = self.widgets[command_type_key]
+        selected_command = command_type_widget.get_selected_item().get_string()
+        values[command_type_key] = selected_command
+
+        values['parameters'] = {}
+        if not selected_command:
+            return values
+
+        try:
+            param_defs = get_command_definitions()[command_key][selected_command]["params"]
+        except KeyError:
+            return values  # Command might not have params
+
+        for param in param_defs.keys():
+            widget = self.widgets.get(param)
+            if isinstance(widget, Adw.ComboRow):
+                values['parameters'][param] = widget.get_selected_item().get_string()
+            elif isinstance(widget, Adw.EntryRow):
+                values['parameters'][param] = widget.get_text()
+
         return values
 
 class LogicEditor(Gtk.Box):
@@ -238,19 +277,19 @@ class LogicEditor(Gtk.Box):
         sidebar.append(palette)
 
         dialogue_button = Gtk.Button(label="Add Dialogue")
-        dialogue_button.connect("clicked", self.on_add_dialogue_node)
+        dialogue_button.connect("clicked", lambda _: self.on_add_node(DialogueNode, "Dialogue"))
         dialogue_row = Adw.ActionRow(title="Add Dialogue Node", activatable_widget=dialogue_button)
         dialogue_row.add_suffix(dialogue_button)
         palette.add(dialogue_row)
 
         condition_button = Gtk.Button(label="Add Condition")
-        condition_button.connect("clicked", self.on_add_condition_node)
+        condition_button.connect("clicked", lambda _: self.on_add_node(ConditionNode, "Condition"))
         condition_row = Adw.ActionRow(title="Add Condition Node", activatable_widget=condition_button)
         condition_row.add_suffix(condition_button)
         palette.add(condition_row)
 
         action_button = Gtk.Button(label="Add Action")
-        action_button.connect("clicked", self.on_add_action_node)
+        action_button.connect("clicked", lambda _: self.on_add_node(ActionNode, "Action"))
         action_row = Adw.ActionRow(title="Add Action Node", activatable_widget=action_button)
         action_row.add_suffix(action_button)
         palette.add(action_row)
@@ -262,7 +301,7 @@ class LogicEditor(Gtk.Box):
         return sidebar
 
     def on_canvas_draw(self, area, cr, w, h, _):
-        cr.set_source_rgb(0.15, 0.15, 0.15)
+        cr.set_source_rgb(*COLOR_BACKGROUND)
         cr.paint()
         if self.active_graph:
             for node in self.active_graph.nodes:
@@ -273,32 +312,32 @@ class LogicEditor(Gtk.Box):
                         self.draw_connection(cr, node, output_node)
             if self.connecting_from_node:
                 start_x, start_y = self.get_connector_pos(self.connecting_from_node, "out")
-                cr.set_source_rgb(0.8, 0.8, 0.2)
+                cr.set_source_rgb(*COLOR_CONNECTION_LINE)
                 cr.move_to(start_x, start_y)
                 cr.line_to(self.connecting_line_x, self.connecting_line_y)
                 cr.stroke()
             if self.drag_selection_rect:
-                cr.set_source_rgba(0.2, 0.5, 1.0, 0.3)
+                cr.set_source_rgba(*COLOR_SELECTION_RECT)
                 x1, y1, x2, y2 = self.drag_selection_rect
                 cr.rectangle(min(x1,x2), min(y1,y2), abs(x1-x2), abs(y1-y2))
                 cr.fill()
 
     def draw_node(self, cr, node):
         # Node body
-        cr.set_source_rgb(0.2, 0.2, 0.2)
+        cr.set_source_rgb(*COLOR_NODE_BODY)
         cr.rectangle(node.x, node.y, node.width, node.height)
         cr.fill()
 
         # Node Header
-        if isinstance(node, DialogueNode): cr.set_source_rgb(0.4, 0.6, 0.4)
-        elif isinstance(node, ConditionNode): cr.set_source_rgb(0.6, 0.4, 0.4)
-        elif isinstance(node, ActionNode): cr.set_source_rgb(0.4, 0.4, 0.6)
-        else: cr.set_source_rgb(0.5, 0.5, 0.5)
-        cr.rectangle(node.x, node.y, node.width, 25)
+        if isinstance(node, DialogueNode): cr.set_source_rgb(*COLOR_NODE_HEADER_DIALOGUE)
+        elif isinstance(node, ConditionNode): cr.set_source_rgb(*COLOR_NODE_HEADER_CONDITION)
+        elif isinstance(node, ActionNode): cr.set_source_rgb(*COLOR_NODE_HEADER_ACTION)
+        else: cr.set_source_rgb(*COLOR_NODE_HEADER_DEFAULT)
+        cr.rectangle(node.x, node.y, node.width, NODE_HEADER_HEIGHT)
         cr.fill()
 
         if node in self.selected_nodes:
-            cr.set_source_rgb(1.0, 1.0, 0.0)
+            cr.set_source_rgb(*COLOR_NODE_SELECTED_BORDER)
             cr.set_line_width(3)
             cr.rectangle(node.x - 2, node.y - 2, node.width + 4, node.height + 4)
             cr.stroke()
@@ -307,12 +346,12 @@ class LogicEditor(Gtk.Box):
         layout = PangoCairo.create_layout(cr)
         layout.set_width((node.width - 20) * Pango.SCALE)
         layout.set_wrap(Pango.WrapMode.WORD_CHAR)
-        cr.set_source_rgb(1, 1, 1)
+        cr.set_source_rgb(*COLOR_NODE_TEXT)
         layout.set_markup(f"<b>{node.node_type}</b>: {node.id}", -1)
         cr.move_to(node.x + 10, node.y + 5)
         PangoCairo.show_layout(cr, layout)
 
-        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.set_source_rgb(*COLOR_NODE_TEXT_SECONDARY)
         cr.move_to(node.x + 10, node.y + 35)
         body_text = ""
         if isinstance(node, DialogueNode): body_text = f"<b>Char:</b> {node.character_id}\n<i>\"{node.dialogue_text}\"</i>"
@@ -326,45 +365,30 @@ class LogicEditor(Gtk.Box):
 
     def draw_connectors_and_resize_handle(self, cr, node):
         connector_y = node.y + node.height / 2
-        cr.set_source_rgb(0.8, 0.8, 0.2)
-        cr.rectangle(node.x - 5, connector_y - 5, 10, 10)
-        cr.rectangle(node.x + node.width - 5, connector_y - 5, 10, 10)
+        cr.set_source_rgb(*COLOR_CONNECTOR)
+        cr.rectangle(node.x - CONNECTOR_SIZE / 2, connector_y - CONNECTOR_SIZE / 2, CONNECTOR_SIZE, CONNECTOR_SIZE)
+        cr.rectangle(node.x + node.width - CONNECTOR_SIZE / 2, connector_y - CONNECTOR_SIZE / 2, CONNECTOR_SIZE, CONNECTOR_SIZE)
         cr.fill()
-        cr.set_source_rgb(0.5, 0.5, 0.5)
-        cr.rectangle(node.x + node.width - 10, node.y + node.height - 10, 10, 10)
+        cr.set_source_rgb(*COLOR_RESIZE_HANDLE)
+        cr.rectangle(node.x + node.width - RESIZE_HANDLE_SIZE, node.y + node.height - RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE)
         cr.fill()
 
     def draw_connection(self, cr, from_node, to_node):
         start_x, start_y = self.get_connector_pos(from_node, "out")
         end_x, end_y = self.get_connector_pos(to_node, "in")
-        cr.set_source_rgb(0.8, 0.8, 0.2)
+        cr.set_source_rgb(*COLOR_CONNECTION_LINE)
         cr.move_to(start_x, start_y)
         cr.curve_to(start_x + 50, start_y, end_x - 50, end_y, end_x, end_y)
         cr.stroke()
 
-    def on_add_dialogue_node(self, button):
+    def on_add_node(self, node_class, node_type):
         if self.active_graph:
-            new_node = DialogueNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Dialogue", x=50, y=50, parent_editor=self)
+            new_node = node_class(id=f"node_{len(self.active_graph.nodes)}", node_type=node_type, x=50, y=50, parent_editor=self)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.minimap.queue_draw()
             self.project_manager.set_dirty(True)
 
-    def on_add_condition_node(self, button):
-        if self.active_graph:
-            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)
-
-    def on_add_action_node(self, button):
-        if self.active_graph:
-            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)
 
     def get_connector_pos(self, node, connector_type):
         if connector_type == "in":
@@ -482,8 +506,8 @@ class LogicEditor(Gtk.Box):
 
     def on_resize_drag_begin(self, gesture, x, y):
         for node in reversed(self.active_graph.nodes):
-            if x >= node.x + node.width - 10 and x <= node.x + node.width and \
-               y >= node.y + node.height - 10 and y <= node.y + node.height:
+            if x >= node.x + node.width - RESIZE_HANDLE_SIZE and x <= node.x + node.width and \
+               y >= node.y + node.height - RESIZE_HANDLE_SIZE and y <= node.y + node.height:
                 self.resizing_node = node
                 self.initial_node_width = node.width
                 self.initial_node_height = node.height
@@ -493,8 +517,8 @@ class LogicEditor(Gtk.Box):
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
             success, start_x, start_y = gesture.get_start_point()
-            self.resizing_node.width = max(150, self.initial_node_width + x)
-            self.resizing_node.height = max(100, self.initial_node_height + y)
+            self.resizing_node.width = max(NODE_MIN_WIDTH, self.initial_node_width + x)
+            self.resizing_node.height = max(NODE_MIN_HEIGHT, self.initial_node_height + y)
             self.canvas.queue_draw()
 
     def on_resize_drag_end(self, gesture, x, y):
@@ -521,9 +545,9 @@ class LogicEditor(Gtk.Box):
 
     def create_canvas_context_menu(self):
         menu = Gio.Menu.new()
-        menu.append("Add Dialogue Node", "app.add_dialogue_node")
-        menu.append("Add Condition Node", "app.add_condition_node")
-        menu.append("Add Action Node", "app.add_action_node")
+        menu.append("Add Dialogue Node", "app.add-dialogue-node")
+        menu.append("Add Condition Node", "app.add-condition-node")
+        menu.append("Add Action Node", "app.add-action-node")
         self.canvas_context_menu = Gtk.PopoverMenu.new_from_model(menu)
         self.canvas_context_menu.set_parent(self.canvas)
 
@@ -533,18 +557,3 @@ class LogicEditor(Gtk.Box):
         self.node_context_menu = Gtk.PopoverMenu.new_from_model(menu)
         self.node_context_menu.set_parent(self.canvas)
 
-    def on_add_condition_node(self, button):
-        if self.active_graph:
-            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)
-
-    def on_add_action_node(self, button):
-        if self.active_graph:
-            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)

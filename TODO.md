@@ -33,16 +33,16 @@ These tasks directly impact the core user experience and should be addressed fir
 
 These tasks will improve the maintainability and stability of the codebase.
 
-- [ ] **Refactor `module_logic.py`**:
+- [x] **Refactor `module_logic.py`**:
   - Eliminate code duplication by creating a single, parameterized `on_add_node` method.
   - Remove the redundant `on_add_condition_node` and `on_add_action_node` methods.
   - Simplify the `get_values` method in the `DynamicNodeEditor` class.
   - Move hardcoded values (colors, sizes) to named constants.
 
-- [ ] **Refactor Database Editors**:
+- [x] **Refactor Database Editors**:
   - Address the final unchecked item from the old TODO list: Implement real-time **input validation** in the `Gtk.ColumnView`-based editors.
 
-- [ ] **Clean up `main.py`**:
+- [x] **Clean up `main.py`**:
   - Refactor the database editor tabs (`Items`, `Attributes`, `Verbs`) for better clarity in the UI. A more prominent `Adw.ViewSwitcher` or similar widget could help.
 
 ---
