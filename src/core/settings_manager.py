@@ -18,6 +18,7 @@ class SettingsManager:
 
     def _get_default_app_settings(self):
         return {
+            "recent_projects": [],
             "autosave_enabled": True,
             "autosave_interval": 5, # in minutes
             "default_project_dir": os.path.expanduser("~/Documents/AdvEngineProjects")
@@ -63,3 +64,12 @@ class SettingsManager:
     def set_project_setting(self, key, value):
         self.project_settings[key] = value
         self._save_settings(self.project_settings_file, self.project_settings)
+
+    def add_recent_project(self, project_path):
+        """Adds a project to the list of recent projects, ensuring no duplicates."""
+        recent = self.get_app_setting("recent_projects")
+        if project_path in recent:
+            recent.remove(project_path)
+        recent.insert(0, project_path)
+        # Keep the list at a reasonable size, e.g., 10 projects
+        self.set_app_setting("recent_projects", recent[:10])
