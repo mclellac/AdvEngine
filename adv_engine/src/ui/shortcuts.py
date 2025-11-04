@@ -11,12 +11,11 @@ class ShortcutsDialog(Gtk.ShortcutsWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_transient_for(kwargs.get("parent"))
         self.set_modal(True)
 
         # General Section
         section = Gtk.ShortcutsSection()
-        self.add(section)
+        self.set_child(section)
 
         # Logic Editor Group
         group = Gtk.ShortcutsGroup(title="Logic Editor")

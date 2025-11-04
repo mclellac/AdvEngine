@@ -68,8 +68,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
             # Project Name
             project_name_row = Adw.EntryRow(
-                title="Project Name",
-                subtitle="The name of the project."
+                title="Project Name"
             )
             project_name_row.set_tooltip_text("Set the name of the project.")
             project_name_row.set_text(self.settings_manager.get_project_setting("project_name"))
@@ -82,7 +81,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
             default_scene_row = Adw.ComboRow(
                 title="Default Starting Scene",
-                subtitle="The scene to load when the game starts.",
                 model=Gtk.StringList.new(scene_names)
             )
             default_scene_row.set_tooltip_text("Set the default scene that the game will load when it starts.")

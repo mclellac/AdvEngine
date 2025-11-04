@@ -61,7 +61,7 @@ class CharacterEditorDialog(Adw.MessageDialog):
 
         # Portrait Preview
         self.portrait_preview = Gtk.Picture()
-        self.portrait_preview.set_size_request(128, 128)
+        self.portrait_preview.set_size_request(256, 256)
         self._update_portrait_preview(character.portrait_asset_id if character else None)
         content.append(self.portrait_preview)
 
@@ -152,6 +152,7 @@ class CharacterManager(Gtk.Box):
         # Character List
         self.character_list = Gtk.ColumnView()
         self.character_list.set_vexpand(True)
+        self.character_list.set_size_request(200, -1)
         self.model = Gio.ListStore(item_type=CharacterGObject)
         for character in self.project_manager.data.characters:
             self.model.append(CharacterGObject(character))
@@ -195,32 +196,28 @@ class CharacterManager(Gtk.Box):
         if not character:
             return
 
-        grid = Gtk.Grid(column_spacing=10, row_spacing=10)
-        self.character_details.append(grid)
+        group = Adw.PreferencesGroup()
+        self.character_details.append(group)
 
-        grid.attach(Gtk.Label(label="ID:"), 0, 0, 1, 1)
         id_entry = Gtk.Entry(text=character.id)
         id_entry.connect("changed", self._on_detail_changed, character, "id")
-        grid.attach(id_entry, 1, 0, 1, 1)
+        group.add(self._create_action_row("ID", "Unique string identifier", id_entry))
 
-        grid.attach(Gtk.Label(label="Display Name:"), 0, 1, 1, 1)
         name_entry = Gtk.Entry(text=character.display_name)
         name_entry.connect("changed", self._on_detail_changed, character, "display_name")
-        grid.attach(name_entry, 1, 1, 1, 1)
+        group.add(self._create_action_row("Display Name", "In-game display name", name_entry))
 
-        grid.attach(Gtk.Label(label="Dialogue Start ID:"), 0, 2, 1, 1)
         dialogue_entry = Gtk.Entry(text=character.dialogue_start_id)
         dialogue_entry.connect("changed", self._on_detail_changed, character, "dialogue_start_id")
-        grid.attach(dialogue_entry, 1, 2, 1, 1)
+        group.add(self._create_action_row("Dialogue Start ID", "Starting dialogue graph ID", dialogue_entry))
 
-        merchant_check = Gtk.CheckButton(label="Is Merchant", active=character.is_merchant)
+        merchant_check = Gtk.CheckButton(active=character.is_merchant)
         merchant_check.connect("toggled", self._on_detail_changed, character, "is_merchant")
-        grid.attach(merchant_check, 0, 3, 2, 1)
+        group.add(self._create_action_row("Is Merchant", "Can this character open a shop?", merchant_check))
 
-        grid.attach(Gtk.Label(label="Shop ID:"), 0, 4, 1, 1)
         shop_entry = Gtk.Entry(text=character.shop_id)
         shop_entry.connect("changed", self._on_detail_changed, character, "shop_id")
-        grid.attach(shop_entry, 1, 4, 1, 1)
+        group.add(self._create_action_row("Shop ID", "Shop identifier", shop_entry))
 
         # Add and Delete buttons
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)

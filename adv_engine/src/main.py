@@ -54,9 +54,13 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         play_button.connect("clicked", self._on_play_clicked)
         self.header.pack_start(play_button)
 
+        new_project_button = Gtk.Button(label="New Project")
+        new_project_button.set_tooltip_text("Create a new project")
+        new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
+        self.header.pack_start(new_project_button)
+
         # Add a menu button to the header
         menu = Gio.Menu.new()
-        menu.append("New Project", "app.new-project")
         menu.append("Preferences", "app.preferences")
         menu.append("Keyboard Shortcuts", "app.shortcuts")
         menu.append("Export Localization", "app.export-localization")
@@ -403,7 +407,7 @@ class AdvEngine(Adw.Application):
         dialog.present()
 
     def on_shortcuts_activate(self, action, param):
-        dialog = ShortcutsDialog(parent=self.win)
+        dialog = ShortcutsDialog(transient_for=self.win)
         dialog.present()
 
     def on_about_activate(self, action, param):
