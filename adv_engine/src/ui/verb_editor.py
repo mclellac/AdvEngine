@@ -7,23 +7,25 @@ from ..core.data_schemas import Verb, VerbGObject
 from ..core.project_manager import ProjectManager
 
 class VerbEditor(Gtk.Box):
-    """A widget for editing verbs in a project, following HIG."""
+    """A widget for editing verbs in a project, using a ColumnView for a more
+    structured editing experience."""
 
     def __init__(self, project_manager: ProjectManager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.project_manager = project_manager
 
-        clamp = Adw.Clamp()
-        self.append(clamp)
-
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.main_box.set_margin_top(12)
         self.main_box.set_margin_bottom(12)
+
+        clamp = Adw.Clamp()
         clamp.set_child(self.main_box)
+        self.append(clamp)
 
         header = Adw.HeaderBar()
         self.main_box.append(header)
 
+        # --- Toolbar ---
         self.add_button = Gtk.Button(icon_name="list-add-symbolic")
         self.add_button.set_tooltip_text("Add New Verb")
         self.add_button.connect("clicked", self._on_add_clicked)
@@ -35,26 +37,50 @@ class VerbEditor(Gtk.Box):
         self.delete_button.set_sensitive(False)
         header.pack_end(self.delete_button)
 
+        # --- Search ---
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Search Verbs")
+        self.search_entry.connect("search-changed", self._on_search_changed)
+        self.main_box.append(self.search_entry)
+
+        # --- Data Model ---
         self.model = Gio.ListStore(item_type=VerbGObject)
         for verb in self.project_manager.data.verbs:
             self.model.append(VerbGObject(verb))
 
-        self.selection = Gtk.SingleSelection(model=self.model)
+        self.filter_model = Gtk.FilterListModel(model=self.model)
+        self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
+        self.filter_model.set_filter(self.filter)
+
+        self.selection = Gtk.SingleSelection(model=self.filter_model)
         self.selection.connect("selection-changed", self._on_selection_changed)
 
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", self._setup_list_item)
-        factory.connect("bind", self._bind_list_item)
-        factory.connect("unbind", self._unbind_list_item)
+        # --- Column View ---
+        self.column_view = Gtk.ColumnView(model=self.selection)
+        self.column_view.set_vexpand(True)
+        self.column_view.set_css_classes(["boxed-list"])
 
-        self.list_view = Gtk.ListView(model=self.selection, factory=factory)
-        self.list_view.set_vexpand(True)
-        self.list_view.set_css_classes(["boxed-list"])
+        # ID Column
+        id_factory = Gtk.SignalListItemFactory()
+        id_factory.connect("setup", self._setup_cell, "id")
+        id_factory.connect("bind", self._bind_cell, "id")
+        id_column = Gtk.ColumnViewColumn(title="ID", factory=id_factory)
+        id_column.set_expand(True)
+        self.column_view.append_column(id_column)
 
-        scrolled_window = Gtk.ScrolledWindow(child=self.list_view)
+        # Name Column
+        name_factory = Gtk.SignalListItemFactory()
+        name_factory.connect("setup", self._setup_cell, "name")
+        name_factory.connect("bind", self._bind_cell, "name")
+        name_column = Gtk.ColumnViewColumn(title="Name", factory=name_factory)
+        name_column.set_expand(True)
+        self.column_view.append_column(name_column)
+
+        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.main_box.append(scrolled_window)
 
+        # --- Empty State ---
         self.empty_state = Adw.StatusPage(
             title="No Verbs",
             description="Create a new verb to get started.",
@@ -65,60 +91,39 @@ class VerbEditor(Gtk.Box):
         self.model.connect("items-changed", self._update_visibility)
         self._update_visibility()
 
+    def _setup_cell(self, factory, list_item, column_id):
+        entry = Adw.EntryRow()
+        entry.set_show_apply_button(True)
+        list_item.set_child(entry)
+
+    def _bind_cell(self, factory, list_item, column_id):
+        verb_gobject = list_item.get_item()
+        entry = list_item.get_child()
+
+        # Bind the entry row's text to the corresponding property of the VerbGObject
+        entry.bind_property("text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+
+        # Mark project as dirty when edit is applied
+        handler_id = entry.connect("apply", lambda e: self.project_manager.set_dirty(True))
+
+        # Store handler to disconnect on unbind
+        list_item.disconnect_handler = handler_id
+
+    def _on_search_changed(self, search_entry):
+        """Called when the search text changes. Invalidates the filter."""
+        self.filter.changed(Gtk.FilterChange.DIFFERENT)
+
+    def _filter_func(self, item, search_entry):
+        """The actual filter function."""
+        search_text = search_entry.get_text().lower()
+        if not search_text:
+            return True
+        return search_text in item.id.lower() or search_text in item.name.lower()
+
     def _update_visibility(self, *args):
         has_items = self.model.get_n_items() > 0
         self.main_box.set_visible(has_items)
         self.empty_state.set_visible(not has_items)
-
-    def _setup_list_item(self, factory, list_item):
-        """Set up the structure of a list item and store widget references."""
-        group = Adw.PreferencesGroup()
-
-        id_entry = Adw.EntryRow(title="ID")
-        name_entry = Adw.EntryRow(title="Name")
-
-        group.add(id_entry)
-        group.add(name_entry)
-
-        list_item._id_entry = id_entry
-        list_item._name_entry = name_entry
-        list_item._bindings = []
-        list_item._handler_ids = []
-        list_item.set_child(group)
-
-    def _bind_list_item(self, factory, list_item):
-        """Bind a verb object to the stored widgets for inline editing."""
-        verb_gobject = list_item.get_item()
-
-        id_entry = list_item._id_entry
-        name_entry = list_item._name_entry
-
-        id_binding = id_entry.bind_property("text", verb_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        name_binding = name_entry.bind_property("text", verb_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        list_item._bindings.extend([id_binding, name_binding])
-
-        def on_applied(*args):
-            if list_item.get_item():
-                self.project_manager.set_dirty(True)
-
-        list_item._handler_ids.extend([
-            id_entry.connect("apply", on_applied),
-            name_entry.connect("apply", on_applied)
-        ])
-
-    def _unbind_list_item(self, factory, list_item):
-        """Disconnect all handlers and unbind all properties on unbind."""
-        id_entry = list_item._id_entry
-        name_entry = list_item._name_entry
-
-        for binding in list_item._bindings:
-            binding.unbind()
-        list_item._bindings = []
-
-        for handler_id in list_item._handler_ids:
-            if id_entry.is_connected(handler_id): id_entry.disconnect(handler_id)
-            if name_entry.is_connected(handler_id): name_entry.disconnect(handler_id)
-        list_item._handler_ids = []
 
     def _on_add_clicked(self, button):
         """Add a new, empty verb to the list."""
@@ -134,7 +139,11 @@ class VerbEditor(Gtk.Box):
         gobject = VerbGObject(new_verb)
         self.model.append(gobject)
 
-        self.selection.set_selected(self.model.get_n_items() - 1)
+        # Find the position in the filter model and select it
+        is_found, pos = self.filter_model.get_model().find(gobject)
+        if is_found:
+             self.selection.set_selected(pos)
+
 
     def _on_delete_clicked(self, button):
         """Delete the selected verb."""
@@ -142,7 +151,9 @@ class VerbEditor(Gtk.Box):
         if selected_pos == Gtk.INVALID_LIST_POSITION:
             return
 
-        verb_gobject = self.model.get_item(selected_pos)
+        verb_gobject = self.selection.get_selected_item()
+        if not verb_gobject:
+            return
 
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),

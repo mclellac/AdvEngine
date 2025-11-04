@@ -8,23 +8,26 @@ from ..core.data_schemas import Character, CharacterGObject
 from ..core.project_manager import ProjectManager
 
 class CharacterManager(Gtk.Box):
-    """A widget for editing characters in a project, following HIG for inline editing."""
+    """A widget for editing characters in a project, using a ColumnView for a
+    structured editing experience and including a portrait preview."""
 
     def __init__(self, project_manager: ProjectManager):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.project_manager = project_manager
 
-        clamp = Adw.Clamp()
-        self.append(clamp)
+        self.set_margin_top(12)
+        self.set_margin_bottom(12)
+        self.set_margin_start(12)
+        self.set_margin_end(12)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.main_box.set_margin_top(12)
-        self.main_box.set_margin_bottom(12)
-        clamp.set_child(self.main_box)
+        # --- Main content box ---
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, hexpand=True)
+        self.append(self.main_box)
 
         header = Adw.HeaderBar()
         self.main_box.append(header)
 
+        # --- Toolbar ---
         self.add_button = Gtk.Button(icon_name="list-add-symbolic")
         self.add_button.set_tooltip_text("Add New Character")
         self.add_button.connect("clicked", self._on_add_clicked)
@@ -36,26 +39,45 @@ class CharacterManager(Gtk.Box):
         self.delete_button.set_sensitive(False)
         header.pack_end(self.delete_button)
 
-        # --- Data Models ---
+        # --- Search ---
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Search Characters")
+        self.search_entry.connect("search-changed", self._on_search_changed)
+        self.main_box.append(self.search_entry)
+
+        # --- Data Model ---
         self.model = Gio.ListStore(item_type=CharacterGObject)
         for character in self.project_manager.data.characters:
             self.model.append(CharacterGObject(character))
 
-        self.selection = Gtk.SingleSelection(model=self.model)
+        self.filter_model = Gtk.FilterListModel(model=self.model)
+        self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
+        self.filter_model.set_filter(self.filter)
+
+        self.selection = Gtk.SingleSelection(model=self.filter_model)
         self.selection.connect("selection-changed", self._on_selection_changed)
 
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", self._setup_list_item)
-        factory.connect("bind", self._bind_list_item)
-        factory.connect("unbind", self._unbind_list_item)
+        # --- Column View ---
+        self.column_view = Gtk.ColumnView(model=self.selection)
+        self.column_view.set_vexpand(True)
+        self.column_view.set_css_classes(["boxed-list"])
+        self._create_columns()
 
-        self.list_view = Gtk.ListView(model=self.selection, factory=factory)
-        self.list_view.set_vexpand(True)
-        self.list_view.set_css_classes(["boxed-list"])
-
-        scrolled_window = Gtk.ScrolledWindow(child=self.list_view)
+        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.main_box.append(scrolled_window)
+
+        # --- Portrait Preview ---
+        preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, vexpand=False, hexpand=False)
+        preview_box.set_size_request(256, -1)
+        self.append(preview_box)
+
+        preview_label = Gtk.Label(label="<b>Portrait Preview</b>", use_markup=True)
+        preview_box.append(preview_label)
+
+        self.portrait_preview = Gtk.Picture(content_fit=Gtk.ContentFit.CONTAIN)
+        self.portrait_preview.set_size_request(-1, 256)
+        preview_box.append(self.portrait_preview)
 
         # --- Empty State ---
         self.empty_state = Adw.StatusPage(
@@ -63,119 +85,107 @@ class CharacterManager(Gtk.Box):
             description="Create a new character to get started.",
             icon_name="user-info-symbolic"
         )
+        # This will be shown/hidden by swapping the main content box
         self.append(self.empty_state)
 
         self.model.connect("items-changed", self._update_visibility)
         self._update_visibility()
 
+    def _create_columns(self):
+        # ID Column
+        id_factory = Gtk.SignalListItemFactory()
+        id_factory.connect("setup", self._setup_cell, "text")
+        id_factory.connect("bind", self._bind_cell, "id", "text")
+        id_column = Gtk.ColumnViewColumn(title="ID", factory=id_factory)
+        self.column_view.append_column(id_column)
+
+        # Display Name Column
+        name_factory = Gtk.SignalListItemFactory()
+        name_factory.connect("setup", self._setup_cell, "text")
+        name_factory.connect("bind", self._bind_cell, "display_name", "text")
+        name_column = Gtk.ColumnViewColumn(title="Display Name", factory=name_factory)
+        name_column.set_expand(True)
+        self.column_view.append_column(name_column)
+
+        # Is Merchant Column
+        merchant_factory = Gtk.SignalListItemFactory()
+        merchant_factory.connect("setup", self._setup_cell, "switch")
+        merchant_factory.connect("bind", self._bind_cell, "is_merchant", "switch")
+        merchant_column = Gtk.ColumnViewColumn(title="Is Merchant", factory=merchant_factory)
+        self.column_view.append_column(merchant_column)
+
+        # Portrait Asset Column
+        portrait_factory = Gtk.SignalListItemFactory()
+        portrait_factory.connect("setup", self._setup_cell, "combo")
+        portrait_factory.connect("bind", self._bind_cell, "portrait_asset_id", "combo")
+        portrait_column = Gtk.ColumnViewColumn(title="Portrait Asset", factory=portrait_factory)
+        portrait_column.set_expand(True)
+        self.column_view.append_column(portrait_column)
+
+    def _setup_cell(self, factory, list_item, cell_type):
+        if cell_type == "switch":
+            widget = Gtk.Switch(valign=Gtk.Align.CENTER)
+        elif cell_type == "combo":
+            image_assets = ["None"] + [asset.id for asset in self.project_manager.data.assets if asset.asset_type in ["sprite", "animation"]]
+            widget = Gtk.DropDown.new_from_strings(image_assets)
+        else: # text
+            widget = Gtk.Entry(valign=Gtk.Align.CENTER)
+        list_item.set_child(widget)
+
+    def _bind_cell(self, factory, list_item, column_id, cell_type):
+        char_gobject = list_item.get_item()
+        widget = list_item.get_child()
+
+        if cell_type == "switch":
+            widget.bind_property("active", char_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            handler_id = widget.connect("notify::active", lambda w, _: self.project_manager.set_dirty(True))
+        elif cell_type == "combo":
+            model = widget.get_model()
+            for i in range(model.get_n_items()):
+                if model.get_string(i) == getattr(char_gobject, column_id, "None"):
+                    widget.set_selected(i)
+                    break
+            handler_id = widget.connect("notify::selected-item", self._on_combo_changed, char_gobject, column_id)
+        else: # text
+            widget.bind_property("text", char_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            handler_id = widget.connect("changed", lambda w: self.project_manager.set_dirty(True))
+
+        list_item.disconnect_handler = handler_id
+
+    def _on_combo_changed(self, combo, _, char_gobject, column_id):
+        selected_str = combo.get_selected_item().get_string() if combo.get_selected_item() else "None"
+        setattr(char_gobject, column_id, selected_str)
+        self.project_manager.set_dirty(True)
+
+    def _update_preview(self):
+        selected_item = self.selection.get_selected_item()
+        if not selected_item:
+            self.portrait_preview.set_filename(None)
+            return
+
+        asset_id = selected_item.portrait_asset_id
+        if asset_id and asset_id != "None":
+            asset = next((a for a in self.project_manager.data.assets if a.id == asset_id), None)
+            if asset and self.project_manager.project_path and os.path.exists(os.path.join(self.project_manager.project_path, asset.file_path)):
+                self.portrait_preview.set_filename(os.path.join(self.project_manager.project_path, asset.file_path))
+            else:
+                self.portrait_preview.set_filename(None)
+        else:
+            self.portrait_preview.set_filename(None)
+
+    def _on_search_changed(self, search_entry):
+        self.filter.changed(Gtk.FilterChange.DIFFERENT)
+
+    def _filter_func(self, item, search_entry):
+        search_text = search_entry.get_text().lower()
+        if not search_text: return True
+        return (search_text in item.id.lower() or
+                search_text in item.display_name.lower())
+
     def _update_visibility(self, *args):
         has_items = self.model.get_n_items() > 0
-        self.main_box.set_visible(has_items)
+        self.main_box.get_parent().set_visible(has_items) # The HBox
         self.empty_state.set_visible(not has_items)
-
-    def _setup_list_item(self, factory, list_item):
-        """Set up the structure of a character editor 'card'."""
-        group = Adw.PreferencesGroup()
-
-        id_entry = Adw.EntryRow(title="ID")
-        name_entry = Adw.EntryRow(title="Display Name")
-        dialogue_entry = Adw.EntryRow(title="Dialogue Start ID")
-        merchant_switch = Adw.SwitchRow(title="Is Merchant")
-        shop_entry = Adw.EntryRow(title="Shop ID")
-
-        image_assets = ["None"] + [asset.id for asset in self.project_manager.data.assets if asset.asset_type in ["sprite", "animation"]]
-        portrait_combo = Adw.ComboRow(title="Portrait Asset", model=Gtk.StringList.new(image_assets))
-
-        portrait_preview = Gtk.Picture(width_request=128, height_request=128, content_fit=Gtk.ContentFit.CONTAIN)
-
-        group.add(id_entry)
-        group.add(name_entry)
-        group.add(dialogue_entry)
-        group.add(merchant_switch)
-        group.add(shop_entry)
-        group.add(portrait_combo)
-        group.add(portrait_preview)
-
-        list_item._widgets = {
-            "id": id_entry, "display_name": name_entry, "dialogue_start_id": dialogue_entry,
-            "is_merchant": merchant_switch, "shop_id": shop_entry,
-            "portrait_asset_id": portrait_combo, "preview": portrait_preview
-        }
-        list_item._bindings = []
-        list_item._handler_ids = []
-        list_item.set_child(group)
-
-    def _bind_list_item(self, factory, list_item):
-        """Bind a CharacterGObject to the widgets."""
-        char_gobject = list_item.get_item()
-        widgets = list_item._widgets
-
-        bindings = [
-            widgets["id"].bind_property("text", char_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            widgets["display_name"].bind_property("text", char_gobject, "display_name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            widgets["dialogue_start_id"].bind_property("text", char_gobject, "dialogue_start_id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            widgets["is_merchant"].bind_property("active", char_gobject, "is_merchant", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-            widgets["shop_id"].bind_property("text", char_gobject, "shop_id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),
-        ]
-        list_item._bindings.extend(bindings)
-
-        # Handle ComboRow selection
-        combo = widgets["portrait_asset_id"]
-        model = combo.get_model()
-
-        # Find and set initial selection
-        for i in range(model.get_n_items()):
-            if model.get_string(i) == char_gobject.portrait_asset_id:
-                combo.set_selected(i)
-                break
-
-        def on_combo_changed(*args):
-            selected_item = combo.get_selected_item()
-            char_gobject.portrait_asset_id = selected_item.get_string() if selected_item else "None"
-            self.project_manager.set_dirty(True)
-
-        # Handle preview update
-        def update_preview(*args):
-            asset_id = char_gobject.portrait_asset_id
-            preview = widgets["preview"]
-            if asset_id and asset_id != "None":
-                asset = next((a for a in self.project_manager.data.assets if a.id == asset_id), None)
-                if asset and os.path.exists(os.path.join(self.project_manager.project_path, asset.file_path)):
-                    preview.set_filename(os.path.join(self.project_manager.project_path, asset.file_path))
-                else:
-                    preview.set_filename(None)
-            else:
-                preview.set_filename(None)
-
-        update_preview() # Initial update
-
-        handlers = [
-            widgets["id"].connect("apply", lambda w: self.project_manager.set_dirty(True)),
-            widgets["display_name"].connect("apply", lambda w: self.project_manager.set_dirty(True)),
-            widgets["shop_id"].connect("apply", lambda w: self.project_manager.set_dirty(True)),
-            char_gobject.connect("notify::is-merchant", lambda *args: self.project_manager.set_dirty(True)),
-            char_gobject.connect("notify::portrait-asset-id", update_preview),
-            combo.connect("notify::selected", on_combo_changed),
-        ]
-        list_item._handler_ids.extend(handlers)
-
-
-    def _unbind_list_item(self, factory, list_item):
-        """Disconnect all handlers and unbind all properties."""
-        for binding in list_item._bindings:
-            binding.unbind()
-        list_item._bindings.clear()
-
-        char_gobject = list_item.get_item()
-        widgets = list_item._widgets
-        for handler_id in list_item._handler_ids:
-            # Disconnect from all widgets and the gobject itself
-            for widget in widgets.values():
-                if isinstance(widget, Gtk.Widget) and widget.is_connected(handler_id):
-                    widget.disconnect(handler_id)
-            if char_gobject and char_gobject.is_connected(handler_id):
-                char_gobject.disconnect(handler_id)
-        list_item._handler_ids.clear()
 
 
     def _on_add_clicked(self, button):
@@ -187,16 +197,18 @@ class CharacterManager(Gtk.Box):
             new_id = f"{new_id_base}_{count}"
             count += 1
 
-        new_char_data = Character(id=new_id, display_name="New Character", dialogue_start_id="", is_merchant=False, shop_id="", portrait_asset_id=None)
+        new_char_data = Character(id=new_id, display_name="New Character", dialogue_start_id="", is_merchant=False, shop_id="", portrait_asset_id="None")
         self.project_manager.add_character(new_char_data)
         gobject = CharacterGObject(new_char_data)
         self.model.append(gobject)
-        self.selection.set_selected(self.model.get_n_items() - 1)
+
+        is_found, pos = self.filter_model.get_model().find(gobject)
+        if is_found:
+             self.selection.set_selected(pos)
 
     def _on_delete_clicked(self, button):
         selected_item = self.selection.get_selected_item()
-        if not selected_item:
-            return
+        if not selected_item: return
 
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),
@@ -220,3 +232,4 @@ class CharacterManager(Gtk.Box):
 
     def _on_selection_changed(self, selection_model, position, n_items):
         self.delete_button.set_sensitive(selection_model.get_selected() != Gtk.INVALID_LIST_POSITION)
+        self._update_preview()

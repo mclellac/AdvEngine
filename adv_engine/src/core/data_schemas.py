@@ -149,6 +149,10 @@ class LogicNode:
     height: int = 160
     inputs: List[str] = field(default_factory=list)  # List of connected node IDs
     outputs: List[str] = field(default_factory=list) # List of connected node IDs
+    parent_editor: Any = None
+
+    def get_parent_editor(self):
+        return self.parent_editor
 
 @dataclass
 class DialogueNode(LogicNode):
