@@ -729,10 +729,13 @@ class ProjectManager:
                 os.path.join(data_dir, "Audio.json"),
                 os.path.join(data_dir, "GlobalState.json"),
                 os.path.join(data_dir, "Verbs.json"),
+                os.path.join(data_dir, "Fonts.json"),
                 os.path.join(logic_dir, "Scenes.json"),
                 os.path.join(logic_dir, "LogicGraphs.json"),
                 os.path.join(logic_dir, "DialogueGraphs.json"),
                 os.path.join(logic_dir, "Cutscenes.json"),
+                os.path.join(logic_dir, "Interactions.json"),
+                os.path.join(logic_dir, "Quests.json"),
                 os.path.join(ui_dir, "WindowLayout.json"),
             ]
             for file_path in json_files:
