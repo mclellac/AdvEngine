@@ -1,7 +1,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf
+from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf, GLib
 import json
 import os
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
@@ -59,7 +59,7 @@ class DynamicNodeEditor(Adw.Bin):
 
     def set_node(self, node):
         self.node = node
-        self.build_ui()
+        GLib.idle_add(self.build_ui)
 
     def build_ui(self):
         # Clear existing widgets
