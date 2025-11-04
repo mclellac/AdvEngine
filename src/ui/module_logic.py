@@ -46,28 +46,32 @@ class DynamicNodeEditor(Adw.Bin):
         super().__init__()
         self.node = None
         self.project_manager = project_manager
-        self.widgets = {}
+        self.main_widgets = {}
+        self.param_widgets = {}
 
-        # Use a Gtk.Box as the single child for the Adw.Bin
         self.container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_child(self.container_box)
 
-        self.params_group = Adw.PreferencesGroup()
-        self.main_group = Adw.PreferencesGroup()
-        self.container_box.append(self.main_group)
-        self.container_box.append(self.params_group)
+        self.main_group = None
+        self.params_group = None
 
     def set_node(self, node):
         self.node = node
         GLib.idle_add(self.build_ui)
 
     def build_ui(self):
-        # Clear existing widgets
-        while self.main_group.get_first_child():
-            self.main_group.remove(self.main_group.get_first_child())
-        while self.params_group.get_first_child():
-            self.params_group.remove(self.params_group.get_first_child())
-        self.widgets.clear()
+        if self.main_group:
+            self.main_group.destroy()
+        if self.params_group:
+            self.params_group.destroy()
+
+        self.main_widgets.clear()
+        self.param_widgets.clear()
+
+        self.main_group = Adw.PreferencesGroup()
+        self.params_group = Adw.PreferencesGroup()
+        self.container_box.append(self.main_group)
+        self.container_box.append(self.params_group)
 
         if not self.node:
             self.params_group.set_visible(False)
@@ -91,20 +95,26 @@ class DynamicNodeEditor(Adw.Bin):
         entry = Adw.EntryRow(title=title)
         entry.set_text(str(default_value))
         entry.connect("apply", self.on_value_changed)
-        self.widgets[key] = entry
+        self.main_widgets[key] = entry
         group.add(entry)
 
     def add_dropdown(self, group, key, title, options, default_value):
         combo = Adw.ComboRow(title=title, model=Gtk.StringList.new(options))
-        self.widgets[key] = combo
         if default_value in options:
             combo.set_selected(options.index(default_value))
         combo.connect("notify::selected-item", self.on_combo_changed)
+        self.main_widgets[key] = combo
         group.add(combo)
 
     def update_params_ui(self, *args):
-        while self.params_group.get_first_child():
-            self.params_group.remove(self.params_group.get_first_child())
+        if self.params_group:
+            self.container_box.remove(self.params_group)
+            self.params_group.destroy()
+        self.param_widgets.clear()
+
+        self.params_group = Adw.PreferencesGroup()
+        self.container_box.append(self.params_group)
+
         if not isinstance(self.node, (ConditionNode, ActionNode)):
             self.params_group.set_visible(False)
             return
@@ -112,7 +122,7 @@ class DynamicNodeEditor(Adw.Bin):
         self.params_group.set_visible(True)
         command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
         command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
-        selected_command = self.widgets[command_type_key].get_selected_item().get_string()
+        selected_command = self.main_widgets[command_type_key].get_selected_item().get_string()
 
         if selected_command:
             defs = get_command_definitions()[command_key][selected_command]
@@ -123,19 +133,35 @@ class DynamicNodeEditor(Adw.Bin):
 
     def add_param_widget(self, key, param_type, default_value):
         if isinstance(param_type, list):
-            self.add_dropdown(self.params_group, key, key, param_type, default_value)
+            combo = Adw.ComboRow(title=key, model=Gtk.StringList.new(param_type))
+            if default_value in param_type:
+                combo.set_selected(param_type.index(default_value))
+            combo.connect("notify::selected-item", self.on_value_changed)
+            self.param_widgets[key] = combo
+            self.params_group.add(combo)
         else:
-            self.add_entry(self.params_group, key, key, default_value)
+            entry = Adw.EntryRow(title=key)
+            entry.set_text(str(default_value))
+            entry.connect("apply", self.on_value_changed)
+            self.param_widgets[key] = entry
+            self.params_group.add(entry)
 
     def on_combo_changed(self, combo, _):
-        self.update_params_ui()
         self.on_value_changed(combo)
+        self.update_params_ui()
 
     def on_value_changed(self, widget):
         if not self.node: return
         values = self.get_values()
+
+        # Apply the direct attributes from the main group
         for key, value in values.items():
-            setattr(self.node, key, value)
+            if key != 'parameters':
+                setattr(self.node, key, value)
+
+        # Apply the parameters dictionary if it exists
+        if 'parameters' in values:
+            self.node.parameters = values['parameters']
 
         if self.project_manager:
             self.project_manager.set_dirty(True)
@@ -147,22 +173,21 @@ class DynamicNodeEditor(Adw.Bin):
 
     def get_values(self):
         values = {}
-        if isinstance(self.node, (ConditionNode, ActionNode)):
-            command_type_key = "condition_type" if isinstance(self.node, ConditionNode) else "action_command"
-            values[command_type_key] = self.widgets[command_type_key].get_selected_item().get_string()
-            values['parameters'] = {}
-            command_key = "conditions" if isinstance(self.node, ConditionNode) else "actions"
-            selected_command = self.widgets[command_type_key].get_selected_item().get_string()
-            if selected_command:
-                defs = get_command_definitions()[command_key][selected_command]["params"]
-                for param, p_type in defs.items():
-                    if isinstance(p_type, list):
-                        values['parameters'][param] = self.widgets[param].get_selected_item().get_string()
-                    else:
-                         values['parameters'][param] = self.widgets[param].get_text()
-        else:
-            for key, widget in self.widgets.items():
+        # Get values from main group
+        for key, widget in self.main_widgets.items():
+            if isinstance(widget, Adw.EntryRow):
                 values[key] = widget.get_text()
+            elif isinstance(widget, Adw.ComboRow):
+                values[key] = widget.get_selected_item().get_string()
+
+        # If there are params, get them too
+        if self.param_widgets:
+            values['parameters'] = {}
+            for key, widget in self.param_widgets.items():
+                if isinstance(widget, Adw.EntryRow):
+                    values['parameters'][key] = widget.get_text()
+                elif isinstance(widget, Adw.ComboRow):
+                    values['parameters'][key] = widget.get_selected_item().get_string()
         return values
 
 class LogicEditor(Gtk.Box):
