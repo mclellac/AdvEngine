@@ -28,81 +28,44 @@ from .ui.module_interaction import InteractionEditor
 from .ui.preferences import PreferencesDialog
 from .ui.shortcuts import ShortcutsDialog
 from .ui.search_results import SearchResultsView
-from .ui.welcome import WelcomeWidget
+from .ui.welcome import WelcomeWindow
 
 
-class AdvEngineWindow(Adw.ApplicationWindow):
-    def __init__(self, **kwargs):
+class EditorWindow(Adw.ApplicationWindow):
+    def __init__(self, project_manager, **kwargs):
         super().__init__(**kwargs)
-        self.project_manager = None
+        self.project_manager = project_manager
         self.base_title = "AdvEngine"
         self.set_title(self.base_title)
         self.set_default_size(1280, 800)
+
+        self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
         # Use a ToolbarView as the main content container
         main_container = Adw.ToolbarView()
         self.set_content(main_container)
 
-        self.header = Adw.HeaderBar()
-        main_container.add_top_bar(self.header)
-
-        # The main_container is the ToolbarView. Its content will be a stack
-        # that switches between the welcome screen and the editor.
-        self.main_stack = Adw.ViewStack()
-        main_container.set_content(self.main_stack)
-
-        # The welcome widget is one page of the stack
-        self.welcome_widget = WelcomeWidget()
-        self.main_stack.add_named(self.welcome_widget, "welcome")
-
-        # The editor UI is the other page
-        self.editor_content_box = Gtk.Box()
-        self.main_stack.add_named(self.editor_content_box, "editor")
-
-        self.show_welcome_screen()
-
-    def show_welcome_screen(self):
-        """Configures the UI to show the welcome screen."""
-        settings = self.get_application().settings_manager
-        recent_projects = settings.get_app_setting("recent_projects")
-        self.welcome_widget.populate_recent_projects(recent_projects)
-        self.main_stack.set_visible_child_name("welcome")
-        self.header.set_visible(False)
-
-    def setup_project_ui(self, project_manager):
-        """Builds the main editor UI once a project is loaded."""
-        self.project_manager = project_manager
-        self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
-        self.header.set_visible(True)
-
-        # Clear any old widgets from previous projects
-        child = self.header.get_first_child()
-        while child:
-            self.header.remove(child)
-            child = self.header.get_first_child()
-
-        child = self.editor_content_box.get_first_child()
-        if child:
-            self.editor_content_box.remove(child)
+        header = Adw.HeaderBar()
+        main_container.add_top_bar(header)
 
         # --- Header Bar Setup ---
         self.toggle_button = Gtk.ToggleButton(icon_name="sidebar-show-symbolic", tooltip_text="Toggle Sidebar")
-        self.header.pack_start(self.toggle_button)
+        header.pack_start(self.toggle_button)
 
         save_button = Gtk.Button(label="Save", tooltip_text="Save project (Ctrl+S)")
         save_button.set_css_classes(["flat"])
         save_button.connect("clicked", self.on_save_clicked)
-        self.header.pack_start(save_button)
+        header.pack_start(save_button)
 
         play_button = Gtk.Button(label="Play", tooltip_text="Launch game (Ctrl+P)")
         play_button.set_css_classes(["flat"])
         play_button.connect("clicked", self._on_play_clicked)
-        self.header.pack_start(play_button)
+        header.pack_start(play_button)
 
         new_project_button = Gtk.Button(label="New Project", tooltip_text="Create a new project")
         new_project_button.set_css_classes(["flat"])
         new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
-        self.header.pack_start(new_project_button)
+        header.pack_start(new_project_button)
 
         menu = Gio.Menu.new()
         menu.append("Preferences", "app.preferences")
@@ -112,15 +75,15 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         menu.append("About", "app.about")
 
         menu_button = Gtk.MenuButton(menu_model=menu, icon_name="open-menu-symbolic", tooltip_text="Application Menu")
-        self.header.pack_end(menu_button)
+        header.pack_end(menu_button)
 
         search_entry = Gtk.SearchEntry(placeholder_text="Search Project")
         search_entry.connect("search-changed", self.on_search_changed)
-        self.header.pack_end(search_entry)
+        header.pack_end(search_entry)
 
         # --- Main Layout ---
         self.split_view = Adw.OverlaySplitView()
-        self.editor_content_box.append(self.split_view)
+        main_container.set_content(self.split_view)
 
         self.toggle_button.bind_property("active", self.split_view, "show-sidebar", GObject.BindingFlags.BIDIRECTIONAL)
 
@@ -173,7 +136,6 @@ class AdvEngineWindow(Adw.ApplicationWindow):
         self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
         self.split_view.set_show_sidebar(True)
 
-        self.main_stack.set_visible_child_name("editor")
         self.setup_logic_editor_actions()
 
     def setup_logic_editor_actions(self):
@@ -314,7 +276,7 @@ class AdvEngine(Adw.Application):
     def on_activate(self, app):
         # This is called when the application is first launched
         if not self.win:
-            self.win = AdvEngineWindow(application=self)
+            self.win = WelcomeWindow(application=self)
         self.win.present()
 
         save_action = Gio.SimpleAction.new("save-project", None)
@@ -424,16 +386,22 @@ class AdvEngine(Adw.Application):
             self.project_manager.save_project()
 
     def load_project(self, project_path):
-        """Loads a project and configures the main window to show it."""
+        """Loads a project and shows its window."""
         self.project_manager = ProjectManager(project_path)
         self.project_manager.load_project()
         self.settings_manager.add_recent_project(project_path)
 
-        if not self.win:
-            self.win = AdvEngineWindow(application=self)
+        # Create a new window for the project
+        new_win = EditorWindow(
+            application=self, project_manager=self.project_manager
+        )
+        new_win.present()
 
-        self.win.setup_project_ui(self.project_manager)
-        self.win.present()
+        # If there was an old window, close it.
+        if self.win:
+            self.win.close()
+
+        self.win = new_win
 
     def on_open_project_activate(self, action, param):
         """Handler for the 'open-project' action."""
