@@ -28,33 +28,9 @@ configure_file(
 
 advengine_sources = [
   '__init__.py',
-  'main.py',
-  'core/__init__.py',
-  'core/data_schemas.py',
-  'core/project_manager.py',
-  'core/settings_manager.py',
-  'core/ue_exporter.py',
-  'ui/attribute_editor.py',
-  'ui/__init__.py',
-  'ui/item_editor.py',
-  'ui/module_assets.py',
-  'ui/module_audio.py',
-  'ui/module_character.py',
-  'ui/module_cutscene.py',
-  'ui/module_dialogue.py',
-  'ui/module_font.py',
-  'ui/module_interaction.py',
-  'ui/module_logic.py',
-  'ui/module_log.py',
-  'ui/module_quest.py',
-  'ui/module_scene.py',
-  'ui/module_state.py',
-  'ui/module_ui_builder.py',
-  'ui/preferences.py',
-  'ui/search_results.py',
-  'ui/shortcuts.py',
-  'ui/verb_editor.py',
-  'ui/widgets'
+  'main.py'
 ]
 
 install_data(advengine_sources, install_dir: moduledir)
+install_subdir('core', install_dir: moduledir)
+install_subdir('ui', install_dir: moduledir)
