@@ -1,7 +1,7 @@
 {
     "id" : "com.github.mclellac.AdvEngine",
     "runtime" : "org.gnome.Platform",
-    "runtime-version" : "master",
+    "runtime-version" : "49",
     "sdk" : "org.gnome.Sdk",
     "command" : "advengine",
     "finish-args" : [
@@ -32,7 +32,13 @@
                     "type" : "git",
                     "url" : "file:///home/mclellac/Projects/src/github.com"
                 }
+            ],
+            "config-opts" : [
+                "--libdir=lib"
             ]
         }
-    ]
+    ],
+    "build-options" : {
+        "env" : {        }
+    }
 }
