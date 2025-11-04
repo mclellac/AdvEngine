@@ -1,95 +1,99 @@
-# Tutorial: Your First Adventure Game Level
+# Tutorial: Your First Adventure Game Puzzle
 
 This tutorial will guide you through creating a simple, single-room puzzle in AdvEngine, inspired by classic Sierra On-Line adventure games like *Space Quest*.
 
 ## The Scenario
 
-Our hero, a hapless space janitor, finds himself locked in the ship's storage closet. He needs to find a hidden keycard to unlock the door and escape to the hallway.
+Our hero finds themselves locked in a storage closet. They need to find a hidden keycard to unlock the door and escape to the hallway.
 
-**Goal:**
-1.  The player can look at the door and a loose wall panel.
-2.  The player can click on the wall panel to reveal a hidden keycard.
-3.  The player can use the keycard on the door to unlock it and move to the next area.
+**Goals:**
+1.  The player can "look at" the door to see that it's locked.
+2.  The player can "look at" a loose wall panel to get a hint.
+3.  The player can "use" the loose wall panel to reveal a hidden keycard, which is added to their inventory.
+4.  The player can "use" the keycard on the door to unlock it and transition to the next scene.
 
-## Step 1: Create the Scene
+## Step 1: Create the Database Entries
 
-First, we need to create the visual space for our puzzle.
+First, we need to define the verbs and items for our puzzle.
 
-1.  Open the **Scenes** module from the main navigation.
-2.  Click the "New Scene" button and give it an ID, for example, `StorageCloset`.
-3.  With your new scene selected, find the "Background Image" property in the editor panel. Click to import an image of a storage closet.
-4.  Next, we need to tell the game where the player can walk. Select the **Walk Mesh** tool.
-5.  Click on the image to draw a polygon that covers the floor area. This is the walkable surface for your character.
-
-## Step 2: Add Hotspots
-
-Hotspots are the interactive elements in your scene. We need two: the door and the loose wall panel.
-
-1.  Select the **Hotspot** tool in the Scene Editor.
-2.  Draw a rectangle over the door. In the properties panel, give it a unique ID like `ClosetDoor`.
-3.  Draw another rectangle over the loose panel on the wall. Give it the ID `LoosePanel`.
-
-Your scene is now visually set up!
-
-## Step 3: Create Verbs and the Keycard Item
-
-First, we need to define the actions the player can take.
-
-1.  Navigate to the **Verbs & Items** module.
-2.  Select the "Verbs" tab.
-3.  Add a few basic verbs:
+1.  Navigate to the **Database** editor from the sidebar. This view contains tabs for Items, Attributes, and Verbs.
+2.  Select the **Verbs** tab and create two new verbs:
     *   `id: "look", name: "Look At"`
     *   `id: "use", name: "Use"`
-
-Now, let's create the keycard.
-
-1.  Select the "Items" tab.
-2.  Add a new row and fill out the details:
-    *   **id:** `Keycard`
+3.  Select the **Items** tab and create the keycard:
+    *   **id:** `keycard`
     *   **name:** `Security Keycard`
-    *   **description:** `A standard issue level 2 security keycard. Looks slightly worn.`
-    *   Leave the other fields at their default values for now.
+    *   **description:** `A standard issue level 2 security keycard.`
 
-## Step 4: Script the Puzzle Logic
+## Step 2: Set up the Scene
 
-This is where we bring the scene to life. Go to the **Logic** module. The node graph here defines all the cause-and-effect rules for your game.
+Now, let's create the visual space for our puzzle.
 
-### Logic Rule 1: Finding the Keycard
+1.  Open the **Scenes** editor from the sidebar.
+2.  Create a new scene with the ID `StorageCloset`.
+3.  With the new scene selected, use the properties panel on the right to set a background image.
+4.  Create two hotspots by clicking and dragging on the canvas:
+    *   One over the door, with the ID `closet_door`.
+    *   One over the loose wall panel, with the ID `loose_panel`.
 
-1.  Create a new logic block. We'll use this to define what happens when the player clicks the loose panel.
-2.  Set the **Target Hotspot ID** to `LoosePanel`.
-3.  Leave the **Used Item ID** empty, as this is a direct click interaction.
-4.  **Add a Condition:** We only want this to work once.
-    *   Create a condition node: `variable_id: "FoundClosetKey", required_value: "false"`
-5.  **Add an Action on Success:** If the condition is met:
-    *   Create an action node: `command: "INVENTORY_ADD", parameters: {"ItemID": "Keycard"}`
-    *   Create a second action node: `command: "SET_VARIABLE", parameters: {"VarName": "FoundClosetKey", "Value": "true"}`
-    *   (Optional) Add a dialogue node to say "You found a keycard!"
+## Step 3: Create the Dialogue and Logic
 
-### Logic Rule 2: Unlocking the Door
+We need to create the text that will be displayed to the player and the logic that will control the puzzle.
 
-1.  Create another logic block. This will handle using the keycard on the door.
-2.  Set the **Target Hotspot ID** to `ClosetDoor`.
-3.  Set the **Used Item ID** to `Keycard`.
-4.  **Add an Action on Success:** No conditions are needed here. If the player uses the key on the door, it should always work.
-    *   Create an action node: `command: "SCENE_TRANSITION", parameters: {"SceneID": "Hallway"}` (Assuming you have another scene with this ID).
+1.  Navigate to the **Dialogue** editor. Create a new dialogue graph with the ID `closet_dialogue`.
+2.  Add the following dialogue nodes to this graph:
+    *   `door_locked_text`: "The door is locked tight."
+    *   `panel_hint_text`: "The wall panel looks loose."
+    *   `found_keycard_text`: "You pry open the panel and find a keycard!"
+3.  Navigate to the **Logic** editor. Create a new logic graph with the ID `unlock_door_logic`.
+4.  In this graph, create a single **Action Node**:
+    *   **Command:** `SCENE_TRANSITION`
+    *   **Parameters:** `{"scene_id": "Hallway"}` (This assumes you've created a "Hallway" scene to transition to).
 
-### Logic Rule 3: Locked Door Message
+## Step 4: Define the Interactions
 
-1.  Create one more logic block for when the player just clicks on the door.
-2.  Set the **Target Hotspot ID** to `ClosetDoor`.
-3.  Leave **Used Item ID** empty.
-4.  **Add an Action on Success:**
-    *   Add a dialogue node that says: `"The door is locked tight."`
-5.  **Set Priority:** In the properties for this logic block, set the `priority` to a lower number (e.g., `0`) than the "Unlock Door" logic (e.g., `1`). This ensures the game checks for the keycard interaction *first*.
+This is where we connect all the pieces.
 
-## Step 5: Export and Play
+1.  Navigate to the **Interactions** editor. This is where you'll define the rules of your puzzle.
 
-You've done it! You have created a complete, albeit small, puzzle.
+2.  **Interaction 1: Look at the locked door.**
+    *   Create a new interaction.
+    *   **Verb:** `look`
+    *   **Primary Item:** (Leave empty)
+    *   **Target Hotspot:** `closet_door`
+    *   **Logic Graph:** `closet_dialogue`
+    *   **Initial Node:** `door_locked_text`
 
-1.  From the main menu, select `File > Export for Unreal Engine`.
-2.  Choose a destination folder.
+3.  **Interaction 2: Look at the loose panel.**
+    *   Create a new interaction.
+    *   **Verb:** `look`
+    *   **Primary Item:** (Leave empty)
+    *   **Target Hotspot:** `loose_panel`
+    *   **Logic Graph:** `closet_dialogue`
+    *   **Initial Node:** `panel_hint_text`
 
-AdvEngine will generate the necessary data files. You can now drop these into the AdvEngine UE Template project, and your storage closet scene will be playable.
+4.  **Interaction 3: Find the keycard.**
+    *   We need a logic graph for this. Go back to the **Logic** editor and create a new graph called `get_keycard_logic`.
+    *   Inside this graph, create two **Action Nodes** and connect them in sequence:
+        1.  `command: "INVENTORY_ADD", parameters: {"item_id": "keycard"}`
+        2.  `command: "SHOW_DIALOGUE", parameters: {"dialogue_graph_id": "closet_dialogue", "initial_node_id": "found_keycard_text"}`
+    *   Now, back in the **Interactions** editor, create the interaction:
+        *   **Verb:** `use`
+        *   **Target Hotspot:** `loose_panel`
+        *   **Logic Graph:** `get_keycard_logic`
 
-From here, you can create the `Hallway` scene, add more items, and build out your game's world and narrative. Congratulations!
+5.  **Interaction 4: Unlock the door.**
+    *   Create the final interaction:
+    *   **Verb:** `use`
+    *   **Primary Item:** `keycard`
+    *   **Target Hotspot:** `closet_door`
+    *   **Logic Graph:** `unlock_door_logic`
+
+## Step 5: Save and Play!
+
+You've done it! You have created a complete, fully functional puzzle.
+
+1.  Click the **Save** button in the header bar to save your project.
+2.  Click the **Play** button to launch the game and test your puzzle.
+
+From here, you can create the `Hallway` scene, add more items and characters, and build out your game's world and narrative. Congratulations!
