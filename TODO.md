@@ -6,7 +6,7 @@ This document tracks planned improvements to the user interface and user experie
 
 These tasks directly impact the core user experience and should be addressed first.
 
-- [ ] **Improve Application Startup**:
+- [X] **Improve Application Startup**:
   - Replace the hardcoded "TestGame" loading with a proper welcome screen.
   - The welcome screen should offer options to:
     - Create a new project.
