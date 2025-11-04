@@ -153,9 +153,7 @@ class SceneEditor(Gtk.Box):
 
         set_bg_button = Gtk.Button(label="Choose Image...")
         set_bg_button.connect("clicked", self._on_set_background)
-        set_bg_row = Adw.ActionRow()
-        set_bg_row.set_center_widget(set_bg_button)
-        group.add(set_bg_row)
+        group.add(set_bg_button)
 
         # Hotspot Properties
         self.props_group = Adw.PreferencesGroup(title="Hotspot Properties")
