@@ -471,6 +471,11 @@ class LogicEditor(Gtk.Box):
     def on_drag_begin(self, gesture, x, y):
         if self.active_graph:
             for node in reversed(self.active_graph.nodes):
+                # Check if the click is in the resize handle area (e.g., bottom-right 20x20 pixels)
+                if (x >= node.x + node.width - 20 and x <= node.x + node.width and
+                        y >= node.y + node.height - 20 and y <= node.y + node.height):
+                    return  # Do not start a drag, let the resize gesture handle it
+
                 if x >= node.x and x <= node.x + node.width and y >= node.y and y <= node.y + node.height:
                     self.dragging_node = node
                     if node not in self.selected_nodes:
