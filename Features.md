@@ -82,3 +82,31 @@ point-and-click adventure games.
     - Ability to create new projects from a template (e.g., "Sierra Style",
       "Modern Minimalist") that comes with pre-configured UI, verbs, and example
       structures.
+
+## Proposed Future Enhancements
+
+- [ ] **State-Driven Scene Changes**
+    - Allow scenes to have different states based on global variables. For
+      example, a scene's background image could change from `day` to `night`
+      when a `is_night` variable is true.
+    - Hotspots could be enabled, disabled, or have their logic graph changed
+      based on the scene's state.
+
+- [ ] **Character Animation Previews**
+    - In the Character Manager, add a visual previewer that plays selected
+      animations (e.g., walk, talk, idle) for the character's sprite.
+    - This would allow for quick visual verification of animations without
+      launching the full game.
+
+- [ ] **Logic Graph Debugger**
+    - An interactive debugger for logic graphs. When the game is running, the
+      active node in a logic graph could be highlighted in the Logic Editor in
+      real-time.
+    - This would provide immediate visual feedback on the flow of game logic and
+      make it easier to debug complex puzzle chains.
+
+- [ ] **Sound Editor Enhancements**
+    - Add a waveform visualization to the sound editor for a better overview of
+      the audio file.
+    - Allow for setting start and end points for sound playback, and adding
+      simple effects like fade-in and fade-out.

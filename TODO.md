@@ -9,7 +9,7 @@ This document tracks planned improvements to the user interface and user experie
 - [x] **Keyboard Shortcut System**: Implement and document keyboard shortcuts for common global actions (e.g., `Ctrl+S` for Save, `Ctrl+O` for Open, `Ctrl+N` for New Project).
 - [x] **Consistent Empty States**: Design and implement informative "empty state" placeholders for all lists, views, and canvases. For example, when no scenes exist, the Scene Editor should display a message like "No Scenes Found. Click 'Add Scene' to Begin."
 - [x] **Improved Error/Confirmation Dialogs**: Replace generic dialogs with more specific and helpful `Adw.MessageDialog`s that clearly explain the action, error, or confirmation.
-- [ ] **Application-Wide Search**: Consider a global search feature to quickly find assets, logic nodes, or database entries by name or ID.
+- [x] **Application-Wide Search**: Consider a global search feature to quickly find assets, logic nodes, or database entries by name or ID.
 
 ## Module-Specific UI/UX Tasks
 
@@ -26,7 +26,7 @@ This document tracks planned improvements to the user interface and user experie
 - [x] **Canvas Mini-Map**: For large graphs, add an interactive mini-map that allows for quick navigation of the entire logic canvas.
 - [x] **Curved Connectors**: Switch from straight-line connectors to Bézier curves for node connections to improve readability and reduce visual clutter.
 - [x] **Right-Click Context Menus**: Add context-sensitive right-click menus on nodes (for actions like "Delete", "Duplicate", "Edit") and on the canvas (for "Add Node...").
-- [ ] **Node Information Displayed**: Nodes should be resizable, and also display the information set in them. There is no way to distingush between multiple nodes of the same type and what information they contain without clicking on them. This is not helpful. Nodes should show what they do to the user better without opening them.
+- [x] **Node Information Displayed**: Nodes should be resizable, and also display the information set in them. There is no way to distingush between multiple nodes of the same type and what information they contain without clicking on them. This is not helpful. Nodes should show what they do to the user better without opening them.
 
 ### Asset Manager (`module_assets.py`)
 

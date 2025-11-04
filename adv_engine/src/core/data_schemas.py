@@ -366,6 +366,26 @@ class InteractionGObject(GObject.Object):
         self.target_hotspot_id = interaction.target_hotspot_id
         self.logic_graph_id = interaction.logic_graph_id
 
+# --- Search Result Schema ---
+@dataclass
+class SearchResult:
+    id: str
+    name: str
+    type: str
+
+class SearchResultGObject(GObject.Object):
+    __gtype_name__ = 'SearchResultGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    type = GObject.Property(type=str)
+
+    def __init__(self, id: str, name: str, type: str):
+        super().__init__()
+        self.id = id
+        self.name = name
+        self.type = type
+
+
 # A container for all project data
 @dataclass
 class ProjectData:
