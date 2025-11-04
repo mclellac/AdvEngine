@@ -57,8 +57,10 @@ class DynamicNodeEditor(Gtk.Box):
 
     def build_ui(self):
         # Clear existing widgets
-        for child in list(self.main_group.observe_children()): self.main_group.remove(child)
-        for child in list(self.params_group.observe_children()): self.params_group.remove(child)
+        while self.main_group.get_first_child():
+            self.main_group.remove(self.main_group.get_first_child())
+        while self.params_group.get_first_child():
+            self.params_group.remove(self.params_group.get_first_child())
         self.widgets.clear()
 
         if not self.node:
@@ -95,7 +97,8 @@ class DynamicNodeEditor(Gtk.Box):
         group.add(combo)
 
     def update_params_ui(self, *args):
-        for child in list(self.params_group.observe_children()): self.params_group.remove(child)
+        while self.params_group.get_first_child():
+            self.params_group.remove(self.params_group.get_first_child())
         if not isinstance(self.node, (ConditionNode, ActionNode)):
             self.params_group.set_visible(False)
             return
