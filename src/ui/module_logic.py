@@ -41,16 +41,21 @@ class MiniMap(Gtk.DrawingArea):
             cr.rectangle(node.x * scale + offset_x, node.y * scale + offset_y, node.width * scale, node.height * scale)
             cr.fill()
 
-class DynamicNodeEditor(Gtk.Box):
+class DynamicNodeEditor(Adw.Bin):
     def __init__(self, project_manager=None):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        super().__init__()
         self.node = None
         self.project_manager = project_manager
         self.widgets = {}
+
+        # Use a Gtk.Box as the single child for the Adw.Bin
+        self.container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.set_child(self.container_box)
+
         self.params_group = Adw.PreferencesGroup()
         self.main_group = Adw.PreferencesGroup()
-        self.append(self.main_group)
-        self.append(self.params_group)
+        self.container_box.append(self.main_group)
+        self.container_box.append(self.params_group)
 
     def set_node(self, node):
         self.node = node
