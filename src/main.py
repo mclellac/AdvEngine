@@ -438,9 +438,14 @@ class AdvEngine(Adw.Application):
         dialog.present()
 
 
-def main():
-    app = AdvEngine(application_id="com.example.advengine")
-    app.run(sys.argv)
+def main(version="0.1.0"):
+    """
+    Main entry point for the AdvEngine application.
+
+    Initializes and runs the Adw.Application.
+    """
+    app = AdvEngine()
+    return app.run(sys.argv)
 
 
 if __name__ == "__main__":
