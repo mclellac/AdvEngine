@@ -63,4 +63,7 @@ Run the application from the installation directory:
 
 ## Documentation
 
-For a detailed guide on how to use the editors and a step-by-step tutorial, please see the documents in the `/docs` directory.
+Comprehensive documentation is available in the `/docs` directory, including:
+- A **[User Guide](./docs/guide/introduction.md)** with a getting-started guide and an interface overview.
+- An exhaustive **[Editor Reference](./docs/reference/)** detailing every editor.
+- A **[Tutorial](./docs/tutorials/01_locked_room.md)** that walks you through creating a complete puzzle.
