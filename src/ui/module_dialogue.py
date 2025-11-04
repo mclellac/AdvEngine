@@ -15,13 +15,7 @@ class ActionEditorDialog(Adw.MessageDialog):
 
         self.editor = DynamicNodeEditor(self.action_node or ActionNode(id="", node_type="Action", x=0, y=0))
 
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        content.set_margin_top(10)
-        content.set_margin_bottom(10)
-        content.set_margin_start(10)
-        content.set_margin_end(10)
-        content.append(self.editor)
-        self.set_extra_child(content)
+        self.set_extra_child(self.editor)
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
