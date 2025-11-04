@@ -82,6 +82,7 @@ class VerbEditor(Gtk.Box):
 
         list_item._id_entry = id_entry
         list_item._name_entry = name_entry
+        list_item._bindings = []
         list_item._handler_ids = []
         list_item.set_child(group)
 
@@ -92,8 +93,9 @@ class VerbEditor(Gtk.Box):
         id_entry = list_item._id_entry
         name_entry = list_item._name_entry
 
-        id_entry.bind_property("text", verb_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        name_entry.bind_property("text", verb_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        id_binding = id_entry.bind_property("text", verb_gobject, "id", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        name_binding = name_entry.bind_property("text", verb_gobject, "name", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        list_item._bindings.extend([id_binding, name_binding])
 
         def on_applied(*args):
             if list_item.get_item():
@@ -105,9 +107,13 @@ class VerbEditor(Gtk.Box):
         ])
 
     def _unbind_list_item(self, factory, list_item):
-        """Disconnect all handlers on unbind."""
+        """Disconnect all handlers and unbind all properties on unbind."""
         id_entry = list_item._id_entry
         name_entry = list_item._name_entry
+
+        for binding in list_item._bindings:
+            binding.unbind()
+        list_item._bindings = []
 
         for handler_id in list_item._handler_ids:
             if id_entry.is_connected(handler_id): id_entry.disconnect(handler_id)

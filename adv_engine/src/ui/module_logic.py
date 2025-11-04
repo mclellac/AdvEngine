@@ -312,7 +312,7 @@ class LogicEditor(Gtk.Box):
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
-            offset_x, offset_y = gesture.get_offset()
+            success, offset_x, offset_y = gesture.get_offset()
             self.resizing_node.width = max(150, self.initial_node_width + offset_x)
             self.resizing_node.height = max(100, self.initial_node_height + offset_y)
             self.canvas.queue_draw()
