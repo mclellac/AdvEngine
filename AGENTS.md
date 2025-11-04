@@ -89,6 +89,11 @@ The architecture is strictly modular to isolate UI logic from data logic.
 *   **ui/module_logic.py**: Handles mouse events (drag, select, connect) on the
     custom drawing canvas. Serializes the visual node layout into the
     InteractionMatrix.json structure.
+*   **ui/**: The UI is built using Libadwaita widgets to ensure a modern,
+    HIG-compliant user experience. Dialogs and forms are built using
+    `Adw.PreferencesGroup` and `Adw.ActionRow` for a consistent look and feel.
+*   **main.py**: The main application window, which includes a global search
+    bar for finding assets, logic nodes, and database entries.
 
 ---
 

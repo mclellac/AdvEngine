@@ -18,6 +18,12 @@ target game engine to consume at runtime.
     attributes, NPCs, and shops.
 *   **Audio Manager:** Assign background music, ambient sounds, and localized
     sound effects.
+*   **Quest Editor:** A dedicated editor for creating and managing quests and
+    their objectives.
+*   **Global Search:** A powerful search feature to quickly find assets, logic
+    nodes, and database entries.
+*   **Modern UI:** A modern, HIG-compliant user interface built with Libadwaita
+    for a polished and consistent look and feel.
 
 ## Installation
 
