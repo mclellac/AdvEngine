@@ -25,8 +25,6 @@ class AssetEditor(Gtk.Box):
         left_panel.set_size_request(350, -1)
 
         self.model = Gio.ListStore(item_type=AssetGObject)
-        self.refresh_asset_list()
-
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._setup_grid_item)
         factory.connect("bind", self._bind_grid_item)
@@ -57,6 +55,8 @@ class AssetEditor(Gtk.Box):
         import_button.connect("clicked", self.on_import_asset)
         left_panel.append(import_button)
         self.append(left_panel)
+
+        self.refresh_asset_list()
 
         right_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         right_panel.set_hexpand(True)
