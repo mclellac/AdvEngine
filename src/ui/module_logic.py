@@ -108,6 +108,11 @@ class DynamicNodeEditor(Adw.Bin):
         group.add(combo)
 
     def update_params_ui(self, *args):
+        def pascal_to_snake(name):
+            import re
+            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            return name.replace('varname', 'var_name')
+
         if self.params_group:
             self.container_box.remove(self.params_group)
         self.param_widgets.clear()
@@ -128,9 +133,13 @@ class DynamicNodeEditor(Adw.Bin):
             defs = get_command_definitions()[command_key][selected_command]
             self.params_group.set_title(f"Parameters for {selected_command}")
             for param, p_type in defs["params"].items():
-                self.add_param_widget(param, p_type, getattr(self.node, param.lower(), ""))
+                self.add_param_widget(param, p_type, getattr(self.node, pascal_to_snake(param), ""))
 
     def add_param_widget(self, key, param_type, default_value):
+        def pascal_to_snake(name):
+            import re
+            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            return name.replace('varname', 'var_name')
         # Convert snake_case to Title Case for display
         title = key.replace("_", " ").title()
         if isinstance(param_type, list):
@@ -138,13 +147,13 @@ class DynamicNodeEditor(Adw.Bin):
             if default_value in param_type:
                 combo.set_selected(param_type.index(default_value))
             combo.connect("notify::selected-item", self.on_value_changed)
-            self.param_widgets[key.lower()] = combo
+            self.param_widgets[pascal_to_snake(key)] = combo
             self.params_group.add(combo)
         else:
             entry = Adw.EntryRow(title=title)
             entry.set_text(str(default_value))
             entry.connect("apply", self.on_value_changed)
-            self.param_widgets[key.lower()] = entry
+            self.param_widgets[pascal_to_snake(key)] = entry
             self.params_group.add(entry)
 
     def on_combo_changed(self, combo, _):

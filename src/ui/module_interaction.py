@@ -35,8 +35,6 @@ class InteractionEditor(Gtk.Box):
         header.pack_end(self.delete_button)
 
         self.model = Gio.ListStore(item_type=InteractionGObject)
-        self._refresh_model()
-
         self.selection = Gtk.SingleSelection(model=self.model)
         self.selection.connect("selection-changed", self._on_selection_changed)
 
@@ -48,6 +46,7 @@ class InteractionEditor(Gtk.Box):
         self.main_box.append(self.column_view)
 
         self._create_columns()
+        self._refresh_model()
         self._update_visibility()
 
     def _update_visibility(self):
