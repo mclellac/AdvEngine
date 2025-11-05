@@ -164,7 +164,9 @@ class ProjectManager:
         def pascal_to_snake(name):
             import re
             name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
-            return name.replace('varname', 'var_name')
+            if name == "varname":
+                return "var_name"
+            return name
 
         try:
             with open(file_path, "r") as f:

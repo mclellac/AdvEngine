@@ -12,7 +12,7 @@ from .core.project_manager import ProjectManager
 from .core.data_schemas import DialogueNode
 import importlib
 import inspect
-from .ui import preferences, shortcuts, search_results, welcome
+from .ui import search_results
 
 
 class EditorWindow(Adw.ApplicationWindow):
@@ -168,6 +168,7 @@ class AdvEngine(Adw.Application):
         self.connect("activate", self.on_activate)
 
     def on_activate(self, app):
+        from .ui import welcome
         if not self.win:
             self.win = welcome.WelcomeWindow(application=self)
         self.win.present()
@@ -264,10 +265,12 @@ class AdvEngine(Adw.Application):
             self.load_project(folder)
 
     def on_preferences_activate(self, action, param):
+        from .ui import preferences
         dialog = preferences.PreferencesDialog(parent=self.win, project_manager=self.project_manager, settings_manager=self.settings_manager)
         dialog.present()
 
     def on_shortcuts_activate(self, action, param):
+        from .ui import shortcuts
         dialog = shortcuts.ShortcutsDialog(transient_for=self.win)
         dialog.present()
 
