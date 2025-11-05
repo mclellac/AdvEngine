@@ -61,9 +61,9 @@ class DynamicNodeEditor(Adw.Bin):
 
     def build_ui(self):
         if self.main_group:
-            self.main_group.destroy()
+            self.container_box.remove(self.main_group)
         if self.params_group:
-            self.params_group.destroy()
+            self.container_box.remove(self.params_group)
 
         self.main_widgets.clear()
         self.param_widgets.clear()
