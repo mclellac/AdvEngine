@@ -15,14 +15,12 @@ class Item:
 
 class ItemGObject(GObject.Object):
     __gtype_name__ = 'ItemGObject'
-
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     type = GObject.Property(type=str)
     buy_price = GObject.Property(type=int)
     sell_price = GObject.Property(type=int)
     description = GObject.Property(type=str)
-
     def __init__(self, item: Item):
         super().__init__()
         self.item = item
@@ -43,12 +41,10 @@ class Attribute:
 
 class AttributeGObject(GObject.Object):
     __gtype_name__ = 'AttributeGObject'
-
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     initial_value = GObject.Property(type=int)
     max_value = GObject.Property(type=int)
-
     def __init__(self, attribute: Attribute):
         super().__init__()
         self.attribute_data = attribute
@@ -69,14 +65,12 @@ class Character:
 
 class CharacterGObject(GObject.Object):
     __gtype_name__ = 'CharacterGObject'
-
     id = GObject.Property(type=str)
     display_name = GObject.Property(type=str)
     dialogue_start_id = GObject.Property(type=str)
     is_merchant = GObject.Property(type=bool, default=False)
     shop_id = GObject.Property(type=str)
     portrait_asset_id = GObject.Property(type=str)
-
     def __init__(self, character: Character):
         super().__init__()
         self.character_data = character
@@ -88,7 +82,6 @@ class CharacterGObject(GObject.Object):
         self.portrait_asset_id = character.portrait_asset_id
 
 # --- Scene Schemas ---
-
 @dataclass
 class Hotspot:
     id: str
@@ -106,7 +99,6 @@ class HotspotGObject(GObject.Object):
     y = GObject.Property(type=int)
     width = GObject.Property(type=int)
     height = GObject.Property(type=int)
-
     def __init__(self, hotspot: Hotspot):
         super().__init__()
         self.hotspot_data = hotspot
@@ -129,16 +121,14 @@ class SceneGObject(GObject.Object):
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     background_image = GObject.Property(type=str)
-
     def __init__(self, scene: Scene):
         super().__init__()
         self.id = scene.id
         self.name = scene.name
         self.background_image = scene.background_image
-        self.scene_data = scene # Store the original dataclass for access to hotspots
+        self.scene_data = scene
 
 # --- Logic Editor Schemas (Node-Based) ---
-
 @dataclass
 class LogicNode:
     id: str
@@ -147,12 +137,8 @@ class LogicNode:
     y: int
     width: int = 240
     height: int = 160
-    inputs: List[str] = field(default_factory=list)  # List of connected node IDs
-    outputs: List[str] = field(default_factory=list) # List of connected node IDs
-    parent_editor: Any = None
-
-    def get_parent_editor(self):
-        return self.parent_editor
+    inputs: List[str] = field(default_factory=list)
+    outputs: List[str] = field(default_factory=list)
 
 @dataclass
 class DialogueNode(LogicNode):
@@ -161,13 +147,11 @@ class DialogueNode(LogicNode):
 
 @dataclass
 class ConditionNode(LogicNode):
-    # e.g., "check_variable", "check_attribute"
     condition_type: str = ""
     parameters: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ActionNode(LogicNode):
-    # e.g., "SET_VARIABLE", "INVENTORY_ADD"
     action_command: str = ""
     parameters: Dict[str, Any] = field(default_factory=dict)
 
@@ -190,13 +174,37 @@ class Cutscene:
     script: str = ""
     actions: List[CutsceneAction] = field(default_factory=list)
 
+class CutsceneGObject(GObject.Object):
+    __gtype_name__ = 'CutsceneGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    def __init__(self, cutscene: Cutscene):
+        super().__init__()
+        self.cutscene_data = cutscene
+        self.id = cutscene.id
+        self.name = cutscene.name
+
 # --- Asset Schemas ---
 @dataclass
 class Asset:
     id: str
     name: str
-    asset_type: str # "sprite", "animation", "sound"
+    asset_type: str
     file_path: str
+
+class AssetGObject(GObject.Object):
+    __gtype_name__ = 'AssetGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    asset_type = GObject.Property(type=str)
+    file_path = GObject.Property(type=str)
+    def __init__(self, asset: Asset):
+        super().__init__()
+        self.asset_data = asset
+        self.id = asset.id
+        self.name = asset.name
+        self.asset_type = asset.asset_type
+        self.file_path = asset.file_path
 
 @dataclass
 class Animation(Asset):
@@ -207,14 +215,28 @@ class Animation(Asset):
 # --- Audio Schemas ---
 @dataclass
 class Audio(Asset):
-    duration: float # in seconds
+    duration: float
+
+class AudioGObject(GObject.Object):
+    __gtype_name__ = 'AudioGObject'
+    id = GObject.Property(type=str)
+    name = GObject.Property(type=str)
+    file_path = GObject.Property(type=str)
+    duration = GObject.Property(type=float)
+    def __init__(self, audio: Audio):
+        super().__init__()
+        self.audio_data = audio
+        self.id = audio.id
+        self.name = audio.name
+        self.file_path = audio.file_path
+        self.duration = audio.duration
 
 # --- Global State Schema ---
 @dataclass
 class GlobalVariable:
     id: str
     name: str
-    type: str  # "bool", "int", "str"
+    type: str
     initial_value: Any
     category: Optional[str] = "Default"
 
@@ -225,7 +247,6 @@ class GlobalVariableGObject(GObject.Object):
     type = GObject.Property(type=str)
     initial_value_str = GObject.Property(type=str)
     category = GObject.Property(type=str)
-
     def __init__(self, variable: GlobalVariable):
         super().__init__()
         self.variable_data = variable
@@ -245,7 +266,6 @@ class VerbGObject(GObject.Object):
     __gtype_name__ = 'VerbGObject'
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
-
     def __init__(self, verb: Verb):
         super().__init__()
         self.verb_data = verb
@@ -255,17 +275,11 @@ class VerbGObject(GObject.Object):
 # --- Interaction Schemas ---
 @dataclass
 class Interaction:
-    """Represents a game interaction, which links a trigger (like using a verb
-    on an item) to a logic graph that defines conditions and actions."""
     id: str
     verb_id: str
-    # ID of the LogicGraph containing the conditions and actions for this interaction.
     logic_graph_id: str
-    # The primary item for the interaction (e.g., the item being used).
     primary_item_id: Optional[str] = None
-    # The secondary item for 'combine' interactions (e.g., use item A on item B).
     secondary_item_id: Optional[str] = None
-    # The hotspot that is the target of the interaction.
     target_hotspot_id: Optional[str] = None
 
 @dataclass
@@ -294,7 +308,6 @@ class UILayoutGObject(GObject.Object):
     __gtype_name__ = 'UILayoutGObject'
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
-
     def __init__(self, layout: UILayout):
         super().__init__()
         self.layout_data = layout
@@ -306,7 +319,6 @@ class FontGObject(GObject.Object):
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     file_path = GObject.Property(type=str)
-
     def __init__(self, font: Font):
         super().__init__()
         self.font_data = font
@@ -331,7 +343,6 @@ class ObjectiveGObject(GObject.Object):
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     completed = GObject.Property(type=bool, default=False)
-
     def __init__(self, objective: Objective):
         super().__init__()
         self.objective_data = objective
@@ -343,7 +354,6 @@ class QuestGObject(GObject.Object):
     __gtype_name__ = 'QuestGObject'
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
-
     def __init__(self, quest: Quest):
         super().__init__()
         self.quest_data = quest
@@ -352,14 +362,12 @@ class QuestGObject(GObject.Object):
 
 class InteractionGObject(GObject.Object):
     __gtype_name__ = 'InteractionGObject'
-
     id = GObject.Property(type=str)
     verb_id = GObject.Property(type=str)
     primary_item_id = GObject.Property(type=str)
     secondary_item_id = GObject.Property(type=str)
     target_hotspot_id = GObject.Property(type=str)
     logic_graph_id = GObject.Property(type=str)
-
     def __init__(self, interaction: Interaction):
         super().__init__()
         self.interaction_data = interaction
@@ -382,13 +390,11 @@ class SearchResultGObject(GObject.Object):
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     type = GObject.Property(type=str)
-
     def __init__(self, id: str, name: str, type: str):
         super().__init__()
         self.id = id
         self.name = name
         self.type = type
-
 
 # A container for all project data
 @dataclass
@@ -408,12 +414,10 @@ class ProjectData:
     quests: List[Quest] = field(default_factory=list)
     ui_layouts: List['UILayout'] = field(default_factory=list)
     fonts: List['Font'] = field(default_factory=list)
-    # UI layouts would also be added here.
 
 class StringGObject(GObject.Object):
     __gtype_name__ = 'StringGObject'
     value = GObject.Property(type=str)
-
     def __init__(self, value):
         super().__init__()
         self.value = value

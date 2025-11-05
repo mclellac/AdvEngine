@@ -42,10 +42,11 @@ class MiniMap(Gtk.DrawingArea):
             cr.fill()
 
 class DynamicNodeEditor(Adw.Bin):
-    def __init__(self, project_manager=None):
+    def __init__(self, project_manager=None, on_update_callback=None):
         super().__init__()
         self.node = None
         self.project_manager = project_manager
+        self.on_update_callback = on_update_callback
         self.main_widgets = {}
         self.param_widgets = {}
 
@@ -109,7 +110,6 @@ class DynamicNodeEditor(Adw.Bin):
     def update_params_ui(self, *args):
         if self.params_group:
             self.container_box.remove(self.params_group)
-            self.params_group.destroy()
         self.param_widgets.clear()
 
         self.params_group = Adw.PreferencesGroup()
@@ -154,33 +154,27 @@ class DynamicNodeEditor(Adw.Bin):
         if not self.node: return
         values = self.get_values()
 
-        # Apply the direct attributes from the main group
         for key, value in values.items():
             if key != 'parameters':
                 setattr(self.node, key, value)
 
-        # Apply the parameters dictionary if it exists
         if 'parameters' in values:
             self.node.parameters = values['parameters']
 
         if self.project_manager:
             self.project_manager.set_dirty(True)
 
-        if hasattr(self.node, 'get_parent_editor'):
-            parent_editor = self.node.get_parent_editor()
-            if parent_editor and hasattr(parent_editor, 'canvas'):
-                parent_editor.canvas.queue_draw()
+        if self.on_update_callback:
+            self.on_update_callback()
 
     def get_values(self):
         values = {}
-        # Get values from main group
         for key, widget in self.main_widgets.items():
             if isinstance(widget, Adw.EntryRow):
                 values[key] = widget.get_text()
             elif isinstance(widget, Adw.ComboRow):
                 values[key] = widget.get_selected_item().get_string()
 
-        # If there are params, get them too
         if self.param_widgets:
             values['parameters'] = {}
             for key, widget in self.param_widgets.items():
@@ -219,7 +213,6 @@ class LogicEditor(Gtk.Box):
 
         self.canvas.queue_draw()
 
-        # Connect signals
         node_drag = Gtk.GestureDrag.new()
         node_drag.connect("drag-begin", self.on_drag_begin)
         node_drag.connect("drag-update", self.on_drag_update)
@@ -270,30 +263,28 @@ class LogicEditor(Gtk.Box):
         sidebar.set_margin_start(12)
         sidebar.set_margin_end(12)
 
-        # --- Tool Palette ---
         palette = Adw.PreferencesGroup(title="Tool Palette")
         sidebar.append(palette)
 
         dialogue_button = Gtk.Button(label="Add Dialogue")
-        dialogue_button.connect("clicked", self.on_add_dialogue_node)
+        dialogue_button.connect("clicked", lambda w: self.on_add_node(DialogueNode, "Dialogue"))
         dialogue_row = Adw.ActionRow(title="Add Dialogue Node", activatable_widget=dialogue_button)
         dialogue_row.add_suffix(dialogue_button)
         palette.add(dialogue_row)
 
         condition_button = Gtk.Button(label="Add Condition")
-        condition_button.connect("clicked", self.on_add_condition_node)
+        condition_button.connect("clicked", lambda w: self.on_add_node(ConditionNode, "Condition"))
         condition_row = Adw.ActionRow(title="Add Condition Node", activatable_widget=condition_button)
         condition_row.add_suffix(condition_button)
         palette.add(condition_row)
 
         action_button = Gtk.Button(label="Add Action")
-        action_button.connect("clicked", self.on_add_action_node)
+        action_button.connect("clicked", lambda w: self.on_add_node(ActionNode, "Action"))
         action_row = Adw.ActionRow(title="Add Action Node", activatable_widget=action_button)
         action_row.add_suffix(action_button)
         palette.add(action_row)
 
-        # --- Properties Panel ---
-        self.props_panel = DynamicNodeEditor(project_manager=self.project_manager)
+        self.props_panel = DynamicNodeEditor(project_manager=self.project_manager, on_update_callback=self.canvas.queue_draw)
         sidebar.append(self.props_panel)
 
         return sidebar
@@ -321,12 +312,10 @@ class LogicEditor(Gtk.Box):
                 cr.fill()
 
     def draw_node(self, cr, node):
-        # Node body
         cr.set_source_rgb(0.2, 0.2, 0.2)
         cr.rectangle(node.x, node.y, node.width, node.height)
         cr.fill()
 
-        # Node Header
         if isinstance(node, DialogueNode): cr.set_source_rgb(0.4, 0.6, 0.4)
         elif isinstance(node, ConditionNode): cr.set_source_rgb(0.6, 0.4, 0.4)
         elif isinstance(node, ActionNode): cr.set_source_rgb(0.4, 0.4, 0.6)
@@ -340,7 +329,6 @@ class LogicEditor(Gtk.Box):
             cr.rectangle(node.x - 2, node.y - 2, node.width + 4, node.height + 4)
             cr.stroke()
 
-        # Node text
         layout = PangoCairo.create_layout(cr)
         layout.set_width((node.width - 20) * Pango.SCALE)
         layout.set_wrap(Pango.WrapMode.WORD_CHAR)
@@ -358,7 +346,6 @@ class LogicEditor(Gtk.Box):
         layout.set_markup(body_text, -1)
         PangoCairo.show_layout(cr, layout)
 
-        # Connectors & Resize handle
         self.draw_connectors_and_resize_handle(cr, node)
 
     def draw_connectors_and_resize_handle(self, cr, node):
@@ -379,25 +366,9 @@ class LogicEditor(Gtk.Box):
         cr.curve_to(start_x + 50, start_y, end_x - 50, end_y, end_x, end_y)
         cr.stroke()
 
-    def on_add_dialogue_node(self, button):
+    def on_add_node(self, node_class, node_type):
         if self.active_graph:
-            new_node = DialogueNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Dialogue", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)
-
-    def on_add_condition_node(self, button):
-        if self.active_graph:
-            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)
-
-    def on_add_action_node(self, button):
-        if self.active_graph:
-            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50, parent_editor=self)
+            new_node = node_class(id=f"node_{len(self.active_graph.nodes)}", node_type=node_type, x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.minimap.queue_draw()
@@ -406,7 +377,7 @@ class LogicEditor(Gtk.Box):
     def get_connector_pos(self, node, connector_type):
         if connector_type == "in":
             return node.x, node.y + node.height / 2
-        else: # out
+        else:
             return node.x + node.width, node.y + node.height / 2
 
     def on_drag_begin(self, gesture, x, y):
@@ -415,7 +386,6 @@ class LogicEditor(Gtk.Box):
             if node_clicked not in self.selected_nodes:
                 self.selected_nodes = [node_clicked]
                 self.props_panel.set_node(node_clicked)
-
             self.drag_offsets = {n.id: (x - n.x, y - n.y) for n in self.selected_nodes}
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
@@ -423,15 +393,15 @@ class LogicEditor(Gtk.Box):
 
     def on_drag_update(self, gesture, x, y):
         if self.drag_offsets:
-            success, start_x, start_y = gesture.get_start_point()
+            start_x, start_y = gesture.get_start_point()
             for node in self.selected_nodes:
                 offset_x, offset_y = self.drag_offsets[node.id]
                 node.x = start_x + x - offset_x
                 node.y = start_y + y - offset_y
             self.canvas.queue_draw()
         elif self.drag_selection_rect:
-            start_x, start_y = self.drag_selection_rect[:2]
-            self.drag_selection_rect = [start_x, start_y, x, y]
+            self.drag_selection_rect[2] = x
+            self.drag_selection_rect[3] = y
             self.canvas.queue_draw()
 
     def on_drag_end(self, gesture, x, y):
@@ -439,7 +409,6 @@ class LogicEditor(Gtk.Box):
             self.project_manager.set_dirty()
             self.drag_offsets = {}
         elif self.drag_selection_rect:
-            # Finalize selection
             self.selected_nodes.clear()
             x1, y1, x2, y2 = self.drag_selection_rect
             rect = Gdk.Rectangle()
@@ -447,22 +416,15 @@ class LogicEditor(Gtk.Box):
             rect.y = min(y1, y2)
             rect.width = abs(x1 - x2)
             rect.height = abs(y1 - y2)
-
             for node in self.active_graph.nodes:
                 node_rect = Gdk.Rectangle()
-                node_rect.x = node.x
-                node_rect.y = node.y
-                node_rect.width = node.width
-                node_rect.height = node.height
+                node_rect.x, node_rect.y, node_rect.width, node_rect.height = node.x, node.y, node.width, node.height
                 if rect.intersect(node_rect)[0]:
                     self.selected_nodes.append(node)
             self.drag_selection_rect = None
             self.canvas.queue_draw()
 
     def on_canvas_click(self, gesture, n_press, x, y):
-        if n_press == 2:
-            return  # Explicitly do nothing on double-click to prevent re-selection issues
-
         node = self.get_node_at(x, y)
         if node:
             if not gesture.get_current_event_state() & Gdk.ModifierType.SHIFT_MASK:
@@ -472,7 +434,6 @@ class LogicEditor(Gtk.Box):
                 else: self.selected_nodes.append(node)
         else:
             self.selected_nodes = []
-
         self.props_panel.set_node(self.selected_nodes[0] if len(self.selected_nodes) == 1 else None)
         self.canvas.queue_draw()
 
@@ -480,7 +441,6 @@ class LogicEditor(Gtk.Box):
         if keyval == Gdk.KEY_Delete:
             for node_to_delete in self.selected_nodes:
                 self.active_graph.nodes.remove(node_to_delete)
-                # Remove connections
                 for node in self.active_graph.nodes:
                     if node_to_delete.id in node.outputs: node.outputs.remove(node_to_delete.id)
                     if node_to_delete.id in node.inputs: node.inputs.remove(node_to_delete.id)
@@ -494,12 +454,13 @@ class LogicEditor(Gtk.Box):
             out_x, out_y = self.get_connector_pos(node, "out")
             if abs(x - out_x) < 10 and abs(y - out_y) < 10:
                 self.connecting_from_node = node
+                self.connecting_line_x, self.connecting_line_y = x, y
                 gesture.set_state(Gtk.EventSequenceState.CLAIMED)
                 return
 
     def on_connection_drag_update(self, gesture, x, y):
         if self.connecting_from_node:
-            success, start_x, start_y = gesture.get_start_point()
+            start_x, start_y = gesture.get_start_point()
             self.connecting_line_x = start_x + x
             self.connecting_line_y = start_y + y
             self.canvas.queue_draw()
@@ -528,7 +489,7 @@ class LogicEditor(Gtk.Box):
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
-            success, start_x, start_y = gesture.get_start_point()
+            start_x, start_y = gesture.get_start_point()
             self.resizing_node.width = max(150, self.initial_node_width + x)
             self.resizing_node.height = max(100, self.initial_node_height + y)
             self.canvas.queue_draw()
@@ -568,19 +529,3 @@ class LogicEditor(Gtk.Box):
         menu.append("Delete Node", "app.delete_node")
         self.node_context_menu = Gtk.PopoverMenu.new_from_model(menu)
         self.node_context_menu.set_parent(self.canvas)
-
-    def on_add_condition_node(self, button):
-        if self.active_graph:
-            new_node = ConditionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Condition", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)
-
-    def on_add_action_node(self, button):
-        if self.active_graph:
-            new_node = ActionNode(id=f"node_{len(self.active_graph.nodes)}", node_type="Action", x=50, y=50, parent_editor=self)
-            self.active_graph.nodes.append(new_node)
-            self.canvas.queue_draw()
-            self.minimap.queue_draw()
-            self.project_manager.set_dirty(True)

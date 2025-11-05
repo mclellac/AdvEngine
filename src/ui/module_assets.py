@@ -4,22 +4,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Adw, Gdk
 import os
 import shutil
-from ..core.data_schemas import Asset, Animation, StringGObject
-
-class AssetGObject(GObject.Object):
-    __gtype_name__ = 'AssetGObject'
-    id = GObject.Property(type=str)
-    name = GObject.Property(type=str)
-    asset_type = GObject.Property(type=str)
-    file_path = GObject.Property(type=str)
-
-    def __init__(self, asset):
-        super().__init__()
-        self.id = asset.id
-        self.name = asset.name
-        self.asset_type = asset.asset_type
-        self.file_path = asset.file_path
-        self.asset_data = asset
+from ..core.data_schemas import Asset, Animation, StringGObject, AssetGObject
 
 class AssetEditor(Gtk.Box):
     def __init__(self, project_manager):
@@ -165,8 +150,7 @@ class AssetEditor(Gtk.Box):
             self.model.append(AssetGObject(asset))
 
     def on_import_asset(self, button):
-        dialog = Gtk.FileChooserDialog(title="Import Asset", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
-        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK)
+        dialog = Gtk.FileChooserNative(title="Import Asset", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
         dialog.set_select_multiple(True)
 
         file_filter = Gtk.FileFilter()
@@ -174,11 +158,13 @@ class AssetEditor(Gtk.Box):
         file_filter.add_pixbuf_formats()
         dialog.add_filter(file_filter)
 
+        dialog.connect("response", self.on_import_asset_response)
         dialog.show()
 
-        def on_response(dialog, response_id):
-            if response_id == Gtk.ResponseType.OK:
-                files = dialog.get_files()
+    def on_import_asset_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.ACCEPT:
+            files = dialog.get_files()
+            try:
                 if len(files) > 1: # Create animation
                     asset_name = os.path.basename(files[0].get_path()).split('.')[0]
                     new_anim = Animation(id=f"anim_{len(self.project_manager.data.assets)}", name=asset_name, asset_type="animation", file_path="", frame_count=len(files), frame_rate=10, frames=[])
@@ -209,9 +195,9 @@ class AssetEditor(Gtk.Box):
 
                 self.project_manager.set_dirty()
                 self.refresh_asset_list()
-            dialog.destroy()
+            except Exception as e:
+                print(f"Error importing asset(s): {e}")
 
-        dialog.connect("response", on_response)
 
     def _on_frame_drag_prepare(self, source, x, y):
         list_item = source.get_widget().get_parent()
@@ -224,11 +210,16 @@ class AssetEditor(Gtk.Box):
 
     def _on_frame_drop(self, target, value, x, y):
         dragged_frame_gobject = value
-        target_row = self.frame_list_view.get_row_at_y(int(y))
 
-        if dragged_frame_gobject and target_row and self.selected_asset:
-            target_frame_gobject = target_row.get_child().get_item()
+        widget = target.get_widget()
+        list_item = widget.get_ancestor(Gtk.ListItem)
+        if not list_item:
+            return False
 
+        target_frame_gobject = list_item.get_item()
+
+
+        if dragged_frame_gobject and target_frame_gobject and self.selected_asset:
             dragged_frame = dragged_frame_gobject.value
             target_frame = target_frame_gobject.value
 

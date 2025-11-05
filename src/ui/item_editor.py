@@ -72,8 +72,9 @@ class ItemEditor(Gtk.Box):
 
         for col_id, col_info in columns_def.items():
             factory = Gtk.SignalListItemFactory()
-            factory.connect("setup", self._setup_cell, col_info["type"])
-            factory.connect("bind", self._bind_cell, col_id, col_info["type"])
+            factory.connect("setup", self._setup_cell, col_id)
+            factory.connect("bind", self._bind_cell, col_id)
+            factory.connect("unbind", self._unbind_cell)
             column = Gtk.ColumnViewColumn(title=col_info["title"], factory=factory)
             column.set_expand(col_info["expand"])
             self.column_view.append_column(column)
@@ -93,26 +94,46 @@ class ItemEditor(Gtk.Box):
         self.model.connect("items-changed", self._update_visibility)
         self._update_visibility()
 
-    def _setup_cell(self, factory, list_item, cell_type):
-        if cell_type == "numeric":
-            widget = Adw.SpinRow()
-            widget.set_adjustment(Gtk.Adjustment(lower=-1, upper=99999, step_increment=1))
-        else: # text
-            widget = Adw.EntryRow()
-            widget.set_show_apply_button(True)
+    def _setup_cell(self, factory, list_item, column_id):
+        if column_id in ["buy_price", "sell_price"]:
+            widget = Gtk.SpinButton(
+                adjustment=Gtk.Adjustment(
+                    lower=0, upper=99999, step_increment=1
+                )
+            )
+        else:
+            widget = Gtk.Entry()
+
         list_item.set_child(widget)
 
-    def _bind_cell(self, factory, list_item, column_id, cell_type):
+    def _bind_cell(self, factory, list_item, column_id):
         item_gobject = list_item.get_item()
         widget = list_item.get_child()
 
-        prop_name = "value" if cell_type == "numeric" else "text"
-        widget.bind_property(prop_name, item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        # Store bindings to unbind them later
+        list_item.bindings = []
 
-        event_name = "notify::value" if cell_type == "numeric" else "apply"
-        handler_id = widget.connect(event_name, lambda w: self.project_manager.set_dirty(True))
+        if isinstance(widget, Gtk.SpinButton):
+            binding = widget.bind_property("value", item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            list_item.bindings.append(binding)
 
-        list_item.disconnect_handler = handler_id
+            handler_id = widget.connect("value-changed", lambda w: self.project_manager.set_dirty(True))
+            list_item.handler_id = handler_id
+        else: # Gtk.Entry
+            binding = widget.bind_property("text", item_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            list_item.bindings.append(binding)
+
+            handler_id = widget.connect("changed", lambda w: self.project_manager.set_dirty(True))
+            list_item.handler_id = handler_id
+
+    def _unbind_cell(self, factory, list_item):
+        if hasattr(list_item, "bindings"):
+            for binding in list_item.bindings:
+                binding.unbind()
+            list_item.bindings = []
+        if hasattr(list_item, "handler_id"):
+            list_item.get_child().disconnect(list_item.handler_id)
+            del list_item.handler_id
 
     def _on_search_changed(self, search_entry):
         self.filter.changed(Gtk.FilterChange.DIFFERENT)

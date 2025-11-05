@@ -60,21 +60,20 @@ class VerbEditor(Gtk.Box):
         self.column_view.set_vexpand(True)
         self.column_view.set_css_classes(["boxed-list"])
 
-        # ID Column
-        id_factory = Gtk.SignalListItemFactory()
-        id_factory.connect("setup", self._setup_cell, "id")
-        id_factory.connect("bind", self._bind_cell, "id")
-        id_column = Gtk.ColumnViewColumn(title="ID", factory=id_factory)
-        id_column.set_expand(True)
-        self.column_view.append_column(id_column)
+        # Define columns
+        columns_def = {
+            "id": {"title": "ID", "expand": True},
+            "name": {"title": "Name", "expand": True}
+        }
 
-        # Name Column
-        name_factory = Gtk.SignalListItemFactory()
-        name_factory.connect("setup", self._setup_cell, "name")
-        name_factory.connect("bind", self._bind_cell, "name")
-        name_column = Gtk.ColumnViewColumn(title="Name", factory=name_factory)
-        name_column.set_expand(True)
-        self.column_view.append_column(name_column)
+        for col_id, col_info in columns_def.items():
+            factory = Gtk.SignalListItemFactory()
+            factory.connect("setup", self._setup_cell)
+            factory.connect("bind", self._bind_cell, col_id)
+            factory.connect("unbind", self._unbind_cell)
+            column = Gtk.ColumnViewColumn(title=col_info["title"], factory=factory)
+            column.set_expand(col_info["expand"])
+            self.column_view.append_column(column)
 
         scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -91,23 +90,29 @@ class VerbEditor(Gtk.Box):
         self.model.connect("items-changed", self._update_visibility)
         self._update_visibility()
 
-    def _setup_cell(self, factory, list_item, column_id):
-        entry = Adw.EntryRow()
-        entry.set_show_apply_button(True)
-        list_item.set_child(entry)
+    def _setup_cell(self, factory, list_item):
+        widget = Gtk.Entry()
+        list_item.set_child(widget)
 
     def _bind_cell(self, factory, list_item, column_id):
         verb_gobject = list_item.get_item()
-        entry = list_item.get_child()
+        widget = list_item.get_child()
 
-        # Bind the entry row's text to the corresponding property of the VerbGObject
-        entry.bind_property("text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        list_item.bindings = []
+        binding = widget.bind_property("text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        list_item.bindings.append(binding)
 
-        # Mark project as dirty when edit is applied
-        handler_id = entry.connect("apply", lambda e: self.project_manager.set_dirty(True))
+        handler_id = widget.connect("changed", lambda w: self.project_manager.set_dirty(True))
+        list_item.handler_id = handler_id
 
-        # Store handler to disconnect on unbind
-        list_item.disconnect_handler = handler_id
+    def _unbind_cell(self, factory, list_item):
+        if hasattr(list_item, "bindings"):
+            for binding in list_item.bindings:
+                binding.unbind()
+            list_item.bindings = []
+        if hasattr(list_item, "handler_id"):
+            list_item.get_child().disconnect(list_item.handler_id)
+            del list_item.handler_id
 
     def _on_search_changed(self, search_entry):
         """Called when the search text changes. Invalidates the filter."""

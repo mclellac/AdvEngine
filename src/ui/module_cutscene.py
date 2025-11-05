@@ -1,132 +1,98 @@
 import gi
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GObject, Gio
-from ..core.data_schemas import Cutscene, CutsceneAction
+from ..core.data_schemas import Cutscene, CutsceneAction, CutsceneGObject
 
-
-class CutsceneGObject(GObject.Object):
-    __gtype_name__ = "CutsceneGObject"
-    id = GObject.Property(type=str)
-    name = GObject.Property(type=str)
-
-    def __init__(self, cutscene: Cutscene):
+class CutsceneActionGObject(GObject.Object):
+    __gtype_name__ = "CutsceneActionGObject"
+    command = GObject.Property(type=str)
+    parameters = GObject.Property(type=str)
+    def __init__(self, action: CutsceneAction):
         super().__init__()
-        self.cutscene_data = cutscene
-        self.id = cutscene.id
-        self.name = cutscene.name
-
+        self.action_data = action
+        self.command = action.command
+        self.parameters = " ".join(action.parameters)
 
 class CutsceneEditor(Gtk.Box):
     def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.project_manager = project_manager
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
-
-        paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        paned = Adw.OverlaySplitView()
         self.append(paned)
 
-        # Left side: List of cutscenes
-        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        paned.set_start_child(left_box)
+        paned.set_sidebar(self._create_cutscene_list_panel())
+        paned.set_content(self._create_editor_panel())
 
-        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        left_box.append(toolbar)
+    def _create_cutscene_list_panel(self):
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        header = Adw.HeaderBar()
+        panel.append(header)
 
-        add_button = Gtk.Button(label="Add")
+        add_button = Gtk.Button(icon_name="list-add-symbolic")
         add_button.connect("clicked", self.on_add_cutscene)
-        toolbar.append(add_button)
+        header.pack_start(add_button)
 
-        self.delete_button = Gtk.Button(label="Delete")
+        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
         self.delete_button.set_sensitive(False)
         self.delete_button.connect("clicked", self.on_delete_cutscene)
-        toolbar.append(self.delete_button)
-
-        cutscene_list_scrolled = Gtk.ScrolledWindow()
-        cutscene_list_scrolled.set_policy(
-            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
-        )
-        cutscene_list_scrolled.set_hexpand(True)
-        cutscene_list_scrolled.set_vexpand(True)
-        left_box.append(cutscene_list_scrolled)
+        header.pack_end(self.delete_button)
 
         self.cutscene_store = Gio.ListStore(item_type=CutsceneGObject)
         for cs in self.project_manager.data.cutscenes:
             self.cutscene_store.append(CutsceneGObject(cs))
 
         factory = Gtk.SignalListItemFactory()
-        factory.connect(
-            "setup",
-            lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)),
-        )
-        factory.connect(
-            "bind",
-            lambda _, list_item: list_item.get_child().set_label(
-                list_item.get_item().name
-            ),
-        )
+        factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(list_item.get_item().name))
 
-        self.cutscene_list_view = Gtk.ListView(
-            model=Gtk.SingleSelection(model=self.cutscene_store), factory=factory
-        )
-        cutscene_list_scrolled.set_child(self.cutscene_list_view)
+        self.cutscene_list_view = Gtk.ListView(model=Gtk.SingleSelection(model=self.cutscene_store), factory=factory)
+        self.cutscene_list_view.get_model().connect("selection-changed", self.on_cutscene_selected)
 
-        # Right side: Script editor and action list
-        right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        right_box.set_size_request(400, -1)
-        paned.set_end_child(right_box)
+        scrolled = Gtk.ScrolledWindow(child=self.cutscene_list_view)
+        scrolled.set_vexpand(True)
+        panel.append(scrolled)
+        return panel
 
-        right_box.append(
-            Gtk.Label(
-                label="Cutscene Script", halign=Gtk.Align.START, css_classes=["title-3"]
-            )
-        )
+    def _create_editor_panel(self):
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        main_box.set_margin_top(10)
+        main_box.set_margin_bottom(10)
+        main_box.set_margin_start(10)
+        main_box.set_margin_end(10)
 
-        script_view_scrolled = Gtk.ScrolledWindow()
-        script_view_scrolled.set_policy(
-            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
-        )
-        script_view_scrolled.set_vexpand(True)
-        right_box.append(script_view_scrolled)
+        main_box.append(Gtk.Label(label="Cutscene Script", halign=Gtk.Align.START, css_classes=["title-3"]))
 
+        script_view_scrolled = Gtk.ScrolledWindow(vexpand=True)
         self.script_view = Gtk.TextView()
         script_view_scrolled.set_child(self.script_view)
+        main_box.append(script_view_scrolled)
 
         parse_button = Gtk.Button(label="Parse Script")
         parse_button.connect("clicked", self.on_parse_script)
-        right_box.append(parse_button)
+        main_box.append(parse_button)
 
-        right_box.append(
-            Gtk.Label(
-                label="Parsed Actions", halign=Gtk.Align.START, css_classes=["title-3"]
-            )
-        )
+        main_box.append(Gtk.Label(label="Parsed Actions", halign=Gtk.Align.START, css_classes=["title-3"]))
 
-        action_list_scrolled = Gtk.ScrolledWindow()
-        action_list_scrolled.set_policy(
-            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
-        )
-        action_list_scrolled.set_vexpand(True)
-        right_box.append(action_list_scrolled)
+        self.action_store = Gio.ListStore(item_type=CutsceneActionGObject)
+        self.action_view = Gtk.ColumnView(model=self.action_store)
 
-        self.action_store = Gtk.TreeStore(str, str)  # Command, Parameters
-        self.action_tree_view = Gtk.TreeView(model=self.action_store)
-        action_list_scrolled.set_child(self.action_tree_view)
+        cmd_factory = Gtk.SignalListItemFactory()
+        cmd_factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        cmd_factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(list_item.get_item().command))
+        cmd_col = Gtk.ColumnViewColumn(title="Command", factory=cmd_factory)
+        self.action_view.append_column(cmd_col)
 
-        renderer = Gtk.CellRendererText()
-        column1 = Gtk.TreeViewColumn("Command", renderer, text=0)
-        column2 = Gtk.TreeViewColumn("Parameters", renderer, text=1)
-        self.action_tree_view.append_column(column1)
-        self.action_tree_view.append_column(column2)
+        param_factory = Gtk.SignalListItemFactory()
+        param_factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        param_factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(list_item.get_item().parameters))
+        param_col = Gtk.ColumnViewColumn(title="Parameters", factory=param_factory)
+        self.action_view.append_column(param_col)
 
-        self.cutscene_list_view.get_model().connect(
-            "selection-changed", self.on_cutscene_selected
-        )
+        action_scrolled = Gtk.ScrolledWindow(child=self.action_view, vexpand=True)
+        main_box.append(action_scrolled)
+        return main_box
 
     def on_cutscene_selected(self, selection_model, position, n_items):
         selected_item = selection_model.get_selected_item()
@@ -140,9 +106,20 @@ class CutsceneEditor(Gtk.Box):
             self.delete_button.set_sensitive(False)
 
     def on_add_cutscene(self, button):
-        # In a real app, this would open a dialog to get a name
-        new_cutscene = self.project_manager.add_cutscene("New Cutscene")
-        self.cutscene_store.append(CutsceneGObject(new_cutscene))
+        dialog = Adw.MessageDialog(transient_for=self.get_root(), modal=True, heading="Create New Cutscene")
+        entry = Adw.EntryRow(title="Cutscene Name")
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", "_Cancel")
+        dialog.add_response("create", "_Create")
+        def on_response(d, response):
+            if response == "create":
+                name = entry.get_text()
+                if name:
+                    new_cutscene = self.project_manager.add_cutscene(name)
+                    self.cutscene_store.append(CutsceneGObject(new_cutscene))
+            d.destroy()
+        dialog.connect("response", on_response)
+        dialog.present()
 
     def on_delete_cutscene(self, button):
         selection = self.cutscene_list_view.get_model()
@@ -155,19 +132,16 @@ class CutsceneEditor(Gtk.Box):
     def on_parse_script(self, button):
         selection = self.cutscene_list_view.get_model()
         selected_item = selection.get_selected_item()
-        if not selected_item:
-            return
+        if not selected_item: return
 
         buffer = self.script_view.get_buffer()
         start_iter, end_iter = buffer.get_bounds()
         script_text = buffer.get_text(start_iter, end_iter, False)
         selected_item.cutscene_data.script = script_text
 
-        # Simple parsing logic
         actions = []
         for line in script_text.splitlines():
-            if not line.strip():
-                continue
+            if not line.strip(): continue
             parts = line.split()
             command = parts[0].upper()
             params = parts[1:]
@@ -178,8 +152,6 @@ class CutsceneEditor(Gtk.Box):
         self.update_action_list(selected_item.cutscene_data)
 
     def update_action_list(self, cutscene):
-        self.action_store.clear()
+        self.action_store.remove_all()
         for action in cutscene.actions:
-            self.action_store.append(
-                None, [action.command, " ".join(action.parameters)]
-            )
+            self.action_store.append(CutsceneActionGObject(action))
