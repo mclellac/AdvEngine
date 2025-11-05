@@ -4,23 +4,8 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gtk, Gio, GObject, Gst
 import os
 import shutil
-from ..core.data_schemas import Audio
+from ..core.data_schemas import Audio, AudioGObject
 import cairo
-
-class AudioGObject(GObject.Object):
-    __gtype_name__ = 'AudioGObject'
-    id = GObject.Property(type=str)
-    name = GObject.Property(type=str)
-    file_path = GObject.Property(type=str)
-    duration = GObject.Property(type=float)
-
-    def __init__(self, audio):
-        super().__init__()
-        self.id = audio.id
-        self.name = audio.name
-        self.file_path = audio.file_path
-        self.duration = audio.duration
-        self.audio_data = audio
 
 class AudioEditor(Gtk.Box):
     def __init__(self, project_manager):
@@ -46,26 +31,22 @@ class AudioEditor(Gtk.Box):
         self.audio_list_view.set_model(selection_model)
         self._create_column("ID", lambda audio: audio.id)
         self._create_column("Name", lambda audio: audio.name)
-        self._create_column("Duration (s)", lambda audio: str(audio.duration))
+        self._create_column("Duration (s)", lambda audio: str(round(audio.duration, 2)))
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.audio_list_view)
-        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scrolled_window.set_vexpand(True)
         left_panel.append(scrolled_window)
 
         import_button = Gtk.Button(label="Import Audio")
-        import_button.set_tooltip_text("Import a new audio file into the project")
         import_button.connect("clicked", self.on_import_audio)
         left_panel.append(import_button)
 
         right_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, hexpand=True)
         self.append(right_panel)
 
-        self.video = Gtk.Video()
-
+        self.media_stream = None
         self.media_controls = Gtk.MediaControls()
-        right_panel.append(self.video)
         right_panel.append(self.media_controls)
 
         self.waveform_drawing_area = Gtk.DrawingArea()
@@ -73,7 +54,6 @@ class AudioEditor(Gtk.Box):
         self.waveform_drawing_area.set_size_request(-1, 100)
         right_panel.append(self.waveform_drawing_area)
         self.waveform_data = []
-
 
     def _create_column(self, title, expression_func):
         factory = Gtk.SignalListItemFactory()
@@ -87,20 +67,16 @@ class AudioEditor(Gtk.Box):
         if selected_audio_gobject:
             audio = selected_audio_gobject.audio_data
             if os.path.exists(audio.file_path):
-                media_file = Gtk.MediaFile.new_for_filename(audio.file_path)
-                self.video.set_media_stream(media_file)
-                self.media_controls.set_media_stream(media_file)
+                self.media_stream = Gtk.MediaFile.new_for_filename(audio.file_path)
+                self.media_controls.set_media_stream(self.media_stream)
                 self.generate_waveform_data(audio.file_path)
             else:
-                self.video.set_media_stream(None)
                 self.media_controls.set_media_stream(None)
                 self.waveform_data = []
         else:
-            self.video.set_media_stream(None)
             self.media_controls.set_media_stream(None)
             self.waveform_data = []
         self.waveform_drawing_area.queue_draw()
-
 
     def refresh_audio_list(self):
         self.model.remove_all()
@@ -108,18 +84,17 @@ class AudioEditor(Gtk.Box):
             self.model.append(AudioGObject(audio))
 
     def on_import_audio(self, button):
-        dialog = Gtk.FileChooserDialog(title="Import Audio", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
-        dialog.add_buttons("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK)
-
+        dialog = Gtk.FileChooserNative(title="Import Audio", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
         file_filter = Gtk.FileFilter()
         file_filter.set_name("Audio Files")
         file_filter.add_mime_type("audio/*")
         dialog.add_filter(file_filter)
-
+        dialog.connect("response", self.on_import_audio_response)
         dialog.show()
 
-        def on_response(dialog, response_id):
-            if response_id == Gtk.ResponseType.OK:
+    def on_import_audio_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.ACCEPT:
+            try:
                 file = dialog.get_file()
                 filepath = file.get_path()
                 audio_name = os.path.basename(filepath)
@@ -129,19 +104,22 @@ class AudioEditor(Gtk.Box):
                 new_filepath = os.path.join(audio_dir, audio_name)
                 shutil.copy(filepath, new_filepath)
 
-                new_audio = Audio(id=f"audio_{len(self.project_manager.data.audio_files)}", name=audio_name, asset_type="sound", file_path=new_filepath, duration=0.0)
+                duration = 0.0
+                discoverer = Gst.Discoverer.new(5 * Gst.SECOND)
+                info = discoverer.discover_uri(f"file://{new_filepath}")
+                if info:
+                    duration = info.get_duration() / Gst.SECOND
+
+                new_audio = Audio(id=f"audio_{len(self.project_manager.data.audio_files)}", name=audio_name, asset_type="sound", file_path=new_filepath, duration=duration)
                 self.project_manager.data.audio_files.append(new_audio)
                 self.project_manager.set_dirty()
                 self.refresh_audio_list()
-            dialog.destroy()
-
-        dialog.connect("response", on_response)
+            except Exception as e:
+                print(f"Error importing audio: {e}")
 
     def generate_waveform_data(self, file_path):
-        # This is a placeholder for a real waveform generation implementation
-        # For now, it generates random data for visualization
         import random
-        self.waveform_.data = [random.uniform(-1.0, 1.0) for _ in range(200)]
+        self.waveform_data = [random.uniform(-1.0, 1.0) for _ in range(200)]
 
     def on_waveform_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.2, 0.2, 0.2)

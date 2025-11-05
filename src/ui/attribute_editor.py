@@ -60,37 +60,22 @@ class AttributeEditor(Gtk.Box):
         self.column_view.set_vexpand(True)
         self.column_view.set_css_classes(["boxed-list"])
 
-        # ID Column
-        id_factory = Gtk.SignalListItemFactory()
-        id_factory.connect("setup", self._setup_cell, "id")
-        id_factory.connect("bind", self._bind_cell, "id")
-        id_column = Gtk.ColumnViewColumn(title="ID", factory=id_factory)
-        id_column.set_expand(True)
-        self.column_view.append_column(id_column)
+        # Define columns
+        columns_def = {
+            "id": {"title": "ID", "expand": True},
+            "name": {"title": "Name", "expand": True},
+            "initial_value": {"title": "Initial Value", "expand": False},
+            "max_value": {"title": "Max Value", "expand": False}
+        }
 
-        # Name Column
-        name_factory = Gtk.SignalListItemFactory()
-        name_factory.connect("setup", self._setup_cell, "name")
-        name_factory.connect("bind", self._bind_cell, "name")
-        name_column = Gtk.ColumnViewColumn(title="Name", factory=name_factory)
-        name_column.set_expand(True)
-        self.column_view.append_column(name_column)
-
-        # Initial Value Column
-        initial_value_factory = Gtk.SignalListItemFactory()
-        initial_value_factory.connect("setup", self._setup_cell, "initial_value")
-        initial_value_factory.connect("bind", self._bind_cell, "initial_value")
-        initial_value_column = Gtk.ColumnViewColumn(title="Initial Value", factory=initial_value_factory)
-        initial_value_column.set_expand(False)
-        self.column_view.append_column(initial_value_column)
-
-        # Max Value Column
-        max_value_factory = Gtk.SignalListItemFactory()
-        max_value_factory.connect("setup", self._setup_cell, "max_value")
-        max_value_factory.connect("bind", self._bind_cell, "max_value")
-        max_value_column = Gtk.ColumnViewColumn(title="Max Value", factory=max_value_factory)
-        max_value_column.set_expand(False)
-        self.column_view.append_column(max_value_column)
+        for col_id, col_info in columns_def.items():
+            factory = Gtk.SignalListItemFactory()
+            factory.connect("setup", self._setup_cell, col_id)
+            factory.connect("bind", self._bind_cell, col_id)
+            factory.connect("unbind", self._unbind_cell)
+            column = Gtk.ColumnViewColumn(title=col_info["title"], factory=factory)
+            column.set_expand(col_info["expand"])
+            self.column_view.append_column(column)
 
         scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -109,24 +94,41 @@ class AttributeEditor(Gtk.Box):
 
     def _setup_cell(self, factory, list_item, column_id):
         if column_id in ["initial_value", "max_value"]:
-            widget = Adw.SpinRow()
-            widget.set_adjustment(Gtk.Adjustment(lower=0, upper=99999, step_increment=1))
+            widget = Gtk.SpinButton(
+                adjustment=Gtk.Adjustment(
+                    lower=0, upper=99999, step_increment=1
+                )
+            )
         else:
-            widget = Adw.EntryRow()
-            widget.set_show_apply_button(True)
+            widget = Gtk.Entry()
         list_item.set_child(widget)
 
     def _bind_cell(self, factory, list_item, column_id):
         attr_gobject = list_item.get_item()
         widget = list_item.get_child()
 
-        prop_name = "text" if isinstance(widget, Adw.EntryRow) else "value"
-        widget.bind_property(prop_name, attr_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        list_item.bindings = []
+        if isinstance(widget, Gtk.SpinButton):
+            binding = widget.bind_property("value", attr_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            list_item.bindings.append(binding)
 
-        event_name = "apply" if isinstance(widget, Adw.EntryRow) else "notify::value"
-        handler_id = widget.connect(event_name, lambda w: self.project_manager.set_dirty(True))
+            handler_id = widget.connect("value-changed", lambda w: self.project_manager.set_dirty(True))
+            list_item.handler_id = handler_id
+        else:
+            binding = widget.bind_property("text", attr_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            list_item.bindings.append(binding)
 
-        list_item.disconnect_handler = handler_id
+            handler_id = widget.connect("changed", lambda w: self.project_manager.set_dirty(True))
+            list_item.handler_id = handler_id
+
+    def _unbind_cell(self, factory, list_item):
+        if hasattr(list_item, "bindings"):
+            for binding in list_item.bindings:
+                binding.unbind()
+            list_item.bindings = []
+        if hasattr(list_item, "handler_id"):
+            list_item.get_child().disconnect(list_item.handler_id)
+            del list_item.handler_id
 
     def _on_search_changed(self, search_entry):
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
