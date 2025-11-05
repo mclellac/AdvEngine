@@ -11,17 +11,6 @@ class QuestEditorDialog(Adw.MessageDialog):
         self.project_manager = project_manager
         self.quest = quest
 
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
-        .error {
-            border: 1px solid red;
-            border-radius: 6px;
-        }
-        """)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.set_margin_top(10)
         content.set_margin_bottom(10)
@@ -56,22 +45,18 @@ class QuestEditorDialog(Adw.MessageDialog):
         id_is_duplicate = any(q.id == id_text for q in self.project_manager.data.quests if (is_new_quest or q.id != self.quest.id))
 
         if not id_text or id_is_duplicate:
-            self.id_entry.add_css_class("error")
             if not id_text:
                 self.id_entry.set_tooltip_text("ID cannot be empty.")
             else:
                 self.id_entry.set_tooltip_text("This ID is already in use.")
             is_valid = False
         else:
-            self.id_entry.remove_css_class("error")
             self.id_entry.set_tooltip_text("")
 
         if not self.name_entry.get_text():
-            self.name_entry.add_css_class("error")
             self.name_entry.set_tooltip_text("Name cannot be empty.")
             is_valid = False
         else:
-            self.name_entry.remove_css_class("error")
             self.name_entry.set_tooltip_text("")
 
         self.set_response_enabled("ok", is_valid)
@@ -89,17 +74,6 @@ class ObjectiveEditorDialog(Adw.MessageDialog):
         self.project_manager = project_manager
         self.quest = quest
         self.objective = objective
-
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
-        .error {
-            border: 1px solid red;
-            border-radius: 6px;
-        }
-        """)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.set_margin_top(10)
@@ -135,22 +109,18 @@ class ObjectiveEditorDialog(Adw.MessageDialog):
         id_is_duplicate = any(obj.id == id_text for obj in self.quest.objectives if (is_new_objective or obj.id != self.objective.id))
 
         if not id_text or id_is_duplicate:
-            self.id_entry.add_css_class("error")
             if not id_text:
                 self.id_entry.set_tooltip_text("ID cannot be empty.")
             else:
                 self.id_entry.set_tooltip_text("This ID is already in use.")
             is_valid = False
         else:
-            self.id_entry.remove_css_class("error")
             self.id_entry.set_tooltip_text("")
 
         if not self.name_entry.get_text():
-            self.name_entry.add_css_class("error")
             self.name_entry.set_tooltip_text("Name cannot be empty.")
             is_valid = False
         else:
-            self.name_entry.remove_css_class("error")
             self.name_entry.set_tooltip_text("")
 
         self.set_response_enabled("ok", is_valid)
@@ -292,14 +262,14 @@ class QuestEditor(Gtk.Box):
 
         original_id = quest.id
         self.project_manager.update_quest(original_id, {property_name: new_value})
-        if property_name == 'id':
-            quest.id = new_value
 
         for i, item in enumerate(self.model):
             if item.id == original_id:
                 setattr(item, property_name, new_value)
                 self.model.items_changed(i, 1, 1)
                 break
+        if property_name == 'id':
+            quest.id = new_value
 
     def _on_add_quest(self, button):
         dialog = QuestEditorDialog(self.get_root(), self.project_manager)

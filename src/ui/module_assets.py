@@ -56,7 +56,7 @@ class AssetEditor(Gtk.Box):
 
         # Animation Editor
         self.animation_editor = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, visible=False)
-        self.animation_editor.append(Gtk.Label(label="Animation Frames", css_classes=["title-3"]))
+        self.animation_editor.append(Gtk.Label(label="Animation Frames"))
 
         self.animation_frames_model = Gio.ListStore(item_type=StringGObject)
 

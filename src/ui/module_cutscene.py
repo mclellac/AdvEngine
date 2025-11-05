@@ -62,7 +62,7 @@ class CutsceneEditor(Gtk.Box):
         main_box.set_margin_start(10)
         main_box.set_margin_end(10)
 
-        main_box.append(Gtk.Label(label="Cutscene Script", halign=Gtk.Align.START, css_classes=["title-3"]))
+        main_box.append(Gtk.Label(label="Cutscene Script", halign=Gtk.Align.START))
 
         script_view_scrolled = Gtk.ScrolledWindow(vexpand=True)
         self.script_view = Gtk.TextView()
@@ -73,7 +73,7 @@ class CutsceneEditor(Gtk.Box):
         parse_button.connect("clicked", self.on_parse_script)
         main_box.append(parse_button)
 
-        main_box.append(Gtk.Label(label="Parsed Actions", halign=Gtk.Align.START, css_classes=["title-3"]))
+        main_box.append(Gtk.Label(label="Parsed Actions", halign=Gtk.Align.START))
 
         self.action_store = Gio.ListStore(item_type=CutsceneActionGObject)
         self.action_view = Gtk.ColumnView(model=self.action_store)

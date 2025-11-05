@@ -82,7 +82,7 @@ class EditorWindow(Adw.ApplicationWindow):
         self.content_stack = Adw.ViewStack()
         self.split_view.set_content(self.content_stack)
 
-        self.sidebar_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE, css_classes=["boxed-list"])
+        self.sidebar_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE)
         self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
         sidebar_scroll = Gtk.ScrolledWindow(child=self.sidebar_list)
         self.split_view.set_sidebar(sidebar_scroll)
@@ -295,8 +295,11 @@ class AdvEngine(Adw.Application):
         if self.project_manager and self.project_manager.is_dirty:
             self.project_manager.save_project()
 
-    def load_project(self, project_path):
-        self.project_manager = ProjectManager(project_path)
+    def load_project(self, project_path, project_manager=None):
+        if project_manager:
+            self.project_manager = project_manager
+        else:
+            self.project_manager = ProjectManager(project_path)
         self.project_manager.load_project()
         self.settings_manager.add_recent_project(project_path)
         new_win = EditorWindow(application=self, project_manager=self.project_manager)
@@ -323,7 +326,14 @@ class AdvEngine(Adw.Application):
                 name = entry.get_text()
                 selected_item = combo.get_selected_item()
                 if not name or not selected_item:
-                    # TODO: Show an error dialog to the user
+                    error_dialog = Adw.MessageDialog(
+                        transient_for=self.win,
+                        heading="Error",
+                        body="Project name cannot be empty.",
+                    )
+                    error_dialog.add_response("ok", "OK")
+                    error_dialog.connect("response", lambda d, r: d.destroy())
+                    error_dialog.present()
                     return
                 template = selected_item.get_string()
                 if name:
@@ -340,8 +350,7 @@ class AdvEngine(Adw.Application):
             project_path = os.path.join(folder, name)
             project_manager, error = ProjectManager.create_project(project_path, template)
             if project_manager:
-                self.project_manager = project_manager
-                self.load_project(project_path)
+                self.load_project(project_path, project_manager=project_manager)
             else:
                 print(f"Error: {error}")
 

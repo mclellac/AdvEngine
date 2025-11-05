@@ -38,7 +38,6 @@ class InteractionEditor(Gtk.Box):
 
         self.column_view = Gtk.ColumnView(model=self.selection)
         self.column_view.set_vexpand(True)
-        self.column_view.set_css_classes(["boxed-list"])
         self.main_box.append(self.column_view)
 
         self._create_columns()

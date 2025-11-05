@@ -38,12 +38,10 @@ class WelcomeWidget(Adw.Bin):
         main_box.append(button_box)
 
         new_project_button = Gtk.Button(label="New Project")
-        new_project_button.get_style_context().add_class("pill")
         new_project_button.connect("clicked", self.on_new_project)
         button_box.append(new_project_button)
 
         open_project_button = Gtk.Button(label="Open Project")
-        open_project_button.get_style_context().add_class("pill")
         open_project_button.connect("clicked", self.on_open_project)
         button_box.append(open_project_button)
 
@@ -55,7 +53,6 @@ class WelcomeWidget(Adw.Bin):
 
         self.recent_projects_list = Gtk.ListBox()
         self.recent_projects_list.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.recent_projects_list.add_css_class("boxed-list")
         recent_projects_group.add(self.recent_projects_list)
 
     def populate_recent_projects(self, recent_projects):
