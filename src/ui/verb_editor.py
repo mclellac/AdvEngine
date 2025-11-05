@@ -58,7 +58,6 @@ class VerbEditor(Gtk.Box):
         # --- Column View ---
         self.column_view = Gtk.ColumnView(model=self.selection)
         self.column_view.set_vexpand(True)
-        self.column_view.set_css_classes(["boxed-list"])
 
         # Define columns
         columns_def = {

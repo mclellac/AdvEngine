@@ -63,7 +63,6 @@ class SceneEditor(Gtk.Box):
         factory.connect("bind", self._bind_scene_list_item)
 
         list_view = Gtk.ListView(model=self.scene_selection, factory=factory)
-        list_view.set_css_classes(["boxed-list"])
 
         scrolled = Gtk.ScrolledWindow(child=list_view)
         scrolled.set_vexpand(True)
@@ -171,7 +170,6 @@ class SceneEditor(Gtk.Box):
         factory.connect("bind", self._bind_layer_item)
 
         self.layer_list = Gtk.ListView(model=self.hotspot_selection, factory=factory)
-        self.layer_list.set_css_classes(["boxed-list"])
 
         scrolled = Gtk.ScrolledWindow(child=self.layer_list)
         scrolled.set_vexpand(True)

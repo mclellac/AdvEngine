@@ -84,4 +84,5 @@ For a complete and exhaustive understanding of the application's features, edito
 *   **Docstrings**: All modules, classes, and functions must have Google-style docstrings.
 *   **Error Handling**: Use `try...except` blocks for all file I/O operations. Provide clear user feedback for errors.
 *   **GNOME HIG**: The UI must follow the GNOME Human Interface Guidelines, using Libadwaita widgets and patterns wherever possible.
+*   **No Custom CSS**: Do not add custom CSS styling. The application should rely entirely on the default Libadwaita theme to ensure a consistent user experience, including support for light and dark modes.
 *   **Atomic Commits**: Submit work as focused, atomic changes. Avoid bundling unrelated features or bug fixes.

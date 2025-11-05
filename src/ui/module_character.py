@@ -60,7 +60,6 @@ class CharacterManager(Gtk.Box):
         # --- Column View ---
         self.column_view = Gtk.ColumnView(model=self.selection)
         self.column_view.set_vexpand(True)
-        self.column_view.set_css_classes(["boxed-list"])
         self._create_columns()
 
         scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
@@ -150,6 +149,8 @@ class CharacterManager(Gtk.Box):
             widget.bind_property("text", char_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
             handler_id = widget.connect("changed", lambda w: self.project_manager.set_dirty(True))
 
+        if hasattr(list_item, "disconnect_handler"):
+            widget.disconnect(list_item.disconnect_handler)
         list_item.disconnect_handler = handler_id
 
     def _on_combo_changed(self, combo, _, char_gobject, column_id):

@@ -53,7 +53,7 @@ class DialogueEditor(Gtk.Box):
         toolbar.append(self.delete_button)
 
         self.model = Gio.ListStore(item_type=DialogueNodeGObject)
-        self.tree_model = Gtk.TreeListModel.new(self.model, passthrough=False, autoexpand=True, create_func=self._get_children, user_data=None, user_destroy=None)
+        self.tree_model = Gtk.TreeListModel.new(self.model, passthrough=False, autoexpand=True, create_func=self._get_children)
 
         self.selection = Gtk.SingleSelection(model=self.tree_model)
         self.selection.connect("selection-changed", self.on_selection_changed)
