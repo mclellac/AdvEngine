@@ -393,7 +393,7 @@ class LogicEditor(Gtk.Box):
 
     def on_drag_update(self, gesture, x, y):
         if self.drag_offsets:
-            start_x, start_y = gesture.get_start_point()
+            success, start_x, start_y = gesture.get_start_point()
             for node in self.selected_nodes:
                 offset_x, offset_y = self.drag_offsets[node.id]
                 node.x = start_x + x - offset_x
@@ -460,7 +460,7 @@ class LogicEditor(Gtk.Box):
 
     def on_connection_drag_update(self, gesture, x, y):
         if self.connecting_from_node:
-            start_x, start_y = gesture.get_start_point()
+            success, start_x, start_y = gesture.get_start_point()
             self.connecting_line_x = start_x + x
             self.connecting_line_y = start_y + y
             self.canvas.queue_draw()
@@ -489,7 +489,7 @@ class LogicEditor(Gtk.Box):
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
-            start_x, start_y = gesture.get_start_point()
+            success, start_x, start_y = gesture.get_start_point()
             self.resizing_node.width = max(150, self.initial_node_width + x)
             self.resizing_node.height = max(100, self.initial_node_height + y)
             self.canvas.queue_draw()
