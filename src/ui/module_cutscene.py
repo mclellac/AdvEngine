@@ -76,7 +76,7 @@ class CutsceneEditor(Gtk.Box):
         main_box.append(Gtk.Label(label="Parsed Actions", halign=Gtk.Align.START))
 
         self.action_store = Gio.ListStore(item_type=CutsceneActionGObject)
-        self.action_view = Gtk.ColumnView(model=self.action_store)
+        self.action_view = Gtk.ColumnView(model=Gtk.SingleSelection(model=self.action_store))
 
         cmd_factory = Gtk.SignalListItemFactory()
         cmd_factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
