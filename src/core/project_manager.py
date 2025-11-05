@@ -20,6 +20,7 @@ class ProjectManager:
         self.data = ProjectData()
         self.settings = SettingsManager(project_path)
         self.is_dirty = False
+        self.is_new_project = False
         self.dirty_state_changed_callbacks = []
         self.project_loaded_callbacks = []
 
@@ -39,6 +40,7 @@ class ProjectManager:
         self._load_quests()
         self._load_ui_layouts()
         self._load_fonts()
+        self.is_new_project = False
         self.set_dirty(False) # Project is clean after loading
         self._notify_project_loaded()
 
@@ -125,7 +127,8 @@ class ProjectManager:
                             row[key] = value.lower() in ['true', '1']
                     target_list.append(dataclass_type(**row))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -139,7 +142,8 @@ class ProjectManager:
                     scene_data["hotspots"] = hotspots
                     self.data.scenes.append(Scene(**scene_data))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found. Starting with an empty scene list.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found. Starting with an empty scene list.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -172,7 +176,8 @@ class ProjectManager:
                     graph_data["nodes"] = nodes
                     self.data.logic_graphs.append(LogicGraph(**graph_data))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found. Starting with an empty logic graph list.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found. Starting with an empty logic graph list.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -196,7 +201,8 @@ class ProjectManager:
                     else:
                         self.data.assets.append(Asset(**asset_data))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
 
     def _save_assets(self):
         file_path = os.path.join(self.project_path, "Data", "Assets.json")
@@ -210,7 +216,8 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 self.data.audio_files = [Audio(**audio_data) for audio_data in json.load(f)]
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
 
     def _save_audio(self):
         file_path = os.path.join(self.project_path, "Data", "Audio.json")
@@ -224,7 +231,8 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 self.data.global_variables = [GlobalVariable(**var) for var in json.load(f)]
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -247,7 +255,8 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 self.data.verbs = [Verb(**verb) for verb in json.load(f)]
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -360,7 +369,8 @@ class ProjectManager:
                     graph_data["nodes"] = nodes
                     self.data.dialogue_graphs.append(LogicGraph(**graph_data))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found. Starting with an empty dialogue graph list.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found. Starting with an empty dialogue graph list.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -379,7 +389,8 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 self.data.cutscenes = [Cutscene(**cs) for cs in json.load(f)]
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -395,7 +406,8 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 self.data.interactions = [Interaction(**interaction) for interaction in json.load(f)]
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -424,7 +436,8 @@ class ProjectManager:
                     quest_data["objectives"] = objectives
                     self.data.quests.append(Quest(**quest_data))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found. Starting with an empty quest list.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found. Starting with an empty quest list.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -494,7 +507,8 @@ class ProjectManager:
                     layout_data["elements"] = elements
                     self.data.ui_layouts.append(UILayout(**layout_data))
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found. Starting with an empty UI layout list.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found. Starting with an empty UI layout list.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -560,7 +574,8 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 self.data.fonts = [Font(**font) for font in json.load(f)]
         except FileNotFoundError:
-            print(f"Warning: {file_path} not found.")
+            if not self.is_new_project:
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -736,28 +751,30 @@ class ProjectManager:
                         writer.writerow(headers)
 
             # Create empty JSON files
-            json_files = [
-                os.path.join(data_dir, "Assets.json"),
-                os.path.join(data_dir, "Audio.json"),
-                os.path.join(data_dir, "GlobalState.json"),
-                os.path.join(data_dir, "Verbs.json"),
-                os.path.join(data_dir, "Fonts.json"),
-                os.path.join(logic_dir, "Scenes.json"),
-                os.path.join(logic_dir, "LogicGraphs.json"),
-                os.path.join(logic_dir, "DialogueGraphs.json"),
-                os.path.join(logic_dir, "Cutscenes.json"),
-                os.path.join(logic_dir, "Interactions.json"),
-                os.path.join(logic_dir, "Quests.json"),
-                os.path.join(ui_dir, "WindowLayout.json"),
-            ]
-            for file_path in json_files:
+            json_files = {
+                os.path.join(data_dir, "Assets.json"): [],
+                os.path.join(data_dir, "Audio.json"): [],
+                os.path.join(data_dir, "GlobalState.json"): [],
+                os.path.join(data_dir, "Verbs.json"): [],
+                os.path.join(data_dir, "Fonts.json"): [],
+                os.path.join(logic_dir, "Scenes.json"): [],
+                os.path.join(logic_dir, "LogicGraphs.json"): [],
+                os.path.join(logic_dir, "DialogueGraphs.json"): [],
+                os.path.join(logic_dir, "Cutscenes.json"): [],
+                os.path.join(logic_dir, "Interactions.json"): [],
+                os.path.join(logic_dir, "Quests.json"): [],
+                os.path.join(ui_dir, "WindowLayout.json"): [],
+            }
+            for file_path, default_content in json_files.items():
                 if not os.path.exists(file_path):
                     with open(file_path, "w") as f:
-                        json.dump([], f)
+                        json.dump(default_content, f)
 
-            return True, None
+            project_manager = ProjectManager(project_path)
+            project_manager.is_new_project = True
+            return project_manager, None
         except Exception as e:
-            return False, str(e)
+            return None, str(e)
 
     def search(self, query):
         """Searches all project data for a given query."""
