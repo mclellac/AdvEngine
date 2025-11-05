@@ -54,37 +54,22 @@ class ProjectManager:
             callback()
 
     def save_project(self):
-        if self.data.items:
-            self._save_csv("ItemData.csv", self.data.items)
-        if self.data.attributes:
-            self._save_csv("Attributes.csv", self.data.attributes)
-        if self.data.global_variables:
-            self._save_global_variables()
-        if self.data.verbs:
-            self._save_verbs()
-        if self.data.interactions:
-            self._save_interactions()
-        if self.data.scenes:
-            self._save_scenes()
-        if self.data.logic_graphs:
-            self._save_logic_graphs()
-        if self.data.assets:
-            self._save_assets()
-        if self.data.audio_files:
-            self._save_audio()
-        if self.data.characters:
-            self._save_characters()
-        if self.data.dialogue_graphs:
-            self._save_dialogue_graphs()
-        if self.data.cutscenes:
-            self._save_cutscenes()
-        if self.data.quests:
-            self._save_quests()
-        if self.data.ui_layouts:
-            self._save_ui_layouts()
-        if self.data.fonts:
-            self._save_fonts()
-        self.set_dirty(False) # Project is clean after saving
+        self._save_csv("ItemData.csv", self.data.items, Item)
+        self._save_csv("Attributes.csv", self.data.attributes, Attribute)
+        self._save_global_variables()
+        self._save_verbs()
+        self._save_interactions()
+        self._save_scenes()
+        self._save_logic_graphs()
+        self._save_assets()
+        self._save_audio()
+        self._save_characters()
+        self._save_dialogue_graphs()
+        self._save_cutscenes()
+        self._save_quests()
+        self._save_ui_layouts()
+        self._save_fonts()
+        self.set_dirty(False)
 
     def register_dirty_state_callback(self, callback):
         """Register a function to be called when the dirty state changes."""
@@ -101,18 +86,21 @@ class ProjectManager:
             self.is_dirty = state
             self._notify_dirty_state_changed()
 
-    def _save_csv(self, filename, data_list):
-        if not data_list:
-            return # Don't write empty files
-
+    def _save_csv(self, filename, data_list, dataclass_type):
         file_path = os.path.join(self.project_path, "Data", filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=asdict(data_list[0]).keys())
-                writer.writeheader()
-                for item in data_list:
-                    writer.writerow(asdict(item))
+                if not data_list:
+                    # Get field names from an empty instance of the dataclass
+                    fieldnames = asdict(dataclass_type(*[None] * len(dataclass_type.__annotations__))).keys()
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                else:
+                    writer = csv.DictWriter(f, fieldnames=asdict(data_list[0]).keys())
+                    writer.writeheader()
+                    for item in data_list:
+                        writer.writerow(asdict(item))
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
 
@@ -202,14 +190,21 @@ class ProjectManager:
         file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
         self._load_graph_data(file_path, self.data.logic_graphs)
 
-    def _save_logic_graphs(self):
-        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
+    def _load_dialogue_graphs(self):
+        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
+        self._load_graph_data(file_path, self.data.dialogue_graphs)
+
+    def _save_graph_data(self, file_path, graph_list):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
-                json.dump([asdict(graph) for graph in self.data.logic_graphs], f, indent=2)
+                json.dump([graph.to_dict() for graph in graph_list], f, indent=4)
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
+
+    def _save_logic_graphs(self):
+        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
+        self._save_graph_data(file_path, self.data.logic_graphs)
 
     def _load_assets(self):
         file_path = os.path.join(self.project_path, "Data", "Assets.json")
@@ -276,12 +271,35 @@ class ProjectManager:
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
 
-    def add_global_variable(self, name, type, initial_value, category):
-        new_id = f"var_{len(self.data.global_variables) + 1}"
-        new_var = GlobalVariable(id=new_id, name=name, type=type, initial_value=initial_value, category=category)
-        self.data.global_variables.append(new_var)
+    def add_global_variable(self, variable):
+        """Adds a new global variable to the project."""
+        self.data.global_variables.append(variable)
         self.set_dirty()
-        return new_var
+
+    def remove_global_variable(self, variable):
+        """Removes a global variable from the project."""
+        if variable in self.data.global_variables:
+            self.data.global_variables.remove(variable)
+            self.set_dirty()
+            return True
+        return False
+
+    def update_global_variable(self, variable, gobject):
+        """Updates a global variable."""
+        variable.name = gobject.name
+        variable.type = gobject.type
+        variable.category = gobject.category
+        # Handle type conversion for initial_value
+        if gobject.type == "int":
+            try:
+                variable.initial_value = int(gobject.initial_value_str)
+            except ValueError:
+                variable.initial_value = 0
+        elif gobject.type == "bool":
+            variable.initial_value = gobject.initial_value_str.lower() in ['true', '1']
+        else:
+            variable.initial_value = gobject.initial_value_str
+        self.set_dirty()
 
     def _load_verbs(self):
         file_path = os.path.join(self.project_path, "Data", "Verbs.json")
@@ -304,7 +322,7 @@ class ProjectManager:
             print(f"Error saving {file_path}: {e}")
 
     def _save_characters(self):
-        self._save_csv("CharacterData.csv", self.data.characters)
+        self._save_csv("CharacterData.csv", self.data.characters, Character)
 
     def add_verb(self, id, name):
         new_verb = Verb(id=id, name=name)
@@ -343,6 +361,8 @@ class ProjectManager:
         if item in self.data.items:
             self.data.items.remove(item)
             self.set_dirty()
+            return True
+        return False
 
     def add_character(self, character):
         """Adds a new character to the project."""
@@ -354,6 +374,8 @@ class ProjectManager:
         if character in self.data.characters:
             self.data.characters.remove(character)
             self.set_dirty()
+            return True
+        return False
 
     def update_character(self, character_id, new_data):
         """Updates an existing character."""
@@ -375,6 +397,8 @@ class ProjectManager:
         if attribute in self.data.attributes:
             self.data.attributes.remove(attribute)
             self.set_dirty()
+            return True
+        return False
 
     def add_dialogue_graph(self, id, name):
         new_graph = LogicGraph(id=id, name=name)
@@ -392,12 +416,7 @@ class ProjectManager:
 
     def _save_dialogue_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(graph) for graph in self.data.dialogue_graphs], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_graph_data(file_path, self.data.dialogue_graphs)
 
     def _load_cutscenes(self):
         file_path = os.path.join(self.project_path, "Logic", "Cutscenes.json")

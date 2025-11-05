@@ -140,6 +140,9 @@ class LogicNode:
     inputs: List[str] = field(default_factory=list)
     outputs: List[str] = field(default_factory=list)
 
+    def to_dict(self):
+        return asdict(self)
+
 @dataclass
 class DialogueNode(LogicNode):
     character_id: str = ""
@@ -194,6 +197,13 @@ class LogicGraph:
     id: str
     name: str
     nodes: List[LogicNode] = field(default_factory=list)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "nodes": [node.to_dict() for node in self.nodes]
+        }
 
 # --- Cutscene Schemas ---
 @dataclass
