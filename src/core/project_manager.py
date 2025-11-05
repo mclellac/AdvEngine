@@ -161,6 +161,11 @@ class ProjectManager:
             print(f"Error saving {file_path}: {e}")
 
     def _load_graph_data(self, file_path, target_list):
+        def pascal_to_snake(name):
+            import re
+            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            return name.replace('varname', 'var_name')
+
         try:
             with open(file_path, "r") as f:
                 graphs_data = json.load(f)
@@ -170,8 +175,9 @@ class ProjectManager:
                         node_type = node_data.get("node_type")
                         if "parameters" in node_data:
                             for key, value in node_data["parameters"].items():
-                                if key.lower() not in node_data:
-                                    node_data[key.lower()] = value
+                                snake_key = pascal_to_snake(key)
+                                if snake_key not in node_data:
+                                    node_data[snake_key] = value
                             del node_data["parameters"]
 
                         if node_type == "Dialogue":
