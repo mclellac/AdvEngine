@@ -15,6 +15,10 @@ class CutsceneActionGObject(GObject.Object):
         self.parameters = " ".join(action.parameters)
 
 class CutsceneEditor(Gtk.Box):
+    EDITOR_NAME = "Cutscenes"
+    VIEW_NAME = "cutscene_editor"
+    ORDER = 4
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.project_manager = project_manager
@@ -91,8 +95,18 @@ class CutsceneEditor(Gtk.Box):
         self.action_view.append_column(param_col)
 
         action_scrolled = Gtk.ScrolledWindow(child=self.action_view, vexpand=True)
+
+        self.status_page = Adw.StatusPage(title="No Cutscenes", icon_name="video-x-generic-symbolic")
+        main_box.append(self.status_page)
         main_box.append(action_scrolled)
+
+        self._update_visibility()
         return main_box
+
+    def _update_visibility(self):
+        has_cutscenes = self.cutscene_store.get_n_items() > 0
+        self.action_view.set_visible(has_cutscenes)
+        self.status_page.set_visible(not has_cutscenes)
 
     def on_cutscene_selected(self, selection_model, position, n_items):
         selected_item = selection_model.get_selected_item()
@@ -104,6 +118,7 @@ class CutsceneEditor(Gtk.Box):
             self.script_view.get_buffer().set_text("")
             self.action_store.clear()
             self.delete_button.set_sensitive(False)
+        self._update_visibility()
 
     def on_add_cutscene(self, button):
         dialog = Adw.MessageDialog(transient_for=self.get_root(), modal=True, heading="Create New Cutscene")

@@ -10,26 +10,9 @@ from gi.repository import Gtk, Adw, Gio, GObject
 
 from .core.project_manager import ProjectManager
 from .core.data_schemas import DialogueNode
-from .ui.item_editor import ItemEditor
-from .ui.attribute_editor import AttributeEditor
-from .ui.verb_editor import VerbEditor
-from .ui.module_character import CharacterManager
-from .ui.module_quest import QuestEditor
-from .ui.module_ui_builder import UIBuilder
-from .ui.module_font import FontManager
-from .ui.module_log import LogViewer
-from .ui.module_scene import SceneEditor
-from .ui.module_logic import LogicEditor
-from .ui.module_dialogue import DialogueEditor
-from .ui.module_cutscene import CutsceneEditor
-from .ui.module_assets import AssetEditor
-from .ui.module_audio import AudioEditor
-from .ui.module_state import GlobalStateEditor
-from .ui.module_interaction import InteractionEditor
-from .ui.preferences import PreferencesDialog
-from .ui.shortcuts import ShortcutsDialog
-from .ui.search_results import SearchResultsView
-from .ui.welcome import WelcomeWindow
+import importlib
+import inspect
+from .ui import preferences, shortcuts, search_results, welcome
 
 
 class EditorWindow(Adw.ApplicationWindow):
@@ -87,32 +70,10 @@ class EditorWindow(Adw.ApplicationWindow):
         sidebar_scroll = Gtk.ScrolledWindow(child=self.sidebar_list)
         self.split_view.set_sidebar(sidebar_scroll)
 
-        self.add_editor("Scenes", "scenes_editor", SceneEditor(self.project_manager))
-        self.logic_editor = LogicEditor(self.project_manager)
-        self.add_editor("Logic", "logic_editor", self.logic_editor)
-        self.add_editor("Interactions", "interaction_editor", InteractionEditor(self.project_manager))
-        self.add_editor("Dialogue", "dialogue_editor", DialogueEditor(self.project_manager))
-        self.add_editor("Cutscenes", "cutscene_editor", CutsceneEditor(self.project_manager))
-        self.add_editor("Assets", "assets_editor", AssetEditor(self.project_manager))
-        self.add_editor("Audio", "audio_editor", AudioEditor(self.project_manager))
-        self.add_editor("Global State", "global_state_editor", GlobalStateEditor(self.project_manager))
-        self.add_editor("Characters", "character_manager", CharacterManager(self.project_manager))
-        self.add_editor("Quests", "quest_editor", QuestEditor(self.project_manager))
-        self.add_editor("UI Builder", "ui_builder", UIBuilder(self.project_manager))
-        self.add_editor("Fonts", "font_manager", FontManager(self.project_manager))
-        self.add_editor("Log", "log_viewer", LogViewer(self.project_manager))
+        self.logic_editor = None # This will be assigned in discover_and_add_editors
+        self.discover_and_add_editors()
 
-        db_stack = Adw.ViewStack()
-        db_switcher = Adw.ViewSwitcher(stack=db_stack)
-        db_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        db_box.append(db_switcher)
-        db_box.append(db_stack)
-        db_stack.add_titled_with_icon(ItemEditor(self.project_manager), "items", "Items", "edit-find-replace-symbolic")
-        db_stack.add_titled_with_icon(AttributeEditor(self.project_manager), "attributes", "Attributes", "document-properties-symbolic")
-        db_stack.add_titled_with_icon(VerbEditor(self.project_manager), "verbs", "Verbs", "input-gaming-symbolic")
-        self.add_editor("Database", "db_editor", db_box)
-
-        self.search_results_view = SearchResultsView()
+        self.search_results_view = search_results.SearchResultsView()
         self.content_stack.add_named(self.search_results_view, "search_results")
 
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
@@ -139,6 +100,29 @@ class EditorWindow(Adw.ApplicationWindow):
         if row:
             view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
+
+    def discover_and_add_editors(self):
+        editors = []
+        ui_dir = os.path.join(os.path.dirname(__file__), "ui")
+        for filename in os.listdir(ui_dir):
+            if filename.endswith(".py") and not filename.startswith("__"):
+                module_name = f".ui.{filename[:-3]}"
+                try:
+                    module = importlib.import_module(module_name, package="advengine")
+                    for name, obj in inspect.getmembers(module):
+                        if inspect.isclass(obj) and hasattr(obj, "EDITOR_NAME"):
+                            editors.append(obj)
+                except Exception as e:
+                    print(f"Error discovering editor in {module_name}: {e}")
+
+        # Sort editors based on an 'ORDER' attribute
+        editors.sort(key=lambda e: getattr(e, "ORDER", 999))
+
+        for editor_class in editors:
+            editor_instance = editor_class(self.project_manager)
+            self.add_editor(editor_class.EDITOR_NAME, editor_class.VIEW_NAME, editor_instance)
+            if editor_class.VIEW_NAME == 'logic_editor':
+                self.logic_editor = editor_instance
 
     def on_dirty_state_changed(self, is_dirty):
         self.set_title(f"{self.base_title}{'*' if is_dirty else ''}")

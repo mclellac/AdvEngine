@@ -144,16 +144,50 @@ class LogicNode:
 class DialogueNode(LogicNode):
     character_id: str = ""
     dialogue_text: str = ""
+    action_node: Optional['ActionNode'] = None
 
 @dataclass
 class ConditionNode(LogicNode):
     condition_type: str = ""
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    var_name: str = ""
+    value: str = ""
+    item_id: str = ""
+    amount: int = 0
+    attribute_id: str = ""
+    comparison: str = ""
+    hotspot_id: str = ""
+    state: bool = False
+    entity_id: str = ""
+    visible: bool = False
+    scene_id: str = ""
+    times: int = 0
+    check_id: str = ""
+    mesh_id: str = ""
+    time_state: str = ""
 
 @dataclass
 class ActionNode(LogicNode):
     action_command: str = ""
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    var_name: str = ""
+    value: str = ""
+    item_id: str = ""
+    amount: int = 0
+    scene_id: str = ""
+    spawn_point: str = ""
+    shop_id: str = ""
+    attribute_id: str = ""
+    cinematic_id: str = ""
+    sound_id: str = ""
+    hotspot_id: str = ""
+    target_id: str = ""
+    animation_key: str = ""
+    loop: bool = False
+    entity_id: str = ""
+    x: int = 0
+    y: int = 0
+    mode: str = ""
+    mesh_id: str = ""
+    dialogue_node_id: str = ""
 
 @dataclass
 class LogicGraph:

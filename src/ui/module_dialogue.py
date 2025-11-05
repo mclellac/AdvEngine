@@ -25,6 +25,10 @@ class DialogueNodeGObject(GObject.Object):
             self.display_text = f"-> ACTION: {node.action_command}"
 
 class DialogueEditor(Gtk.Box):
+    EDITOR_NAME = "Dialogue"
+    VIEW_NAME = "dialogue_editor"
+    ORDER = 3
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.project_manager = project_manager

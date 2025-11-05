@@ -126,24 +126,25 @@ class DynamicNodeEditor(Adw.Bin):
 
         if selected_command:
             defs = get_command_definitions()[command_key][selected_command]
-            self.params_group.set_title(f"Parameters")
+            self.params_group.set_title(f"Parameters for {selected_command}")
             for param, p_type in defs["params"].items():
-                default = self.node.parameters.get(param, "")
-                self.add_param_widget(param, p_type, default)
+                self.add_param_widget(param, p_type, getattr(self.node, param.lower(), ""))
 
     def add_param_widget(self, key, param_type, default_value):
+        # Convert snake_case to Title Case for display
+        title = key.replace("_", " ").title()
         if isinstance(param_type, list):
-            combo = Adw.ComboRow(title=key, model=Gtk.StringList.new(param_type))
+            combo = Adw.ComboRow(title=title, model=Gtk.StringList.new(param_type))
             if default_value in param_type:
                 combo.set_selected(param_type.index(default_value))
             combo.connect("notify::selected-item", self.on_value_changed)
-            self.param_widgets[key] = combo
+            self.param_widgets[key.lower()] = combo
             self.params_group.add(combo)
         else:
-            entry = Adw.EntryRow(title=key)
+            entry = Adw.EntryRow(title=title)
             entry.set_text(str(default_value))
             entry.connect("apply", self.on_value_changed)
-            self.param_widgets[key] = entry
+            self.param_widgets[key.lower()] = entry
             self.params_group.add(entry)
 
     def on_combo_changed(self, combo, _):
@@ -153,38 +154,38 @@ class DynamicNodeEditor(Adw.Bin):
     def on_value_changed(self, widget):
         if not self.node: return
         values = self.get_values()
-
         for key, value in values.items():
-            if key != 'parameters':
-                setattr(self.node, key, value)
-
-        if 'parameters' in values:
-            self.node.parameters = values['parameters']
+            # Handle type conversion for int/bool
+            field_type = type(getattr(self.node, key, None))
+            if field_type == int:
+                try: value = int(value)
+                except (ValueError, TypeError): value = 0
+            elif field_type == bool:
+                value = str(value).lower() in ['true', '1']
+            setattr(self.node, key, value)
 
         if self.project_manager:
             self.project_manager.set_dirty(True)
-
         if self.on_update_callback:
             self.on_update_callback()
 
     def get_values(self):
         values = {}
-        for key, widget in self.main_widgets.items():
+        all_widgets = {**self.main_widgets, **self.param_widgets}
+        for key, widget in all_widgets.items():
             if isinstance(widget, Adw.EntryRow):
                 values[key] = widget.get_text()
             elif isinstance(widget, Adw.ComboRow):
-                values[key] = widget.get_selected_item().get_string()
-
-        if self.param_widgets:
-            values['parameters'] = {}
-            for key, widget in self.param_widgets.items():
-                if isinstance(widget, Adw.EntryRow):
-                    values['parameters'][key] = widget.get_text()
-                elif isinstance(widget, Adw.ComboRow):
-                    values['parameters'][key] = widget.get_selected_item().get_string()
+                selected_item = widget.get_selected_item()
+                if selected_item:
+                    values[key] = selected_item.get_string()
         return values
 
 class LogicEditor(Gtk.Box):
+    EDITOR_NAME = "Logic"
+    VIEW_NAME = "logic_editor"
+    ORDER = 1
+
     def __init__(self, project_manager):
         super().__init__()
         self.project_manager = project_manager
@@ -266,23 +267,9 @@ class LogicEditor(Gtk.Box):
         palette = Adw.PreferencesGroup(title="Tool Palette")
         sidebar.append(palette)
 
-        dialogue_button = Gtk.Button(label="Add Dialogue")
-        dialogue_button.connect("clicked", lambda w: self.on_add_node(DialogueNode, "Dialogue"))
-        dialogue_row = Adw.ActionRow(title="Add Dialogue Node", activatable_widget=dialogue_button)
-        dialogue_row.add_suffix(dialogue_button)
-        palette.add(dialogue_row)
-
-        condition_button = Gtk.Button(label="Add Condition")
-        condition_button.connect("clicked", lambda w: self.on_add_node(ConditionNode, "Condition"))
-        condition_row = Adw.ActionRow(title="Add Condition Node", activatable_widget=condition_button)
-        condition_row.add_suffix(condition_button)
-        palette.add(condition_row)
-
-        action_button = Gtk.Button(label="Add Action")
-        action_button.connect("clicked", lambda w: self.on_add_node(ActionNode, "Action"))
-        action_row = Adw.ActionRow(title="Add Action Node", activatable_widget=action_button)
-        action_row.add_suffix(action_button)
-        palette.add(action_row)
+        self.add_node_button(palette, "Add Dialogue Node", "Add Dialogue", DialogueNode, "Dialogue")
+        self.add_node_button(palette, "Add Condition Node", "Add Condition", ConditionNode, "Condition")
+        self.add_node_button(palette, "Add Action Node", "Add Action", ActionNode, "Action")
 
         self.props_panel = DynamicNodeEditor(project_manager=self.project_manager, on_update_callback=self.canvas.queue_draw)
         sidebar.append(self.props_panel)
@@ -365,6 +352,13 @@ class LogicEditor(Gtk.Box):
         cr.move_to(start_x, start_y)
         cr.curve_to(start_x + 50, start_y, end_x - 50, end_y, end_x, end_y)
         cr.stroke()
+
+    def add_node_button(self, palette, title, label, node_class, node_type):
+        button = Gtk.Button(label=label)
+        button.connect("clicked", lambda w: self.on_add_node(node_class, node_type))
+        row = Adw.ActionRow(title=title, activatable_widget=button)
+        row.add_suffix(button)
+        palette.add(row)
 
     def on_add_node(self, node_class, node_type):
         if self.active_graph:
@@ -489,7 +483,7 @@ class LogicEditor(Gtk.Box):
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
-            success, start_x, start_y = gesture.get_start_point()
+            # The x and y values from the gesture are offsets from the start point
             self.resizing_node.width = max(150, self.initial_node_width + x)
             self.resizing_node.height = max(100, self.initial_node_height + y)
             self.canvas.queue_draw()

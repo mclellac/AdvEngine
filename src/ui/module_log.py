@@ -4,6 +4,10 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw
 
 class LogViewer(Gtk.Box):
+    EDITOR_NAME = "Log"
+    VIEW_NAME = "log_viewer"
+    ORDER = 12
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.project_manager = project_manager

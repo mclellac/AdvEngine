@@ -5,6 +5,10 @@ from gi.repository import Gtk, Gio, Adw, GObject
 from ..core.data_schemas import Interaction, InteractionGObject, Item, Verb, Hotspot, LogicGraph, StringGObject
 
 class InteractionEditor(Gtk.Box):
+    EDITOR_NAME = "Interactions"
+    VIEW_NAME = "interaction_editor"
+    ORDER = 2
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.project_manager = project_manager
@@ -38,14 +42,24 @@ class InteractionEditor(Gtk.Box):
 
         self.column_view = Gtk.ColumnView(model=self.selection)
         self.column_view.set_vexpand(True)
+
+        self.status_page = Adw.StatusPage(title="No Interactions", icon_name="emblem-synchronizing-symbolic")
+        self.main_box.append(self.status_page)
         self.main_box.append(self.column_view)
 
         self._create_columns()
+        self._update_visibility()
+
+    def _update_visibility(self):
+        has_interactions = self.model.get_n_items() > 0
+        self.column_view.set_visible(has_interactions)
+        self.status_page.set_visible(not has_interactions)
 
     def _refresh_model(self):
         self.model.remove_all()
         for interaction in self.project_manager.data.interactions:
             self.model.append(InteractionGObject(interaction))
+        self._update_visibility()
 
     def _create_columns(self):
         columns = {

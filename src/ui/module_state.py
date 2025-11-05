@@ -9,6 +9,9 @@ from ..core.project_manager import ProjectManager
 class GlobalStateEditor(Gtk.Box):
     """A widget for editing global variables, using a ColumnView for a
     structured, inline editing experience."""
+    EDITOR_NAME = "Global State"
+    VIEW_NAME = "global_state_editor"
+    ORDER = 7
 
     def __init__(self, project_manager: ProjectManager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)

@@ -132,6 +132,10 @@ class ObjectiveEditorDialog(Adw.MessageDialog):
         return row
 
 class QuestEditor(Gtk.Box):
+    EDITOR_NAME = "Quests"
+    VIEW_NAME = "quest_editor"
+    ORDER = 9
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -164,7 +168,18 @@ class QuestEditor(Gtk.Box):
         self.append(self.quest_details)
 
         self.selection.connect("selection-changed", self._on_quest_selected)
+
+        self.status_page = Adw.StatusPage(title="No Quests", icon_name="dialog-question-symbolic")
+        self.append(self.status_page)
+
         self._on_quest_selected(self.selection, None)
+        self._update_visibility()
+
+    def _update_visibility(self):
+        has_quests = self.model.get_n_items() > 0
+        self.quest_list.get_parent().set_visible(has_quests) # The scrolled window
+        self.quest_details.set_visible(has_quests)
+        self.status_page.set_visible(not has_quests)
 
     def _create_column(self, title, sorter, expression_func):
         factory = Gtk.SignalListItemFactory()

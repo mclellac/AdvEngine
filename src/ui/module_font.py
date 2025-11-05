@@ -6,6 +6,10 @@ from gi.repository import Gtk, Gio, Adw, Pango
 from ..core.data_schemas import Font, FontGObject
 
 class FontManager(Gtk.Box):
+    EDITOR_NAME = "Fonts"
+    VIEW_NAME = "font_manager"
+    ORDER = 11
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -30,7 +34,13 @@ class FontManager(Gtk.Box):
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.font_list)
-        self.append(scrolled_window)
+
+        self.status_page = Adw.StatusPage(title="No Fonts", icon_name="font-x-generic-symbolic")
+
+        self.main_stack = Gtk.Stack()
+        self.main_stack.add_named(scrolled_window, "list")
+        self.main_stack.add_named(self.status_page, "status")
+        self.append(self.main_stack)
 
         # Font Preview
         self.font_preview = Gtk.Label(label="The quick brown fox jumps over the lazy dog")
@@ -49,6 +59,15 @@ class FontManager(Gtk.Box):
         delete_button.connect("clicked", self._on_delete_font)
         button_box.append(delete_button)
         self.append(button_box)
+
+        self._update_visibility()
+
+    def _update_visibility(self):
+        has_fonts = self.model.get_n_items() > 0
+        if has_fonts:
+            self.main_stack.set_visible_child_name("list")
+        else:
+            self.main_stack.set_visible_child_name("status")
 
     def _create_column(self, title, sorter, expression_func):
         factory = Gtk.SignalListItemFactory()
