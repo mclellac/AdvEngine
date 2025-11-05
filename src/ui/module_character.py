@@ -10,6 +10,9 @@ from ..core.project_manager import ProjectManager
 class CharacterManager(Gtk.Box):
     """A widget for editing characters in a project, using a ColumnView for a
     structured editing experience and including a portrait preview."""
+    EDITOR_NAME = "Characters"
+    VIEW_NAME = "character_manager"
+    ORDER = 8
 
     def __init__(self, project_manager: ProjectManager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)

@@ -5,6 +5,10 @@ from gi.repository import Gtk, Gio, Adw
 from ..core.data_schemas import UILayout, UIElement, UILayoutGObject
 
 class UIBuilder(Gtk.Box):
+    EDITOR_NAME = "UI Builder"
+    VIEW_NAME = "ui_builder"
+    ORDER = 10
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -30,7 +34,13 @@ class UIBuilder(Gtk.Box):
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.layout_list)
-        self.append(scrolled_window)
+
+        self.status_page = Adw.StatusPage(title="No UI Layouts", icon_name="applications-graphics-symbolic")
+
+        self.main_stack = Gtk.Stack()
+        self.main_stack.add_named(scrolled_window, "list")
+        self.main_stack.add_named(self.status_page, "status")
+        self.append(self.main_stack)
 
         # UI Canvas
         self.canvas = Gtk.DrawingArea()
@@ -68,6 +78,15 @@ class UIBuilder(Gtk.Box):
         delete_element_button.connect("clicked", self._on_delete_element)
         button_box.append(delete_element_button)
         self.append(button_box)
+
+        self._update_visibility()
+
+    def _update_visibility(self):
+        has_layouts = self.model.get_n_items() > 0
+        if has_layouts:
+            self.main_stack.set_visible_child_name("list")
+        else:
+            self.main_stack.set_visible_child_name("status")
 
     def _on_canvas_click(self, gesture, n_press, x, y):
         if not self.active_layout:

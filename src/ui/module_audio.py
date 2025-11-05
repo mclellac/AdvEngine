@@ -8,6 +8,10 @@ from ..core.data_schemas import Audio, AudioGObject
 import cairo
 
 class AudioEditor(Gtk.Box):
+    EDITOR_NAME = "Audio"
+    VIEW_NAME = "audio_editor"
+    ORDER = 6
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -34,9 +38,16 @@ class AudioEditor(Gtk.Box):
         self._create_column("Duration (s)", lambda audio: str(round(audio.duration, 2)))
 
         scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_child(self.audio_list_view)
         scrolled_window.set_vexpand(True)
-        left_panel.append(scrolled_window)
+
+        self.status_page = Adw.StatusPage(title="No Audio Files", icon_name="audio-x-generic-symbolic")
+
+        self.main_stack = Gtk.Stack()
+        self.main_stack.add_named(scrolled_window, "list")
+        self.main_stack.add_named(self.status_page, "status")
+        left_panel.append(self.main_stack)
+
+        scrolled_window.set_child(self.audio_list_view)
 
         import_button = Gtk.Button(label="Import Audio")
         import_button.connect("clicked", self.on_import_audio)
@@ -52,7 +63,7 @@ class AudioEditor(Gtk.Box):
         self.waveform_drawing_area = Gtk.DrawingArea()
         self.waveform_drawing_area.set_draw_func(self.on_waveform_draw, None)
         self.waveform_drawing_area.set_size_request(-1, 100)
-        right_panel.append(self.waveform_drawing_area)
+        #right_panel.append(self.waveform_drawing_area)
         self.waveform_data = []
 
     def _create_column(self, title, expression_func):
@@ -82,6 +93,14 @@ class AudioEditor(Gtk.Box):
         self.model.remove_all()
         for audio in self.project_manager.data.audio_files:
             self.model.append(AudioGObject(audio))
+        self._update_visibility()
+
+    def _update_visibility(self):
+        has_audio = self.model.get_n_items() > 0
+        if has_audio:
+            self.main_stack.set_visible_child_name("list")
+        else:
+            self.main_stack.set_visible_child_name("status")
 
     def on_import_audio(self, button):
         dialog = Gtk.FileChooserNative(title="Import Audio", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
@@ -117,28 +136,3 @@ class AudioEditor(Gtk.Box):
             except Exception as e:
                 print(f"Error importing audio: {e}")
 
-    def generate_waveform_data(self, file_path):
-        import random
-        self.waveform_data = [random.uniform(-1.0, 1.0) for _ in range(200)]
-
-    def on_waveform_draw(self, drawing_area, cr, width, height, data):
-        cr.set_source_rgb(0.2, 0.2, 0.2)
-        cr.paint()
-
-        if not self.waveform_data:
-            return
-
-        cr.set_source_rgb(0.4, 0.6, 0.8)
-        cr.set_line_width(2)
-
-        center_y = height / 2
-        step_x = width / len(self.waveform_data)
-
-        for i, sample in enumerate(self.waveform_data):
-            x = i * step_x
-            y = center_y + (sample * center_y)
-            if i == 0:
-                cr.move_to(x, y)
-            else:
-                cr.line_to(x, y)
-        cr.stroke()

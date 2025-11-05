@@ -7,6 +7,10 @@ import shutil
 from ..core.data_schemas import Asset, Animation, StringGObject, AssetGObject
 
 class AssetEditor(Gtk.Box):
+    EDITOR_NAME = "Assets"
+    VIEW_NAME = "assets_editor"
+    ORDER = 5
+
     def __init__(self, project_manager):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.project_manager = project_manager
@@ -35,10 +39,18 @@ class AssetEditor(Gtk.Box):
         self.asset_grid_view.set_min_columns(2)
 
         scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_child(self.asset_grid_view)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scrolled_window.set_vexpand(True)
-        left_panel.append(scrolled_window)
+
+        self.status_page = Adw.StatusPage(title="No Assets", icon_name="image-x-generic-symbolic")
+
+        self.main_stack = Gtk.Stack()
+        self.main_stack.add_named(scrolled_window, "grid")
+        self.main_stack.add_named(self.status_page, "status")
+        left_panel.append(self.main_stack)
+
+        self.asset_grid_view.set_model(selection_model)
+        scrolled_window.set_child(self.asset_grid_view)
 
         import_button = Gtk.Button(label="Import Asset")
         import_button.set_tooltip_text("Import a new image asset into the project")
@@ -70,7 +82,6 @@ class AssetEditor(Gtk.Box):
         scrolled_frames.set_child(self.frame_list_view)
         self.animation_editor.append(scrolled_frames)
         right_panel.append(self.animation_editor)
-
 
     def _setup_grid_item(self, factory, list_item):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
@@ -111,12 +122,10 @@ class AssetEditor(Gtk.Box):
         drop_target.connect("drop", self._on_frame_drop)
         row.add_controller(drop_target)
 
-
     def _bind_frame_row(self, factory, list_item):
         label = list_item.get_child()
         frame_path = list_item.get_item().value
         label.set_text(os.path.basename(frame_path))
-
 
     def on_asset_selected(self, selection_model, position, n_items):
         selected_asset_gobject = selection_model.get_selected_item()
@@ -148,6 +157,14 @@ class AssetEditor(Gtk.Box):
         self.model.remove_all()
         for asset in self.project_manager.data.assets:
             self.model.append(AssetGObject(asset))
+        self._update_visibility()
+
+    def _update_visibility(self):
+        has_assets = self.model.get_n_items() > 0
+        if has_assets:
+            self.main_stack.set_visible_child_name("grid")
+        else:
+            self.main_stack.set_visible_child_name("status")
 
     def on_import_asset(self, button):
         dialog = Gtk.FileChooserNative(title="Import Asset", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
@@ -174,6 +191,9 @@ class AssetEditor(Gtk.Box):
 
                     for file in files:
                         filepath = file.get_path()
+                        if not self.is_supported_image_file(filepath):
+                            self.show_error_dialog(f"Unsupported file type: {os.path.basename(filepath)}")
+                            continue
                         new_filepath = os.path.join(anim_dir, os.path.basename(filepath))
                         shutil.copy(filepath, new_filepath)
                         new_anim.frames.append(new_filepath)
@@ -182,6 +202,9 @@ class AssetEditor(Gtk.Box):
                 else: # Import single asset
                     file = files[0]
                     filepath = file.get_path()
+                    if not self.is_supported_image_file(filepath):
+                        self.show_error_dialog(f"Unsupported file type: {os.path.basename(filepath)}")
+                        return
                     asset_name = os.path.basename(filepath)
                     asset_type = "sprite"
 
@@ -196,8 +219,7 @@ class AssetEditor(Gtk.Box):
                 self.project_manager.set_dirty()
                 self.refresh_asset_list()
             except Exception as e:
-                print(f"Error importing asset(s): {e}")
-
+                self.show_error_dialog(f"Error importing asset(s): {e}")
 
     def _on_frame_drag_prepare(self, source, x, y):
         list_item = source.get_widget().get_parent()
@@ -210,26 +232,35 @@ class AssetEditor(Gtk.Box):
 
     def _on_frame_drop(self, target, value, x, y):
         dragged_frame_gobject = value
-
         widget = target.get_widget()
         list_item = widget.get_ancestor(Gtk.ListItem)
         if not list_item:
             return False
-
         target_frame_gobject = list_item.get_item()
-
 
         if dragged_frame_gobject and target_frame_gobject and self.selected_asset:
             dragged_frame = dragged_frame_gobject.value
             target_frame = target_frame_gobject.value
-
             dragged_index = self.selected_asset.frames.index(dragged_frame)
             target_index = self.selected_asset.frames.index(target_frame)
-
             self.selected_asset.frames.pop(dragged_index)
             self.selected_asset.frames.insert(target_index, dragged_frame)
-
             self.project_manager.set_dirty()
             self.refresh_frame_list()
             return True
         return False
+
+    def is_supported_image_file(self, filepath):
+        supported_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
+        return any(filepath.lower().endswith(ext) for ext in supported_extensions)
+
+    def show_error_dialog(self, message):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_native(),
+            modal=True,
+            heading="Error",
+            body=message,
+        )
+        dialog.add_response("ok", "OK")
+        dialog.connect("response", lambda d, r: d.close())
+        dialog.present()

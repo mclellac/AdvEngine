@@ -7,6 +7,10 @@ from ..core.data_schemas import SceneGObject, Hotspot, HotspotGObject
 from ..core.project_manager import ProjectManager
 
 class SceneEditor(Gtk.Box):
+    EDITOR_NAME = "Scenes"
+    VIEW_NAME = "scenes_editor"
+    ORDER = 0
+
     def __init__(self, project_manager: ProjectManager):
         super().__init__()
         self.project_manager = project_manager

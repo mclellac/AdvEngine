@@ -54,6 +54,10 @@ class ProjectManager:
             callback()
 
     def save_project(self):
+        if self.data.items:
+            self._save_csv("ItemData.csv", self.data.items)
+        if self.data.attributes:
+            self._save_csv("Attributes.csv", self.data.attributes)
         if self.data.global_variables:
             self._save_global_variables()
         if self.data.verbs:
@@ -156,8 +160,7 @@ class ProjectManager:
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
 
-    def _load_logic_graphs(self):
-        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
+    def _load_graph_data(self, file_path, target_list):
         try:
             with open(file_path, "r") as f:
                 graphs_data = json.load(f)
@@ -165,6 +168,12 @@ class ProjectManager:
                     nodes = []
                     for node_data in graph_data.get("nodes", []):
                         node_type = node_data.get("node_type")
+                        if "parameters" in node_data:
+                            for key, value in node_data["parameters"].items():
+                                if key.lower() not in node_data:
+                                    node_data[key.lower()] = value
+                            del node_data["parameters"]
+
                         if node_type == "Dialogue":
                             nodes.append(DialogueNode(**node_data))
                         elif node_type == "Condition":
@@ -174,12 +183,16 @@ class ProjectManager:
                         else:
                             nodes.append(LogicNode(**node_data))
                     graph_data["nodes"] = nodes
-                    self.data.logic_graphs.append(LogicGraph(**graph_data))
+                    target_list.append(LogicGraph(**graph_data))
         except FileNotFoundError:
             if not self.is_new_project:
-                print(f"Warning: {file_path} not found. Starting with an empty logic graph list.")
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
+
+    def _load_logic_graphs(self):
+        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
+        self._load_graph_data(file_path, self.data.logic_graphs)
 
     def _save_logic_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
@@ -203,12 +216,17 @@ class ProjectManager:
         except FileNotFoundError:
             if not self.is_new_project:
                 print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
 
     def _save_assets(self):
         file_path = os.path.join(self.project_path, "Data", "Assets.json")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(asset) for asset in self.data.assets], f, indent=2)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(asset) for asset in self.data.assets], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def _load_audio(self):
         file_path = os.path.join(self.project_path, "Data", "Audio.json")
@@ -218,12 +236,17 @@ class ProjectManager:
         except FileNotFoundError:
             if not self.is_new_project:
                 print(f"Warning: {file_path} not found.")
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
 
     def _save_audio(self):
         file_path = os.path.join(self.project_path, "Data", "Audio.json")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(audio) for audio in self.data.audio_files], f, indent=2)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(audio) for audio in self.data.audio_files], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def _load_global_variables(self):
         file_path = os.path.join(self.project_path, "Data", "GlobalState.json")
@@ -239,8 +262,11 @@ class ProjectManager:
     def _save_global_variables(self):
         file_path = os.path.join(self.project_path, "Data", "GlobalState.json")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(var) for var in self.data.global_variables], f, indent=2)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(var) for var in self.data.global_variables], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def add_global_variable(self, name, type, initial_value, category):
         new_id = f"var_{len(self.data.global_variables) + 1}"
@@ -263,8 +289,11 @@ class ProjectManager:
     def _save_verbs(self):
         file_path = os.path.join(self.project_path, "Data", "Verbs.json")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(verb) for verb in self.data.verbs], f, indent=2)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(verb) for verb in self.data.verbs], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def _save_characters(self):
         self._save_csv("CharacterData.csv", self.data.characters)
@@ -351,28 +380,7 @@ class ProjectManager:
 
     def _load_dialogue_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        try:
-            with open(file_path, "r") as f:
-                graphs_data = json.load(f)
-                for graph_data in graphs_data:
-                    nodes = []
-                    for node_data in graph_data.get("nodes", []):
-                        node_type = node_data.get("node_type")
-                        if node_type == "Dialogue":
-                            nodes.append(DialogueNode(**node_data))
-                        elif node_type == "Condition":
-                            nodes.append(ConditionNode(**node_data))
-                        elif node_type == "Action":
-                            nodes.append(ActionNode(**node_data))
-                        else:
-                            nodes.append(LogicNode(**node_data))
-                    graph_data["nodes"] = nodes
-                    self.data.dialogue_graphs.append(LogicGraph(**graph_data))
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found. Starting with an empty dialogue graph list.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_graph_data(file_path, self.data.dialogue_graphs)
 
     def _save_dialogue_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
@@ -397,8 +405,11 @@ class ProjectManager:
     def _save_cutscenes(self):
         file_path = os.path.join(self.project_path, "Logic", "Cutscenes.json")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(cs) for cs in self.data.cutscenes], f, indent=2)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(cs) for cs in self.data.cutscenes], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def _load_interactions(self):
         file_path = os.path.join(self.project_path, "Logic", "Interactions.json")
@@ -414,8 +425,11 @@ class ProjectManager:
     def _save_interactions(self):
         file_path = os.path.join(self.project_path, "Logic", "Interactions.json")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(interaction) for interaction in self.data.interactions], f, indent=2)
+        try:
+            with open(file_path, "w") as f:
+                json.dump([asdict(interaction) for interaction in self.data.interactions], f, indent=2)
+        except Exception as e:
+            print(f"Error saving {file_path}: {e}")
 
     def add_interaction(self, interaction):
         self.data.interactions.append(interaction)
