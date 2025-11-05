@@ -321,7 +321,11 @@ class AdvEngine(Adw.Application):
         def on_response(d, response):
             if response == "create":
                 name = entry.get_text()
-                template = combo.get_selected_item().get_string()
+                selected_item = combo.get_selected_item()
+                if not name or not selected_item:
+                    # TODO: Show an error dialog to the user
+                    return
+                template = selected_item.get_string()
                 if name:
                     file_dialog = Gtk.FileChooserNative(title="Select Project Location", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
                     file_dialog.connect("response", lambda fd, resp: self.on_new_project_folder_selected(fd, resp, name, template))
@@ -334,8 +338,9 @@ class AdvEngine(Adw.Application):
         if response == Gtk.ResponseType.ACCEPT:
             folder = dialog.get_file().get_path()
             project_path = os.path.join(folder, name)
-            success, error = ProjectManager.create_project(project_path, template)
-            if success:
+            project_manager, error = ProjectManager.create_project(project_path, template)
+            if project_manager:
+                self.project_manager = project_manager
                 self.load_project(project_path)
             else:
                 print(f"Error: {error}")
