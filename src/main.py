@@ -169,7 +169,7 @@ class AdvEngine(Adw.Application):
 
     def on_activate(self, app):
         if not self.win:
-            self.win = WelcomeWindow(application=self)
+            self.win = welcome.WelcomeWindow(application=self)
         self.win.present()
 
         save_action = Gio.SimpleAction.new("save", None)
@@ -264,11 +264,11 @@ class AdvEngine(Adw.Application):
             self.load_project(folder)
 
     def on_preferences_activate(self, action, param):
-        dialog = PreferencesDialog(parent=self.win, project_manager=self.project_manager, settings_manager=self.settings_manager)
+        dialog = preferences.PreferencesDialog(parent=self.win, project_manager=self.project_manager, settings_manager=self.settings_manager)
         dialog.present()
 
     def on_shortcuts_activate(self, action, param):
-        dialog = ShortcutsDialog(transient_for=self.win)
+        dialog = shortcuts.ShortcutsDialog(transient_for=self.win)
         dialog.present()
 
     def on_about_activate(self, action, param):
