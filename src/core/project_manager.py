@@ -726,13 +726,14 @@ class ProjectManager:
             csv_files = {
                 "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
                 "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id"],
+                "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id", "sprite_sheet_asset_id", "animations"],
             }
             for filename, headers in csv_files.items():
                 file_path = os.path.join(data_dir, filename)
-                with open(file_path, "w", newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(headers)
+                if not os.path.exists(file_path):
+                    with open(file_path, "w", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(headers)
 
             # Create empty JSON files
             json_files = [
@@ -750,8 +751,9 @@ class ProjectManager:
                 os.path.join(ui_dir, "WindowLayout.json"),
             ]
             for file_path in json_files:
-                with open(file_path, "w") as f:
-                    json.dump([], f)
+                if not os.path.exists(file_path):
+                    with open(file_path, "w") as f:
+                        json.dump([], f)
 
             return True, None
         except Exception as e:
