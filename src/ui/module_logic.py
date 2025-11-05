@@ -276,9 +276,13 @@ class LogicEditor(Gtk.Box):
         palette = Adw.PreferencesGroup(title="Tool Palette")
         sidebar.append(palette)
 
-        self.add_node_button(palette, "Add Dialogue Node", "Add Dialogue", DialogueNode, "Dialogue")
-        self.add_node_button(palette, "Add Condition Node", "Add Condition", ConditionNode, "Condition")
-        self.add_node_button(palette, "Add Action Node", "Add Action", ActionNode, "Action")
+        node_types = [
+            ("Add Dialogue Node", "Add Dialogue", DialogueNode, "Dialogue"),
+            ("Add Condition Node", "Add Condition", ConditionNode, "Condition"),
+            ("Add Action Node", "Add Action", ActionNode, "Action")
+        ]
+        for title, label, node_class, node_type in node_types:
+            self.add_node_button(palette, title, label, node_class, node_type)
 
         self.props_panel = DynamicNodeEditor(project_manager=self.project_manager, on_update_callback=self.canvas.queue_draw)
         sidebar.append(self.props_panel)
@@ -364,14 +368,22 @@ class LogicEditor(Gtk.Box):
 
     def add_node_button(self, palette, title, label, node_class, node_type):
         button = Gtk.Button(label=label)
-        button.connect("clicked", lambda w: self.on_add_node(node_class, node_type))
+        button.connect("clicked", lambda w, nc=node_class, nt=node_type: self.on_add_node(nc, nt))
         row = Adw.ActionRow(title=title, activatable_widget=button)
         row.add_suffix(button)
         palette.add(row)
 
     def on_add_node(self, node_class, node_type):
         if self.active_graph:
-            new_node = node_class(id=f"node_{len(self.active_graph.nodes)}", node_type=node_type, x=50, y=50)
+            new_id = f"node_{len(self.active_graph.nodes)}"
+            # Ensure the ID is unique
+            existing_ids = {node.id for node in self.active_graph.nodes}
+            count = 0
+            while new_id in existing_ids:
+                new_id = f"node_{len(self.active_graph.nodes)}_{count}"
+                count += 1
+
+            new_node = node_class(id=new_id, node_type=node_type, x=50, y=50)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.minimap.queue_draw()
@@ -492,10 +504,11 @@ class LogicEditor(Gtk.Box):
 
     def on_resize_drag_update(self, gesture, x, y):
         if self.resizing_node:
-            # The x and y values from the gesture are offsets from the start point
-            self.resizing_node.width = max(150, self.initial_node_width + x)
-            self.resizing_node.height = max(100, self.initial_node_height + y)
-            self.canvas.queue_draw()
+            success, offset_x, offset_y = gesture.get_offset()
+            if success:
+                self.resizing_node.width = max(150, self.initial_node_width + offset_x)
+                self.resizing_node.height = max(100, self.initial_node_height + offset_y)
+                self.canvas.queue_draw()
 
     def on_resize_drag_end(self, gesture, x, y):
         if self.resizing_node:
