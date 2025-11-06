@@ -136,8 +136,7 @@ class DynamicNodeEditor(Adw.Bin):
         """Updates the parameters UI."""
         def pascal_to_snake(name):
             import re
-            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
-            return name.replace('varname', 'var_name')
+            return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
 
         if self.params_group:
             self.container_box.remove(self.params_group)
@@ -169,8 +168,7 @@ class DynamicNodeEditor(Adw.Bin):
         """Adds a parameter widget to the UI."""
         def pascal_to_snake(name):
             import re
-            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
-            return name.replace('varname', 'var_name')
+            return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
         title = key.replace("_", " ").title()
         if isinstance(param_type, list):
             combo = Adw.ComboRow(
@@ -199,16 +197,19 @@ class DynamicNodeEditor(Adw.Bin):
 
         values = self.get_values()
         for key, value in values.items():
-            # Check if the attribute exists before setting it
             if hasattr(self.node, key):
-                field_type = type(getattr(self.node, key, None))
+                field_type = getattr(self.node.__class__, '__annotations__', {}).get(key, 'any')
+
                 if field_type == int:
                     try:
                         value = int(value)
                     except (ValueError, TypeError):
                         value = 0
                 elif field_type == bool:
-                    value = str(value).lower() in ['true', '1']
+                    value = str(value).lower() in ['true', '1', 'yes']
+                elif field_type == str:
+                    value = str(value)
+
                 setattr(self.node, key, value)
 
         if self.project_manager:
@@ -220,6 +221,7 @@ class DynamicNodeEditor(Adw.Bin):
         """Gets the values from the widgets."""
         values = {}
         all_widgets = {**self.main_widgets, **self.param_widgets}
+
         for key, widget in all_widgets.items():
             if isinstance(widget, Adw.EntryRow):
                 values[key] = widget.get_text()
@@ -227,6 +229,10 @@ class DynamicNodeEditor(Adw.Bin):
                 selected_item = widget.get_selected_item()
                 if selected_item:
                     values[key] = selected_item.get_string()
+            elif isinstance(widget, Gtk.CheckButton):
+                values[key] = widget.get_active()
+            elif isinstance(widget, Gtk.SpinButton):
+                values[key] = widget.get_value_as_int()
         return values
 
 
@@ -424,9 +430,9 @@ class LogicEditor(Adw.Bin):
 
         cr.set_source_rgb(0.9, 0.9, 0.9)
         cr.move_to(node.x + 10, node.y + 35)
-        if not hasattr(node, "body_text"):
-            node.body_text = self.update_node_body_text(node)
-        layout.set_markup(node.body_text, -1)
+        if not hasattr(node, "body_text") or node.body_text is None:
+            self.update_node_body_text(node)
+        layout.set_markup(node.body_text or "", -1)
         PangoCairo.show_layout(cr, layout)
 
         self.draw_connectors_and_resize_handle(cr, node)
@@ -436,26 +442,35 @@ class LogicEditor(Adw.Bin):
         body_text = ""
         if isinstance(node, DialogueNode):
             body_text = f"<b>Char:</b> {node.character_id}\n<i>\"{node.dialogue_text}\"</i>"
-        elif isinstance(node, (ConditionNode, ActionNode)):
-            command_key = "conditions" if isinstance(
-                node, ConditionNode) else "actions"
-            command_type_key = "condition_type" if isinstance(
-                node, ConditionNode) else "action_command"
-            command_type = getattr(node, command_type_key, "")
-            body_text = f"<b>{command_key.capitalize()}:</b> {command_type}\n"
-            defs = get_command_definitions()
-            if command_type in defs[command_key]:
-                for param, p_type in defs[command_key][command_type]["params"].items():
-                    param_snake_case = param.replace("-", "_")
+        elif isinstance(node, ConditionNode):
+            body_text = f"<b>IF</b> {node.condition_type}\n"
+            if node.condition_type == "VARIABLE_EQUALS":
+                body_text += f"  {node.var_name} == {node.value}"
+            elif node.condition_type == "HAS_ITEM":
+                body_text += f"  Player has {node.amount} of {node.item_id}"
+            elif node.condition_type == "ATTRIBUTE_CHECK":
+                body_text += f"  {node.attribute_id} {node.comparison} {node.value}"
+            else:
+                 body_text += "<i>(Condition details not yet formatted)</i>"
+
+        elif isinstance(node, ActionNode):
+            body_text = f"<b>DO</b> {node.action_command}\n"
+            defs = get_command_definitions()['actions']
+            if node.action_command in defs:
+                params = defs[node.action_command]['params']
+                param_strings = []
+                for param, p_type in params.items():
+                    param_snake_case = param.replace("-", "_").lower()
                     value = getattr(node, param_snake_case, "")
-                    body_text += f"  <b>{param}:</b> {value}\n"
-        return body_text
+                    param_strings.append(f"{param}: {value}")
+                body_text += f"  ({', '.join(param_strings)})"
+        node.body_text = body_text
 
     def update_node_and_redraw(self):
         """Updates the node and redraws the canvas."""
         if self.selected_nodes:
-            node = self.selected_nodes[0]
-            node.body_text = self.update_node_body_text(node)
+            for node in self.selected_nodes:
+                self.update_node_body_text(node)
             self.canvas.queue_draw()
 
     def draw_connectors_and_resize_handle(self, cr, node):
