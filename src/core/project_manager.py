@@ -1,5 +1,8 @@
-"""
-Handles loading, saving, and managing all project data.
+"""Core component for managing AdvEngine project data.
+
+This module provides the ProjectManager class, which is the central hub for
+all project data. It is responsible for loading, saving, and providing access
+to all project data, as well as managing the "dirty" state of the project.
 """
 
 import os
@@ -15,7 +18,28 @@ from .data_schemas import (
 from .settings_manager import SettingsManager
 
 class ProjectManager:
-    def __init__(self, project_path):
+    """Manages all data for a single AdvEngine project.
+
+    This class is responsible for all project-related data management,
+    including loading data from files, saving data to files, and providing
+    access to the data to the rest of the application. It also tracks the
+    "dirty" state of the project, which is used to determine if there are
+    unsaved changes.
+
+    Attributes:
+        project_path (str): The absolute path to the project directory.
+        data (ProjectData): A dataclass containing all project data.
+        settings (SettingsManager): Manages project-specific settings.
+        is_dirty (bool): True if the project has unsaved changes.
+        is_new_project (bool): True if the project was just created.
+    """
+
+    def __init__(self, project_path: str):
+        """Initializes a new ProjectManager instance.
+
+        Args:
+            project_path: The absolute path to the project directory.
+        """
         self.project_path = project_path
         self.data = ProjectData()
         self.settings = SettingsManager(project_path)
@@ -25,6 +49,12 @@ class ProjectManager:
         self.project_loaded_callbacks = []
 
     def load_project(self):
+        """Loads all project data from files into memory.
+
+        This method reads all of the project's data files (both CSV and JSON)
+        and populates the `self.data` attribute with the loaded data. It is
+        called once when a project is opened.
+        """
         self._load_csv("ItemData.csv", Item, self.data.items)
         self._load_csv("Attributes.csv", Attribute, self.data.attributes)
         self._load_csv("CharacterData.csv", Character, self.data.characters)
@@ -41,19 +71,28 @@ class ProjectManager:
         self._load_ui_layouts()
         self._load_fonts()
         self.is_new_project = False
-        self.set_dirty(False) # Project is clean after loading
+        self.set_dirty(False)  # Project is clean after loading
         self._notify_project_loaded()
 
-    def register_project_loaded_callback(self, callback):
-        """Register a function to be called when the project is loaded."""
+    def register_project_loaded_callback(self, callback: callable):
+        """Registers a callback to be called when the project is loaded.
+
+        Args:
+            callback: A callable that takes no arguments.
+        """
         self.project_loaded_callbacks.append(callback)
 
     def _notify_project_loaded(self):
-        """Notify all registered callbacks that the project has been loaded."""
+        """Notifies all registered callbacks that the project has been loaded."""
         for callback in self.project_loaded_callbacks:
             callback()
 
     def save_project(self):
+        """Saves all project data from memory to their respective files.
+
+        This method writes all data from the `self.data` attribute to the
+        project's data files. It is called when the user saves the project.
+        """
         self._save_csv("ItemData.csv", self.data.items, Item)
         self._save_csv("Attributes.csv", self.data.attributes, Attribute)
         self._save_global_variables()
@@ -71,40 +110,68 @@ class ProjectManager:
         self._save_fonts()
         self.set_dirty(False)
 
-    def register_dirty_state_callback(self, callback):
-        """Register a function to be called when the dirty state changes."""
+    def register_dirty_state_callback(self, callback: callable):
+        """Registers a callback to be called when the dirty state changes.
+
+        Args:
+            callback: A callable that takes a single boolean argument, which
+                is the new dirty state.
+        """
         self.dirty_state_changed_callbacks.append(callback)
 
     def _notify_dirty_state_changed(self):
-        """Notify all registered callbacks of the dirty state change."""
+        """Notifies all registered callbacks of a change in the dirty state."""
         for callback in self.dirty_state_changed_callbacks:
             callback(self.is_dirty)
 
-    def set_dirty(self, state=True):
-        """Sets the project's dirty state and notifies listeners."""
+    def set_dirty(self, state: bool = True):
+        """Sets the project's dirty state and notifies listeners.
+
+        This method should be called whenever any data in the project is
+        modified.
+
+        Args:
+            state: The new dirty state. Defaults to True.
+        """
         if self.is_dirty != state:
             self.is_dirty = state
             self._notify_dirty_state_changed()
 
-    def _save_csv(self, filename, data_list, dataclass_type):
+    def _save_csv(self, filename: str, data_list: list, dataclass_type: type):
+        """Saves a list of dataclass objects to a CSV file.
+
+        Args:
+            filename: The name of the CSV file.
+            data_list: A list of dataclass objects to save.
+            dataclass_type: The type of the dataclass objects.
+        """
         file_path = os.path.join(self.project_path, "Data", filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w", newline="") as f:
                 if not data_list:
                     # Get field names from an empty instance of the dataclass
-                    fieldnames = asdict(dataclass_type(*[None] * len(dataclass_type.__annotations__))).keys()
+                    fieldnames = asdict(dataclass_type(
+                        *[None] * len(dataclass_type.__annotations__))).keys()
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
                 else:
-                    writer = csv.DictWriter(f, fieldnames=asdict(data_list[0]).keys())
+                    writer = csv.DictWriter(
+                        f, fieldnames=asdict(data_list[0]).keys())
                     writer.writeheader()
                     for item in data_list:
                         writer.writerow(asdict(item))
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
 
-    def _load_csv(self, filename, dataclass_type, target_list):
+    def _load_csv(self, filename: str, dataclass_type: type, target_list: list):
+        """Loads data from a CSV file into a list of dataclass objects.
+
+        Args:
+            filename: The name of the CSV file.
+            dataclass_type: The type of the dataclass objects to create.
+            target_list: The list to which the loaded objects will be appended.
+        """
         file_path = os.path.join(self.project_path, "Data", filename)
         try:
             with open(file_path, "r", newline="") as f:
@@ -124,29 +191,53 @@ class ProjectManager:
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
-    def _load_scenes(self):
-        file_path = os.path.join(self.project_path, "Logic", "Scenes.json")
+    def _load_json(self, filename: str, target_list: list, object_hook: callable = None):
+        """Loads data from a JSON file.
+
+        Args:
+            filename: The path to the JSON file, relative to the project root.
+            target_list: The list to which the loaded objects will be appended.
+            object_hook: An optional function to process each loaded object.
+        """
+        file_path = os.path.join(self.project_path, filename)
         try:
             with open(file_path, "r") as f:
-                scenes_data = json.load(f)
-                for scene_data in scenes_data:
-                    hotspots = [Hotspot(**hs) for hs in scene_data.get("hotspots", [])]
-                    scene_data["hotspots"] = hotspots
-                    self.data.scenes.append(Scene(**scene_data))
+                data = json.load(f)
+                if object_hook:
+                    for item_data in data:
+                        target_list.append(object_hook(item_data))
+                else:
+                    target_list.extend(data)
         except FileNotFoundError:
             if not self.is_new_project:
-                print(f"Warning: {file_path} not found. Starting with an empty scene list.")
+                print(f"Warning: {file_path} not found.")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
-    def _save_scenes(self):
-        file_path = os.path.join(self.project_path, "Logic", "Scenes.json")
+    def _save_json(self, filename: str, data_list: list):
+        """Saves a list of dataclass objects to a JSON file.
+
+        Args:
+            filename: The path to the JSON file, relative to the project root.
+            data_list: A list of dataclass objects to save.
+        """
+        file_path = os.path.join(self.project_path, filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
-                json.dump([asdict(scene) for scene in self.data.scenes], f, indent=2)
+                json.dump([asdict(item) for item in data_list], f, indent=2)
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
+
+    def _load_scenes(self):
+        def scene_object_hook(data):
+            hotspots = [Hotspot(**hs) for hs in data.get("hotspots", [])]
+            data["hotspots"] = hotspots
+            return Scene(**data)
+        self._load_json(os.path.join("Logic", "Scenes.json"), self.data.scenes, scene_object_hook)
+
+    def _save_scenes(self):
+        self._save_json(os.path.join("Logic", "Scenes.json"), self.data.scenes)
 
     def _load_graph_data(self, file_path, target_list):
         def pascal_to_snake(name):
@@ -156,35 +247,29 @@ class ProjectManager:
                 return "var_name"
             return name
 
-        try:
-            with open(file_path, "r") as f:
-                graphs_data = json.load(f)
-                for graph_data in graphs_data:
-                    nodes = []
-                    for node_data in graph_data.get("nodes", []):
-                        node_type = node_data.get("node_type")
-                        if "parameters" in node_data:
-                            for key, value in node_data["parameters"].items():
-                                snake_key = pascal_to_snake(key)
-                                if snake_key not in node_data:
-                                    node_data[snake_key] = value
-                            del node_data["parameters"]
+        def graph_object_hook(data):
+            nodes = []
+            for node_data in data.get("nodes", []):
+                node_type = node_data.get("node_type")
+                if "parameters" in node_data:
+                    for key, value in node_data["parameters"].items():
+                        snake_key = pascal_to_snake(key)
+                        if snake_key not in node_data:
+                            node_data[snake_key] = value
+                    del node_data["parameters"]
 
-                        if node_type == "Dialogue":
-                            nodes.append(DialogueNode(**node_data))
-                        elif node_type == "Condition":
-                            nodes.append(ConditionNode(**node_data))
-                        elif node_type == "Action":
-                            nodes.append(ActionNode(**node_data))
-                        else:
-                            nodes.append(LogicNode(**node_data))
-                    graph_data["nodes"] = nodes
-                    target_list.append(LogicGraph(**graph_data))
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+                if node_type == "Dialogue":
+                    nodes.append(DialogueNode(**node_data))
+                elif node_type == "Condition":
+                    nodes.append(ConditionNode(**node_data))
+                elif node_type == "Action":
+                    nodes.append(ActionNode(**node_data))
+                else:
+                    nodes.append(LogicNode(**node_data))
+            data["nodes"] = nodes
+            return LogicGraph(**data)
+
+        self._load_json(file_path, target_list, graph_object_hook)
 
     def _load_logic_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
@@ -195,8 +280,6 @@ class ProjectManager:
         self._load_graph_data(file_path, self.data.dialogue_graphs)
 
     def _save_graph_data(self, file_path, graph_list):
-        print(f"--- Saving graph data to {file_path} ---")
-        print(f"--- Graph data: {[graph.to_dict() for graph in graph_list]} ---")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
@@ -209,69 +292,26 @@ class ProjectManager:
         self._save_graph_data(file_path, self.data.logic_graphs)
 
     def _load_assets(self):
-        file_path = os.path.join(self.project_path, "Data", "Assets.json")
-        try:
-            with open(file_path, "r") as f:
-                assets_data = json.load(f)
-                for asset_data in assets_data:
-                    if asset_data.get("asset_type") == "animation":
-                        self.data.assets.append(Animation(**asset_data))
-                    else:
-                        self.data.assets.append(Asset(**asset_data))
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        def asset_object_hook(data):
+            if data.get("asset_type") == "animation":
+                return Animation(**data)
+            return Asset(**data)
+        self._load_json(os.path.join("Data", "Assets.json"), self.data.assets, asset_object_hook)
 
     def _save_assets(self):
-        file_path = os.path.join(self.project_path, "Data", "Assets.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(asset) for asset in self.data.assets], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Data", "Assets.json"), self.data.assets)
 
     def _load_audio(self):
-        file_path = os.path.join(self.project_path, "Data", "Audio.json")
-        try:
-            with open(file_path, "r") as f:
-                self.data.audio_files = [Audio(**audio_data) for audio_data in json.load(f)]
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_json(os.path.join("Data", "Audio.json"), self.data.audio_files, lambda data: Audio(**data))
 
     def _save_audio(self):
-        file_path = os.path.join(self.project_path, "Data", "Audio.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(audio) for audio in self.data.audio_files], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Data", "Audio.json"), self.data.audio_files)
 
     def _load_global_variables(self):
-        file_path = os.path.join(self.project_path, "Data", "GlobalState.json")
-        try:
-            with open(file_path, "r") as f:
-                self.data.global_variables = [GlobalVariable(**var) for var in json.load(f)]
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables, lambda data: GlobalVariable(**data))
 
     def _save_global_variables(self):
-        file_path = os.path.join(self.project_path, "Data", "GlobalState.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(var) for var in self.data.global_variables], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables)
 
     def add_global_variable(self, variable):
         """Adds a new global variable to the project."""
@@ -304,24 +344,10 @@ class ProjectManager:
         self.set_dirty()
 
     def _load_verbs(self):
-        file_path = os.path.join(self.project_path, "Data", "Verbs.json")
-        try:
-            with open(file_path, "r") as f:
-                self.data.verbs = [Verb(**verb) for verb in json.load(f)]
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_json(os.path.join("Data", "Verbs.json"), self.data.verbs, lambda data: Verb(**data))
 
     def _save_verbs(self):
-        file_path = os.path.join(self.project_path, "Data", "Verbs.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(verb) for verb in self.data.verbs], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Data", "Verbs.json"), self.data.verbs)
 
     def _save_characters(self):
         self._save_csv("CharacterData.csv", self.data.characters, Character)
@@ -421,44 +447,16 @@ class ProjectManager:
         self._save_graph_data(file_path, self.data.dialogue_graphs)
 
     def _load_cutscenes(self):
-        file_path = os.path.join(self.project_path, "Logic", "Cutscenes.json")
-        try:
-            with open(file_path, "r") as f:
-                self.data.cutscenes = [Cutscene(**cs) for cs in json.load(f)]
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_json(os.path.join("Logic", "Cutscenes.json"), self.data.cutscenes, lambda data: Cutscene(**data))
 
     def _save_cutscenes(self):
-        file_path = os.path.join(self.project_path, "Logic", "Cutscenes.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(cs) for cs in self.data.cutscenes], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Logic", "Cutscenes.json"), self.data.cutscenes)
 
     def _load_interactions(self):
-        file_path = os.path.join(self.project_path, "Logic", "Interactions.json")
-        try:
-            with open(file_path, "r") as f:
-                self.data.interactions = [Interaction(**interaction) for interaction in json.load(f)]
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_json(os.path.join("Logic", "Interactions.json"), self.data.interactions, lambda data: Interaction(**data))
 
     def _save_interactions(self):
-        file_path = os.path.join(self.project_path, "Logic", "Interactions.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(interaction) for interaction in self.data.interactions], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Logic", "Interactions.json"), self.data.interactions)
 
     def add_interaction(self, interaction):
         self.data.interactions.append(interaction)
@@ -470,28 +468,14 @@ class ProjectManager:
             self.set_dirty()
 
     def _load_quests(self):
-        file_path = os.path.join(self.project_path, "Logic", "Quests.json")
-        try:
-            with open(file_path, "r") as f:
-                quests_data = json.load(f)
-                for quest_data in quests_data:
-                    objectives = [Objective(**obj) for obj in quest_data.get("objectives", [])]
-                    quest_data["objectives"] = objectives
-                    self.data.quests.append(Quest(**quest_data))
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found. Starting with an empty quest list.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        def quest_object_hook(data):
+            objectives = [Objective(**obj) for obj in data.get("objectives", [])]
+            data["objectives"] = objectives
+            return Quest(**data)
+        self._load_json(os.path.join("Logic", "Quests.json"), self.data.quests, quest_object_hook)
 
     def _save_quests(self):
-        file_path = os.path.join(self.project_path, "Logic", "Quests.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(quest) for quest in self.data.quests], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("Logic", "Quests.json"), self.data.quests)
 
     def add_quest(self, id, name):
         new_quest = Quest(id=id, name=name)
@@ -541,28 +525,14 @@ class ProjectManager:
         return False
 
     def _load_ui_layouts(self):
-        file_path = os.path.join(self.project_path, "UI", "WindowLayout.json")
-        try:
-            with open(file_path, "r") as f:
-                layouts_data = json.load(f)
-                for layout_data in layouts_data:
-                    elements = [UIElement(**elem) for elem in layout_data.get("elements", [])]
-                    layout_data["elements"] = elements
-                    self.data.ui_layouts.append(UILayout(**layout_data))
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found. Starting with an empty UI layout list.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        def ui_layout_object_hook(data):
+            elements = [UIElement(**elem) for elem in data.get("elements", [])]
+            data["elements"] = elements
+            return UILayout(**data)
+        self._load_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts, ui_layout_object_hook)
 
     def _save_ui_layouts(self):
-        file_path = os.path.join(self.project_path, "UI", "WindowLayout.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(layout) for layout in self.data.ui_layouts], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts)
 
     def add_ui_layout(self, id, name):
         new_layout = UILayout(id=id, name=name)
@@ -612,21 +582,10 @@ class ProjectManager:
         return False
 
     def _load_fonts(self):
-        file_path = os.path.join(self.project_path, "Data", "Fonts.json")
-        try:
-            with open(file_path, "r") as f:
-                self.data.fonts = [Font(**font) for font in json.load(f)]
-        except FileNotFoundError:
-            if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
-        except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+        self._load_json(os.path.join("Data", "Fonts.json"), self.data.fonts, lambda data: Font(**data))
 
     def _save_fonts(self):
-        file_path = os.path.join(self.project_path, "Data", "Fonts.json")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump([asdict(font) for font in self.data.fonts], f, indent=2)
+        self._save_json(os.path.join("Data", "Fonts.json"), self.data.fonts)
 
     def add_font(self, id, name, file_path):
         new_font = Font(id=id, name=name, file_path=file_path)
@@ -755,18 +714,32 @@ class ProjectManager:
     @staticmethod
     def get_templates():
         """Returns a list of available project templates."""
-        template_dir = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
+        template_dir = os.path.join(os.path.dirname(
+            __file__), "..", "..", "templates")
         if os.path.exists(template_dir):
             return [d for d in os.listdir(template_dir) if os.path.isdir(os.path.join(template_dir, d))]
         return []
 
     @staticmethod
-    def create_project(project_path, template=None):
-        """
-        Creates the directory structure and empty data files for a new project.
+    def create_project(project_path: str, template: str = None):
+        """Creates the directory structure and data files for a new project.
+
+        This static method is used to initialize a new project on the
+        filesystem. It creates the necessary subdirectories and populates them
+        with empty or template-based data files.
+
+        Args:
+            project_path: The absolute path where the project will be created.
+            template: The name of an optional project template to use.
+
+        Returns:
+            A tuple containing a new ProjectManager instance and an error
+            string. If the project is created successfully, the error string
+            will be None.
         """
         if template:
-            template_dir = os.path.join(os.path.dirname(__file__), "..", "..", "templates", template)
+            template_dir = os.path.join(os.path.dirname(
+                __file__), "..", "..", "templates", template)
             if os.path.exists(template_dir):
                 import shutil
                 shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
@@ -819,34 +792,50 @@ class ProjectManager:
         except Exception as e:
             return None, str(e)
 
-    def search(self, query):
-        """Searches all project data for a given query."""
+    def search(self, query: str) -> list[SearchResult]:
+        """Searches all project data for a given query.
+
+        This method performs a case-insensitive search across various data
+        types in the project, including items, characters, scenes, quests,
+        and assets.
+
+        Args:
+            query: The search term.
+
+        Returns:
+            A list of SearchResult objects that match the query.
+        """
         results = []
         query_lower = query.lower()
 
         # Search Items
         for item in self.data.items:
             if query_lower in item.name.lower() or query_lower in item.id.lower():
-                results.append(SearchResult(id=item.id, name=item.name, type="Item"))
+                results.append(
+                    SearchResult(id=item.id, name=item.name, type="Item"))
 
         # Search Characters
         for char in self.data.characters:
             if query_lower in char.display_name.lower() or query_lower in char.id.lower():
-                results.append(SearchResult(id=char.id, name=char.display_name, type="Character"))
+                results.append(SearchResult(
+                    id=char.id, name=char.display_name, type="Character"))
 
         # Search Scenes
         for scene in self.data.scenes:
             if query_lower in scene.name.lower() or query_lower in scene.id.lower():
-                results.append(SearchResult(id=scene.id, name=scene.name, type="Scene"))
+                results.append(
+                    SearchResult(id=scene.id, name=scene.name, type="Scene"))
 
         # Search Quests
         for quest in self.data.quests:
             if query_lower in quest.name.lower() or query_lower in quest.id.lower():
-                results.append(SearchResult(id=quest.id, name=quest.name, type="Quest"))
+                results.append(
+                    SearchResult(id=quest.id, name=quest.name, type="Quest"))
 
         # Search Assets
         for asset in self.data.assets:
             if query_lower in asset.name.lower() or query_lower in asset.id.lower():
-                results.append(SearchResult(id=asset.id, name=asset.name, type="Asset"))
+                results.append(
+                    SearchResult(id=asset.id, name=asset.name, type="Asset"))
 
         return results
