@@ -69,7 +69,15 @@ The project has a split source structure. Python modules are in `adv_engine/src/
 
 ---
 
-## 4. Feature and Data Model Documentation
+## 4. Design and Architectural Documentation
+
+For a complete understanding of the application's architecture, coding standards, and the design of its core components, consult the comprehensive design documentation located in the `docs/design/` directory.
+
+-   **`01_application_architecture.md`**: Provides a high-level overview of the application's architecture, data flow, and the role of core components.
+-   **`02_coding_standards.md`**: Defines the project's coding conventions, including PEP8, docstring format, and UI guidelines.
+-   **`03_logic_editor_design.md`**: Provides a detailed breakdown of the Logic Editor's internal architecture, its interaction with data schemas, and the complete data persistence workflow.
+
+## 5. Feature and Data Model Documentation
 
 For a complete and exhaustive understanding of the application's features, editor workflows, and data schemas, consult the comprehensive user documentation located in the `/docs` directory.
 
