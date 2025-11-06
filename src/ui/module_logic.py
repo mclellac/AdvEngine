@@ -134,7 +134,9 @@ class DynamicNodeEditor(Adw.Bin):
 
     def pascal_to_snake(self, name):
         import re
-        return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+        # Handles cases like 'VarName' -> 'var_name' and 'ItemID' -> 'item_id'
+        name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
     def update_params_ui(self, *args):
         """Updates the parameters UI."""
@@ -210,17 +212,18 @@ class DynamicNodeEditor(Adw.Bin):
             if hasattr(self.node, key):
                 field_type = getattr(self.node.__class__, '__annotations__', {}).get(key, 'any')
 
+                coerced_value = value
                 if field_type == int:
                     try:
-                        value = int(value)
+                        coerced_value = int(value)
                     except (ValueError, TypeError):
-                        value = 0
+                        coerced_value = 0
                 elif field_type == bool:
-                    value = str(value).lower() in ['true', '1', 'yes']
+                    coerced_value = str(value).lower() in ['true', '1', 'yes']
                 elif field_type == str:
-                    value = str(value)
+                    coerced_value = str(value)
 
-                setattr(self.node, key, value)
+                setattr(self.node, key, coerced_value)
 
         if self.project_manager:
             self.project_manager.set_dirty(True)
