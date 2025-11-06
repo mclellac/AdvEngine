@@ -176,7 +176,8 @@ class AdvEngine(Adw.Application):
         #     self.win = welcome.WelcomeWindow(application=self)
         # self.win.present()
         print("--- Loading project ---")
-        self.load_project(project_path="/app/TestGame")
+        project_path = os.path.join(os.path.dirname(__file__), "..", "TestGame")
+        self.load_project(project_path=project_path)
 
         save_action = Gio.SimpleAction.new("save", None)
         save_action.connect("activate", lambda a, p: self.save_project())
