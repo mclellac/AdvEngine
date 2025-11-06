@@ -95,6 +95,7 @@ class DialogueEditor(Adw.Bin):
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._setup_list_item)
         factory.connect("bind", self._bind_list_item)
+        factory.connect("unbind", self._unbind_list_item)
 
         list_view = Gtk.ListView(model=self.selection, factory=factory)
         list_view_scrolled = Gtk.ScrolledWindow()
@@ -114,14 +115,14 @@ class DialogueEditor(Adw.Bin):
         self.properties_stack.add_named(self.placeholder, "placeholder")
 
         self.dialogue_node_editor = DynamicNodeEditor(
-            project_manager=self.project_manager)
+            project_manager=self.project_manager, on_update_callback=self._on_node_updated)
         self.properties_stack.add_named(
             self.dialogue_node_editor, "editor")
 
         self.properties_stack.set_visible_child_name("placeholder")
         return self.properties_stack
 
-    def _get_children(self, item):
+    def _get_children(self, item, *args):
         """Gets the children of a node in the dialogue tree."""
         node = item.node
         if isinstance(node, DialogueNode):
@@ -143,8 +144,18 @@ class DialogueEditor(Adw.Bin):
         """Binds a list item to the data model."""
         label = list_item.get_child()
         tree_list_row = list_item.get_item()
+        if tree_list_row is None:
+            return
         node_gobject = tree_list_row.get_item()
-        label.set_text(node_gobject.display_text)
+        if node_gobject:
+            binding = node_gobject.bind_property("display_text", label, "label", GObject.BindingFlags.SYNC_CREATE)
+            list_item.binding = binding
+
+    def _unbind_list_item(self, factory, list_item):
+        """Unbinds a list item from the data model."""
+        if hasattr(list_item, 'binding'):
+            list_item.binding.unbind()
+            del list_item.binding
 
     def _load_dialogue_graphs(self):
         """Loads the dialogue graphs from the project manager."""
@@ -231,3 +242,15 @@ class DialogueEditor(Adw.Bin):
         else:
             self.delete_button.set_sensitive(False)
             self.properties_stack.set_visible_child_name("placeholder")
+
+    def _on_node_updated(self):
+        """Handles the node-updated signal from the dynamic node editor."""
+        selected_item = self.selection.get_selected_item()
+        if selected_item:
+            node_gobject = selected_item.get_item()
+            node = node_gobject.node
+            if isinstance(node, DialogueNode):
+                node_gobject.display_text = f"{node.character_id}: {node.dialogue_text[:30]}..."
+            elif isinstance(node, ActionNode):
+                node_gobject.display_text = f"-> ACTION: {node.action_command}"
+        self._load_dialogue_graphs()

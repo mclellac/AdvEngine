@@ -227,7 +227,7 @@ class AttributeEditor(Adw.Bin):
     def _on_delete_dialog_response(self, dialog, response, attr_gobject):
         """Handles the response from the delete confirmation dialog."""
         if response == "delete":
-            if self.project_manager.remove_attribute(attr_gobject.attribute_data):
+            if self.project_manager.remove_attribute(attr_gobject.attribute):
                 is_found, pos = self.model.find(attr_gobject)
                 if is_found:
                     self.model.remove(pos)

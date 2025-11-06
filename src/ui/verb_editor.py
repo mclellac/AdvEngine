@@ -181,12 +181,13 @@ class VerbEditor(Adw.Bin):
             count += 1
 
         new_verb = self.project_manager.add_verb(id=new_id, name="New Verb")
-        gobject = VerbGObject(new_verb)
-        self.model.append(gobject)
+        if new_verb:
+            gobject = VerbGObject(new_verb)
+            self.model.append(gobject)
 
-        is_found, pos = self.filter_model.get_model().find(gobject)
-        if is_found:
-            self.selection.set_selected(pos)
+            is_found, pos = self.filter_model.get_model().find(gobject)
+            if is_found:
+                self.selection.set_selected(pos)
 
     def _on_delete_clicked(self, button):
         """Handles the clicked signal from the delete button."""
@@ -211,10 +212,11 @@ class VerbEditor(Adw.Bin):
     def _on_delete_dialog_response(self, dialog, response, verb_gobject):
         """Handles the response from the delete confirmation dialog."""
         if response == "delete":
-            if self.project_manager.remove_verb(verb_gobject.verb_data):
-                is_found, pos = self.model.find(verb_gobject)
-                if is_found:
-                    self.model.remove(pos)
+            self.project_manager.data.verbs.remove(verb_gobject.verb)
+            self.project_manager.set_dirty()
+            is_found, pos = self.model.find(verb_gobject)
+            if is_found:
+                self.model.remove(pos)
         dialog.destroy()
 
     def _on_selection_changed(self, selection_model, position, n_items):
