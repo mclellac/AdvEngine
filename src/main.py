@@ -2,6 +2,7 @@ import sys
 import subprocess
 import gi
 import os
+import pkg_resources
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -176,7 +177,7 @@ class AdvEngine(Adw.Application):
         #     self.win = welcome.WelcomeWindow(application=self)
         # self.win.present()
         print("--- Loading project ---")
-        project_path = os.path.join(os.path.dirname(__file__), "..", "TestGame")
+        project_path = pkg_resources.resource_filename('advengine', '../TestGame')
         self.load_project(project_path=project_path)
 
         save_action = Gio.SimpleAction.new("save", None)
