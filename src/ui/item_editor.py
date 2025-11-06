@@ -26,8 +26,8 @@ class ItemEditor(Adw.Bin):
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        self.main_box = self._build_ui()
-        self.set_child(self.main_box)
+        root_widget = self._build_ui()
+        self.set_child(root_widget)
 
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
@@ -38,13 +38,15 @@ class ItemEditor(Adw.Bin):
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        self.content_clamp = Adw.Clamp()
+        root_box.append(self.content_clamp)
+
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         main_box.set_margin_top(12)
         main_box.set_margin_bottom(12)
-
-        clamp = Adw.Clamp()
-        clamp.set_child(main_box)
-        self.set_child(clamp)
+        self.content_clamp.set_child(main_box)
 
         header = Adw.HeaderBar()
         main_box.append(header)
@@ -76,9 +78,9 @@ class ItemEditor(Adw.Bin):
             description="Create a new item to get started.",
             icon_name="edit-find-replace-symbolic"
         )
-        self.set_child(self.empty_state)
+        root_box.append(self.empty_state)
 
-        return main_box
+        return root_box
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
@@ -182,9 +184,9 @@ class ItemEditor(Adw.Bin):
                 search_text in item.type.lower())
 
     def _update_visibility(self, *args):
-        """Updates the visibility of the main box and empty state."""
+        """Updates the visibility of the main content and empty state."""
         has_items = self.model.get_n_items() > 0
-        self.main_box.set_visible(has_items)
+        self.content_clamp.set_visible(has_items)
         self.empty_state.set_visible(not has_items)
 
     def _on_add_clicked(self, button):
