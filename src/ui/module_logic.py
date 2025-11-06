@@ -288,7 +288,7 @@ class LogicEditor(Gtk.Box):
             row.add_suffix(button)
             palette.add(row)
 
-        self.props_panel = DynamicNodeEditor(project_manager=self.project_manager, on_update_callback=self.canvas.queue_draw)
+        self.props_panel = DynamicNodeEditor(project_manager=self.project_manager, on_update_callback=self.update_node_and_redraw)
         sidebar.append(self.props_panel)
 
         return sidebar
@@ -343,14 +343,35 @@ class LogicEditor(Gtk.Box):
 
         cr.set_source_rgb(0.9, 0.9, 0.9)
         cr.move_to(node.x + 10, node.y + 35)
-        body_text = ""
-        if isinstance(node, DialogueNode): body_text = f"<b>Char:</b> {node.character_id}\n<i>\"{node.dialogue_text}\"</i>"
-        elif isinstance(node, ConditionNode): body_text = f"<b>If:</b> {node.condition_type}"
-        elif isinstance(node, ActionNode): body_text = f"<b>Do:</b> {node.action_command}"
-        layout.set_markup(body_text, -1)
+        if not hasattr(node, "body_text"):
+            node.body_text = self.update_node_body_text(node)
+        layout.set_markup(node.body_text, -1)
         PangoCairo.show_layout(cr, layout)
 
         self.draw_connectors_and_resize_handle(cr, node)
+
+    def update_node_body_text(self, node):
+        body_text = ""
+        if isinstance(node, DialogueNode):
+            body_text = f"<b>Char:</b> {node.character_id}\n<i>\"{node.dialogue_text}\"</i>"
+        elif isinstance(node, (ConditionNode, ActionNode)):
+            command_key = "conditions" if isinstance(node, ConditionNode) else "actions"
+            command_type_key = "condition_type" if isinstance(node, ConditionNode) else "action_command"
+            command_type = getattr(node, command_type_key, "")
+            body_text = f"<b>{command_key.capitalize()}:</b> {command_type}\n"
+            defs = get_command_definitions()
+            if command_type in defs[command_key]:
+                for param, p_type in defs[command_key][command_type]["params"].items():
+                    param_snake_case = param.replace("-", "_")
+                    value = getattr(node, param_snake_case, "")
+                    body_text += f"  <b>{param}:</b> {value}\n"
+        return body_text
+
+    def update_node_and_redraw(self):
+        if self.selected_nodes:
+            node = self.selected_nodes[0]
+            node.body_text = self.update_node_body_text(node)
+            self.canvas.queue_draw()
 
     def draw_connectors_and_resize_handle(self, cr, node):
         connector_y = node.y + node.height / 2

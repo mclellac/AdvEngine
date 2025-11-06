@@ -16,8 +16,10 @@ These issues cause data loss and must be fixed first.
 
 ## II. Editor Functionality
 
+
 - [x] **Fix Logic Node Resizing:**
   - In `src/ui/module_logic.py`, correct the calculation in `on_resize_drag_update` to properly account for the drag offset, ensuring that node resizing is smooth and predictable.
+
 
 - [ ] **Implement Global State Editor:**
   - In `src/ui/module_state.py`, add UI elements (buttons, a `Gtk.ColumnView`) to allow users to add, update, and delete global variables.
