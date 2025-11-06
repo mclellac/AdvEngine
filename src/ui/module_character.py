@@ -196,7 +196,7 @@ class CharacterManager(Adw.Bin):
                 "changed", lambda w: self.project_manager.set_dirty(True))
 
         if hasattr(list_item, "disconnect_handler"):
-            widget.disconnect(list_item.disconnect_handler)
+            list_item.get_child().disconnect(list_item.disconnect_handler)
         list_item.disconnect_handler = handler_id
 
     def _on_combo_changed(self, combo, _, char_gobject, column_id):
@@ -285,7 +285,7 @@ class CharacterManager(Adw.Bin):
     def _on_delete_dialog_response(self, dialog, response, char_gobject):
         """Handles the response from the delete confirmation dialog."""
         if response == "delete":
-            if self.project_manager.remove_character(char_gobject.character_data):
+            if self.project_manager.remove_character(char_gobject.character):
                 is_found, pos = self.model.find(char_gobject)
                 if is_found:
                     self.model.remove(pos)

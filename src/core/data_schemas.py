@@ -49,12 +49,24 @@ class ItemGObject(GObject.Object):
 
     def __init__(self, item: Item):
         super().__init__()
+        self.item = item
         self.id = item.id
         self.name = item.name
         self.type = item.type
         self.buy_price = item.buy_price
         self.sell_price = item.sell_price
         self.description = item.description
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::type", self._on_property_changed, "type")
+        self.connect("notify::buy_price", self._on_property_changed, "buy_price")
+        self.connect("notify::sell_price", self._on_property_changed, "sell_price")
+        self.connect("notify::description", self._on_property_changed, "description")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.item, data_key, getattr(self, data_key))
 
 
 # Schema for Attributes.csv
@@ -84,10 +96,20 @@ class AttributeGObject(GObject.Object):
 
     def __init__(self, attribute: Attribute):
         super().__init__()
+        self.attribute = attribute
         self.id = attribute.id
         self.name = attribute.name
         self.initial_value = attribute.initial_value
         self.max_value = attribute.max_value
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::initial_value", self._on_property_changed, "initial_value")
+        self.connect("notify::max_value", self._on_property_changed, "max_value")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.attribute, data_key, getattr(self, data_key))
 
 # Schema for CharacterData.csv
 @dataclass
@@ -124,12 +146,24 @@ class CharacterGObject(GObject.Object):
 
     def __init__(self, character: Character):
         super().__init__()
+        self.character = character
         self.id = character.id
         self.display_name = character.display_name
         self.dialogue_start_id = character.dialogue_start_id
         self.is_merchant = character.is_merchant
         self.shop_id = character.shop_id
         self.portrait_asset_id = character.portrait_asset_id
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::display_name", self._on_property_changed, "display_name")
+        self.connect("notify::dialogue_start_id", self._on_property_changed, "dialogue_start_id")
+        self.connect("notify::is_merchant", self._on_property_changed, "is_merchant")
+        self.connect("notify::shop_id", self._on_property_changed, "shop_id")
+        self.connect("notify::portrait_asset_id", self._on_property_changed, "portrait_asset_id")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.character, data_key, getattr(self, data_key))
 
 # --- Scene Schemas ---
 @dataclass
@@ -164,12 +198,24 @@ class HotspotGObject(GObject.Object):
 
     def __init__(self, hotspot: Hotspot):
         super().__init__()
+        self.hotspot = hotspot
         self.id = hotspot.id
         self.name = hotspot.name
         self.x = hotspot.x
         self.y = hotspot.y
         self.width = hotspot.width
         self.height = hotspot.height
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::x", self._on_property_changed, "x")
+        self.connect("notify::y", self._on_property_changed, "y")
+        self.connect("notify::width", self._on_property_changed, "width")
+        self.connect("notify::height", self._on_property_changed, "height")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.hotspot, data_key, getattr(self, data_key))
 
 
 @dataclass
@@ -197,9 +243,18 @@ class SceneGObject(GObject.Object):
 
     def __init__(self, scene: Scene):
         super().__init__()
+        self.scene = scene
         self.id = scene.id
         self.name = scene.name
         self.background_image = scene.background_image
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::background_image", self._on_property_changed, "background_image")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.scene, data_key, getattr(self, data_key))
 
 # --- Logic Editor Schemas (Node-Based) ---
 @dataclass
@@ -338,8 +393,16 @@ class CutsceneGObject(GObject.Object):
 
     def __init__(self, cutscene: Cutscene):
         super().__init__()
+        self.cutscene = cutscene
         self.id = cutscene.id
         self.name = cutscene.name
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.cutscene, data_key, getattr(self, data_key))
 
 # --- Asset Schemas ---
 @dataclass
@@ -368,10 +431,20 @@ class AssetGObject(GObject.Object):
 
     def __init__(self, asset: Asset):
         super().__init__()
+        self.asset = asset
         self.id = asset.id
         self.name = asset.name
         self.asset_type = asset.asset_type
         self.file_path = asset.file_path
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::asset_type", self._on_property_changed, "asset_type")
+        self.connect("notify::file_path", self._on_property_changed, "file_path")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.asset, data_key, getattr(self, data_key))
 
 
 @dataclass
@@ -408,10 +481,20 @@ class AudioGObject(GObject.Object):
 
     def __init__(self, audio: Audio):
         super().__init__()
+        self.audio = audio
         self.id = audio.id
         self.name = audio.name
         self.file_path = audio.file_path
         self.duration = audio.duration
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::file_path", self._on_property_changed, "file_path")
+        self.connect("notify::duration", self._on_property_changed, "duration")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.audio, data_key, getattr(self, data_key))
 
 
 # --- Global State Schema ---
@@ -444,11 +527,32 @@ class GlobalVariableGObject(GObject.Object):
 
     def __init__(self, variable: GlobalVariable):
         super().__init__()
+        self.variable = variable
         self.id = variable.id
         self.name = variable.name
         self.type = variable.type
         self.initial_value_str = str(variable.initial_value)
         self.category = variable.category
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::type", self._on_property_changed, "type")
+        self.connect("notify::initial_value_str", self._on_property_changed, "initial_value")
+        self.connect("notify::category", self._on_property_changed, "category")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        value = getattr(self, pspec.name)
+        if data_key == "initial_value":
+            # Coerce the string value from the UI to the correct type
+            if self.type == "int":
+                try:
+                    value = int(value)
+                except (ValueError, TypeError):
+                    value = 0
+            elif self.type == "bool":
+                value = value.lower() in ['true', '1']
+        setattr(self.variable, data_key, value)
 
 
 # --- Verb Schema ---
@@ -472,8 +576,16 @@ class VerbGObject(GObject.Object):
 
     def __init__(self, verb: Verb):
         super().__init__()
+        self.verb = verb
         self.id = verb.id
         self.name = verb.name
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.verb, data_key, getattr(self, data_key))
 
 # --- Interaction Schemas ---
 @dataclass
@@ -556,8 +668,16 @@ class UILayoutGObject(GObject.Object):
 
     def __init__(self, layout: UILayout):
         super().__init__()
+        self.layout = layout
         self.id = layout.id
         self.name = layout.name
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.layout, data_key, getattr(self, data_key))
 
 
 class FontGObject(GObject.Object):
@@ -569,9 +689,18 @@ class FontGObject(GObject.Object):
 
     def __init__(self, font: Font):
         super().__init__()
+        self.font = font
         self.id = font.id
         self.name = font.name
         self.file_path = font.file_path
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::file_path", self._on_property_changed, "file_path")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.font, data_key, getattr(self, data_key))
 
 @dataclass
 class Objective:
@@ -610,9 +739,18 @@ class ObjectiveGObject(GObject.Object):
 
     def __init__(self, objective: Objective):
         super().__init__()
+        self.objective = objective
         self.id = objective.id
         self.name = objective.name
         self.completed = objective.completed
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+        self.connect("notify::completed", self._on_property_changed, "completed")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.objective, data_key, getattr(self, data_key))
 
 
 class QuestGObject(GObject.Object):
@@ -623,8 +761,16 @@ class QuestGObject(GObject.Object):
 
     def __init__(self, quest: Quest):
         super().__init__()
+        self.quest = quest
         self.id = quest.id
         self.name = quest.name
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::name", self._on_property_changed, "name")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.quest, data_key, getattr(self, data_key))
 
 
 class InteractionGObject(GObject.Object):
@@ -639,12 +785,24 @@ class InteractionGObject(GObject.Object):
 
     def __init__(self, interaction: Interaction):
         super().__init__()
+        self.interaction = interaction
         self.id = interaction.id
         self.verb_id = interaction.verb_id
         self.primary_item_id = interaction.primary_item_id
         self.secondary_item_id = interaction.secondary_item_id
         self.target_hotspot_id = interaction.target_hotspot_id
         self.logic_graph_id = interaction.logic_graph_id
+
+        self.connect("notify::id", self._on_property_changed, "id")
+        self.connect("notify::verb_id", self._on_property_changed, "verb_id")
+        self.connect("notify::primary_item_id", self._on_property_changed, "primary_item_id")
+        self.connect("notify::secondary_item_id", self._on_property_changed, "secondary_item_id")
+        self.connect("notify::target_hotspot_id", self._on_property_changed, "target_hotspot_id")
+        self.connect("notify::logic_graph_id", self._on_property_changed, "logic_graph_id")
+
+    def _on_property_changed(self, obj, pspec, data_key):
+        """Handles the notify signal for a property."""
+        setattr(self.interaction, data_key, getattr(self, data_key))
 
 
 # --- Search Result Schema ---

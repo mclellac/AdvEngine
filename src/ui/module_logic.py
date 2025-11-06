@@ -119,7 +119,7 @@ class DynamicNodeEditor(Adw.Bin):
         """Adds an entry row to a group."""
         entry = Adw.EntryRow(title=title)
         entry.set_text(str(default_value))
-        entry.connect("apply", self.on_value_changed)
+        entry.connect("notify::text", self.on_value_changed)
         self.main_widgets[key] = entry
         group.add(entry)
 
@@ -183,7 +183,7 @@ class DynamicNodeEditor(Adw.Bin):
         else:
             entry = Adw.EntryRow(title=title)
             entry.set_text(str(default_value))
-            entry.connect("apply", self.on_value_changed)
+            entry.connect("notify::text", self.on_value_changed)
             self.param_widgets[pascal_to_snake(key)] = entry
             self.params_group.add(entry)
 
@@ -192,21 +192,24 @@ class DynamicNodeEditor(Adw.Bin):
         self.on_value_changed(combo)
         self.update_params_ui()
 
-    def on_value_changed(self, widget):
+    def on_value_changed(self, widget, *args):
         """Handles the value-changed signal from a widget."""
         if not self.node:
             return
+
         values = self.get_values()
         for key, value in values.items():
-            field_type = type(getattr(self.node, key, None))
-            if field_type == int:
-                try:
-                    value = int(value)
-                except (ValueError, TypeError):
-                    value = 0
-            elif field_type == bool:
-                value = str(value).lower() in ['true', '1']
-            setattr(self.node, key, value)
+            # Check if the attribute exists before setting it
+            if hasattr(self.node, key):
+                field_type = type(getattr(self.node, key, None))
+                if field_type == int:
+                    try:
+                        value = int(value)
+                    except (ValueError, TypeError):
+                        value = 0
+                elif field_type == bool:
+                    value = str(value).lower() in ['true', '1']
+                setattr(self.node, key, value)
 
         if self.project_manager:
             self.project_manager.set_dirty(True)
