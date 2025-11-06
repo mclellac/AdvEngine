@@ -132,12 +132,12 @@ class DynamicNodeEditor(Adw.Bin):
         self.main_widgets[key] = combo
         group.add(combo)
 
+    def pascal_to_snake(self, name):
+        import re
+        return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
     def update_params_ui(self, *args):
         """Updates the parameters UI."""
-        def pascal_to_snake(name):
-            import re
-            return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
-
         if self.params_group:
             self.container_box.remove(self.params_group)
         self.param_widgets.clear()
@@ -162,28 +162,38 @@ class DynamicNodeEditor(Adw.Bin):
             self.params_group.set_title(f"Parameters for {selected_command}")
             for param, p_type in defs["params"].items():
                 self.add_param_widget(
-                    param, p_type, getattr(self.node, pascal_to_snake(param), ""))
+                    param, p_type, getattr(self.node, self.pascal_to_snake(param), ""))
 
     def add_param_widget(self, key, param_type, default_value):
         """Adds a parameter widget to the UI."""
-        def pascal_to_snake(name):
-            import re
-            return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+        snake_key = self.pascal_to_snake(key)
         title = key.replace("_", " ").title()
+
         if isinstance(param_type, list):
-            combo = Adw.ComboRow(
-                title=title, model=Gtk.StringList.new(param_type))
+            widget = Adw.ComboRow(title=title, model=Gtk.StringList.new(param_type))
             if default_value in param_type:
-                combo.set_selected(param_type.index(default_value))
-            combo.connect("notify::selected-item", self.on_value_changed)
-            self.param_widgets[pascal_to_snake(key)] = combo
-            self.params_group.add(combo)
+                widget.set_selected(param_type.index(default_value))
+            widget.connect("notify::selected-item", self.on_value_changed)
+        elif param_type == "bool":
+            widget = Gtk.CheckButton(label=title)
+            widget.set_active(bool(default_value))
+            widget.connect("toggled", self.on_value_changed)
+        elif param_type == "int":
+            widget = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=999999, step_increment=1))
+            widget.set_value(int(default_value or 0))
+            widget.connect("value-changed", self.on_value_changed)
         else:
-            entry = Adw.EntryRow(title=title)
-            entry.set_text(str(default_value))
-            entry.connect("notify::text", self.on_value_changed)
-            self.param_widgets[pascal_to_snake(key)] = entry
-            self.params_group.add(entry)
+            widget = Adw.EntryRow(title=title)
+            widget.set_text(str(default_value))
+            widget.connect("notify::text", self.on_value_changed)
+
+        self.param_widgets[snake_key] = widget
+        if not isinstance(widget, Gtk.CheckButton):
+            self.params_group.add(widget)
+        else:
+            row = Adw.ActionRow(title=title, activatable_widget=widget)
+            row.add_suffix(widget)
+            self.params_group.add(row)
 
     def on_combo_changed(self, combo, _):
         """Handles the changed signal from a combo box."""
@@ -223,16 +233,21 @@ class DynamicNodeEditor(Adw.Bin):
         all_widgets = {**self.main_widgets, **self.param_widgets}
 
         for key, widget in all_widgets.items():
+            value = None
             if isinstance(widget, Adw.EntryRow):
-                values[key] = widget.get_text()
+                value = widget.get_text()
             elif isinstance(widget, Adw.ComboRow):
                 selected_item = widget.get_selected_item()
                 if selected_item:
-                    values[key] = selected_item.get_string()
+                    value = selected_item.get_string()
             elif isinstance(widget, Gtk.CheckButton):
-                values[key] = widget.get_active()
+                value = widget.get_active()
             elif isinstance(widget, Gtk.SpinButton):
-                values[key] = widget.get_value_as_int()
+                value = widget.get_value_as_int()
+
+            if value is not None:
+                values[key] = value
+        return values
         return values
 
 
