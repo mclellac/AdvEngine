@@ -8,7 +8,6 @@ AdvEngine is a data and configuration manager for creating 2.5D point-and-click 
 *   **Logic Editor:** A powerful node-graph editor for creating puzzle logic and branching flows using conditions and actions.
 *   **Interaction Editor:** A dedicated editor to define complex `Verb + Item` and `Item + Item` interactions that trigger logic graphs.
 *   **Dialogue Editor:** A tree-based editor for writing and structuring branching character dialogues.
-*   **Cutscene Editor:** A simple, script-based editor for creating and managing in-game cutscenes.
 *   **Asset Manager:** Import and manage game assets like sprites and animations, with a built-in preview panel.
 *   **Database Editors:** A suite of modern, spreadsheet-style editors for managing game data, with full inline editing and search capabilities:
     *   Items

@@ -22,9 +22,8 @@ This document provides a high-level overview of the features implemented in the 
 -   [x] **Verb Editor:** A database-style editor for in-game verbs.
 -   [x] **Global State Editor:** Manage global game variables.
 -   [x] **Asset Manager:** Manage game assets, including images and animations.
--   [x] **Cutscene Editor:** A script-based editor for cutscenes.
--   [x] **UI Layout Editor:** Design and lay out user interface elements.
--   [x] **Font Editor:** Manage fonts used in the game.
+-   [ ] **UI Layout Editor:** Design and lay out user interface elements.
+-   [ ] **Font Editor:** Manage fonts used in the game.
 
 ## UI/UX
 

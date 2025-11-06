@@ -311,7 +311,7 @@ class AdvEngine(Adw.Application):
         """Creates and sets up keyboard shortcuts for navigating between editors."""
         shortcuts = {
             "1": "scenes_editor", "2": "logic_editor", "3": "interaction_editor",
-            "4": "dialogue_editor", "5": "cutscenes_editor", "6": "assets_editor",
+            "4": "dialogue_editor", "6": "assets_editor",
             "7": "global_state_editor", "8": "character_manager", "9": "quest_editor",
             "0": "db_editor",
         }
