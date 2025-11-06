@@ -1,96 +1,76 @@
+"""The shortcuts window for the AdvEngine application."""
+
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk
 
+
 class ShortcutsDialog(Gtk.ShortcutsWindow):
-    """A window that displays the application's keyboard shortcuts."""
+    """A window that displays the application's keyboard shortcuts.
+
+    This window is organized into sections and groups to make it easy for
+    users to find the shortcuts they are looking for.
+    """
     __gtype_name__ = "ShortcutsDialog"
 
     def __init__(self, **kwargs):
+        """Initializes a new ShortcutsDialog instance."""
         super().__init__(**kwargs)
         self.set_modal(True)
         self.set_title("Keyboard Shortcuts")
 
-        # Main Section for General Shortcuts
-        main_section = Gtk.ShortcutsSection(title="General")
-        self.set_child(main_section)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_child(box)
 
-        # -- General Group --
+        main_section = self._create_main_section()
+        box.append(main_section)
+
+        editor_section = self._create_editor_section()
+        box.append(editor_section)
+
+    def _create_main_section(self):
+        """Adds the main section for general and navigation shortcuts."""
+        main_section = Gtk.ShortcutsSection(title="General")
+
         general_group = Gtk.ShortcutsGroup(title="Application")
         main_section.append(general_group)
+        self._add_shortcut(general_group, "<Primary>S", "Save Project")
+        self._add_shortcut(general_group, "<Primary>P", "Launch Game")
+        self._add_shortcut(general_group, "<Primary>N", "New Project")
+        self._add_shortcut(general_group, "<Primary>,", "Preferences")
 
-        general_group.append(Gtk.ShortcutsShortcut(
-            title="Save Project",
-            accelerator="<Primary>S"
-        ))
-        general_group.append(Gtk.ShortcutsShortcut(
-            title="Launch Game",
-            accelerator="<Primary>P"
-        ))
-        general_group.append(Gtk.ShortcutsShortcut(
-            title="New Project",
-            accelerator="<Primary>N"
-        ))
-        general_group.append(Gtk.ShortcutsShortcut(
-            title="Preferences",
-            accelerator="<Primary>,"
-        ))
-
-        # -- Navigation Group --
         nav_group = Gtk.ShortcutsGroup(title="Navigation")
         main_section.append(nav_group)
+        self._add_shortcut(nav_group, "<Primary>1", "Go to Scenes")
+        self._add_shortcut(nav_group, "<Primary>2", "Go to Logic")
+        self._add_shortcut(nav_group, "<Primary>3", "Go to Interactions")
+        self._add_shortcut(nav_group, "<Primary>4", "Go to Dialogue")
+        self._add_shortcut(nav_group, "<Primary>5", "Go to Cutscenes")
+        self._add_shortcut(nav_group, "<Primary>6", "Go to Assets")
+        self._add_shortcut(nav_group, "<Primary>7", "Go to Global State")
+        self._add_shortcut(nav_group, "<Primary>8", "Go to Characters")
+        self._add_shortcut(nav_group, "<Primary>9", "Go to Quests")
+        self._add_shortcut(nav_group, "<Primary>0",
+                           "Go to Database (Items, etc.)")
+        return main_section
 
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Scenes",
-            accelerator="<Primary>1"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Logic",
-            accelerator="<Primary>2"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Interactions",
-            accelerator="<Primary>3"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Dialogue",
-            accelerator="<Primary>4"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Cutscenes",
-            accelerator="<Primary>5"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Assets",
-            accelerator="<Primary>6"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Global State",
-            accelerator="<Primary>7"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Characters",
-            accelerator="<Primary>8"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Quests",
-            accelerator="<Primary>9"
-        ))
-        nav_group.append(Gtk.ShortcutsShortcut(
-            title="Go to Database (Items, etc.)",
-            accelerator="<Primary>0"
-        ))
-
-        # Editor Section
+    def _create_editor_section(self):
+        """Adds the section for editor-specific shortcuts."""
         editor_section = Gtk.ShortcutsSection(title="Editors")
-        main_section.append(editor_section)
 
-        # -- Logic Editor Group --
         logic_group = Gtk.ShortcutsGroup(title="Logic Editor")
         editor_section.append(logic_group)
+        self._add_shortcut(logic_group, "Delete", "Delete Selected Node(s)")
+        return editor_section
 
-        logic_group.append(Gtk.ShortcutsShortcut(
-            title="Delete Selected Node(s)",
-            accelerator="Delete"
-        ))
+    def _add_shortcut(self, group, accelerator, title):
+        """Adds a new shortcut to a group.
+
+        Args:
+            group: The Gtk.ShortcutsGroup to add the shortcut to.
+            accelerator: The accelerator for the shortcut.
+            title: The title of the shortcut.
+        """
+        group.append(Gtk.ShortcutsShortcut(
+            accelerator=accelerator, title=title))
