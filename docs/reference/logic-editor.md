@@ -68,7 +68,6 @@ The following is a reference of the most common `ActionNode` commands. For a com
 | `INVENTORY_REMOVE` | Removes an item from the player's inventory. | `item_id` (String) |
 | `SCENE_TRANSITION`| Moves the player to a new scene. | `scene_id` (String) |
 | `SHOW_DIALOGUE` | Displays a line or tree of dialogue. | `dialogue_graph_id` (String), `initial_node_id` (String) |
-| `PLAY_CINEMATIC`| Triggers a cutscene. | `cutscene_id` (String) |
 | `PLAY_SFX` | Plays a sound effect. | `sfx_id` (String) |
 
 ## 5. Workflow: Building a Simple Logic Graph

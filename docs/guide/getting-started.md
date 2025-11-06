@@ -26,7 +26,7 @@ A typical project directory looks like this:
         -   `LogicGraphs.json`: Contains all your general-purpose logic graphs.
         -   `DialogueGraphs.json`: Contains all your dialogue trees.
         -   `Interactions.json`: The definitions for all verb/item interactions.
-        -   `...` (and other `.json` files for quests, cutscenes, etc.)
+        -   `...` (and other `.json` files for quests, etc.)
     -   **`Assets.json`**: A manifest of all your imported assets.
     -   **`Audio.json`**: A manifest of all your audio files.
     -   **`settings.json`**: Project-specific settings.

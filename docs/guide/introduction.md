@@ -14,7 +14,7 @@ When you first launch AdvEngine, it automatically loads the `TestGame` project i
 
 A project directory contains the following subdirectories:
 -   **`Data/`**: Contains `.csv` and `.json` files for database-style data like items, characters, attributes, verbs, and global state.
--   **`Logic/`**: Contains `.json` files for all logic-based assets, including scenes, logic graphs, dialogues, interactions, quests, and cutscenes.
+-   **`Logic/`**: Contains `.json` files for all logic-based assets, including scenes, logic graphs, dialogues, interactions, and quests.
 
 To build and run the application, please follow the instructions in the main `README.md` file.
 

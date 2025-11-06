@@ -257,7 +257,6 @@ class SceneGObject(GObject.Object):
         setattr(self.scene, data_key, getattr(self, data_key))
 
 # --- Logic Editor Schemas (Node-Based) ---
-@dataclass
 class LogicNode:
     """Base class for all nodes in a logic graph.
 
@@ -848,7 +847,6 @@ class ProjectData:
     assets: List[Asset] = field(default_factory=list)
     audio_files: List[Audio] = field(default_factory=list)
     dialogue_graphs: List[LogicGraph] = field(default_factory=list)
-    cutscenes: List[Cutscene] = field(default_factory=list)
     interactions: List[Interaction] = field(default_factory=list)
     quests: List[Quest] = field(default_factory=list)
     ui_layouts: List['UILayout'] = field(default_factory=list)

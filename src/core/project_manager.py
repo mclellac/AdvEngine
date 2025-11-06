@@ -67,7 +67,6 @@ class ProjectManager:
         self._load_global_variables()
         self._load_verbs()
         self._load_dialogue_graphs()
-        self._load_cutscenes()
         self._load_interactions()
         self._load_quests()
         self._load_ui_layouts()
@@ -108,7 +107,6 @@ class ProjectManager:
         self._save_audio()
         self._save_characters()
         self._save_dialogue_graphs()
-        self._save_cutscenes()
         self._save_quests()
         self._save_ui_layouts()
         self._save_fonts()
@@ -456,12 +454,6 @@ class ProjectManager:
         file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
         self._save_graph_data(file_path, self.data.dialogue_graphs)
 
-    def _load_cutscenes(self):
-        self._load_json(os.path.join("Logic", "Cutscenes.json"), self.data.cutscenes, lambda data: Cutscene(**data))
-
-    def _save_cutscenes(self):
-        self._save_json(os.path.join("Logic", "Cutscenes.json"), self.data.cutscenes)
-
     def _load_interactions(self):
         self._load_json(os.path.join("Logic", "Interactions.json"), self.data.interactions, lambda data: Interaction(**data))
 
@@ -673,17 +665,6 @@ class ProjectManager:
                                 setattr(objective, property_name, translated_text)
         self.set_dirty()
 
-    def add_cutscene(self, name):
-        new_id = f"cutscene_{len(self.data.cutscenes) + 1}"
-        new_cutscene = Cutscene(id=new_id, name=name)
-        self.data.cutscenes.append(new_cutscene)
-        self.set_dirty()
-        return new_cutscene
-
-    def remove_cutscene(self, cutscene_id):
-        self.data.cutscenes = [cs for cs in self.data.cutscenes if cs.id != cutscene_id]
-        self.set_dirty()
-
     def get_verb_index(self, verb_id):
         for i, verb in enumerate(self.data.verbs):
             if verb.id == verb_id:
@@ -788,7 +769,6 @@ class ProjectManager:
                 os.path.join(logic_dir, "Scenes.json"): [],
                 os.path.join(logic_dir, "LogicGraphs.json"): [],
                 os.path.join(logic_dir, "DialogueGraphs.json"): [],
-                os.path.join(logic_dir, "Cutscenes.json"): [],
                 os.path.join(logic_dir, "Interactions.json"): [],
                 os.path.join(logic_dir, "Quests.json"): [],
                 os.path.join(ui_dir, "WindowLayout.json"): [],
