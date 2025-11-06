@@ -34,17 +34,20 @@ class EditorWindow(Adw.ApplicationWindow):
         Args:
             project_manager: The project manager for the current project.
         """
+        print("DEBUG: EditorWindow.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.base_title = "AdvEngine"
         self.set_title(self.base_title)
         self.set_default_size(1280, 800)
+        print(f"DEBUG: Project Manager assigned: {self.project_manager.project_path}")
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
         main_container = Adw.ToolbarView()
         self.set_content(main_container)
 
+        print("DEBUG: Creating HeaderBar and adding widgets.")
         header = Adw.HeaderBar()
         main_container.add_top_bar(header)
 
@@ -59,8 +62,10 @@ class EditorWindow(Adw.ApplicationWindow):
         play_button.connect("clicked", self._on_play_clicked)
         header.pack_start(play_button)
 
-        new_project_button = Gtk.Button(label="New Project", tooltip_text="Create a new project")
-        new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
+        new_project_button = Gtk.Button(
+            label="New Project", tooltip_text="Create a new project")
+        new_project_button.connect(
+            "clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
         header.pack_start(new_project_button)
 
         menu = Gio.Menu.new()
@@ -180,6 +185,7 @@ class EditorWindow(Adw.ApplicationWindow):
         Args:
             button: The button that was clicked.
         """
+        print("DEBUG: Save button clicked.")
         self.get_application().save_project()
 
     def _on_play_clicked(self, button: Gtk.Button):
@@ -188,6 +194,7 @@ class EditorWindow(Adw.ApplicationWindow):
         Args:
             button: The button that was clicked.
         """
+        print("DEBUG: Play button clicked.")
         self.get_application().save_project()
         ue_path = self.get_application().settings_manager.get("ue_path")
         if not ue_path:
@@ -240,6 +247,7 @@ class AdvEngine(Adw.Application):
 
     def __init__(self, **kwargs):
         """Initializes a new AdvEngine instance."""
+        print("DEBUG: AdvEngine.__init__")
         super().__init__(**kwargs)
         self.project_manager = None
         self.settings_manager = SettingsManager()
@@ -255,6 +263,7 @@ class AdvEngine(Adw.Application):
         Args:
             app: The application instance.
         """
+        print("DEBUG: AdvEngine.on_activate")
         from .ui import welcome
         self.win = welcome.WelcomeWindow(application=app)
         self.win.present()
@@ -262,6 +271,7 @@ class AdvEngine(Adw.Application):
 
     def _setup_actions(self):
         """Creates and sets up all application-level actions."""
+        print("DEBUG: AdvEngine._setup_actions")
         save_action = Gio.SimpleAction.new("save", None)
         save_action.connect("activate", lambda a, p: self.save_project())
         self.add_action(save_action)
@@ -445,8 +455,12 @@ class AdvEngine(Adw.Application):
 
     def save_project(self):
         """Saves the currently open project."""
+        print("DEBUG: AdvEngine.save_project")
         if self.project_manager and self.project_manager.is_dirty:
+            print("DEBUG: Project is dirty, saving...")
             self.project_manager.save_project()
+        else:
+            print("DEBUG: Project is not dirty, skipping save.")
 
     def load_project(self, project_path: str, project_manager: ProjectManager = None):
         """Loads a project and displays it in a new EditorWindow.
@@ -459,16 +473,21 @@ class AdvEngine(Adw.Application):
             project_manager: An optional ProjectManager instance. If not
                 provided, a new one will be created.
         """
+        print(f"DEBUG: AdvEngine.load_project: {project_path}")
         if project_manager:
             self.project_manager = project_manager
+            print("DEBUG: Using existing ProjectManager.")
         else:
+            print("DEBUG: Creating new ProjectManager.")
             self.project_manager = ProjectManager(project_path)
             self.project_manager.load_project()
         self.settings_manager.add_recent_project(project_path)
+        print("DEBUG: Creating new EditorWindow.")
         new_win = EditorWindow(
             application=self, project_manager=self.project_manager)
         new_win.present()
         if self.win:
+            print("DEBUG: Closing old window.")
             self.win.close()
         self.win = new_win
 
@@ -540,7 +559,9 @@ class AdvEngine(Adw.Application):
 
 def main(version="0.1.0"):
     """The main entry point of the application."""
-    app = AdvEngine()
+    print("DEBUG: main()")
+    app = AdvEngine(application_id="com.github.mclellac.AdvEngine",
+                    flags=Gio.ApplicationFlags.FLAGS_NONE)
     return app.run(sys.argv)
 
 

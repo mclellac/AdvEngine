@@ -11,6 +11,7 @@ class FontManager(Adw.Bin):
     ORDER = 11
 
     def __init__(self, project_manager, **kwargs):
+        print("DEBUG: FontManager.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
@@ -31,8 +32,8 @@ class FontManager(Adw.Bin):
         self.selection = Gtk.SingleSelection(model=self.model)
         self.font_list.set_model(self.selection)
 
-        self._create_column("ID", Gtk.StringSorter(), lambda font: font.id)
-        self._create_column("Name", Gtk.StringSorter(), lambda font: font.name)
+        self._create_column("ID", lambda font: font.id)
+        self._create_column("Name", lambda font: font.name)
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.font_list)
@@ -66,20 +67,22 @@ class FontManager(Adw.Bin):
 
     def _update_visibility(self):
         has_fonts = self.model.get_n_items() > 0
+        print(f"DEBUG: FontManager._update_visibility: has_fonts={has_fonts}")
         if has_fonts:
             self.main_stack.set_visible_child_name("list")
         else:
             self.main_stack.set_visible_child_name("status")
 
-    def _create_column(self, title, sorter, expression_func):
+    def _create_column(self, title, expression_func):
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
         factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
 
-        col = Gtk.ColumnViewColumn(title=title, factory=factory, sorter=sorter)
+        col = Gtk.ColumnViewColumn(title=title, factory=factory)
         self.font_list.append_column(col)
 
     def _on_font_selected(self, selection, _):
+        print("DEBUG: FontManager._on_font_selected")
         selected_font = selection.get_selected_item()
         if selected_font:
             self._display_font_preview(selected_font)
@@ -87,34 +90,51 @@ class FontManager(Adw.Bin):
             self._clear_font_preview()
 
     def _display_font_preview(self, font):
-        self.font_preview.set_attributes(Pango.AttrList.from_string(f"{{font_family: '{font.name}'}}"))
+        print(f"DEBUG: FontManager._display_font_preview: {font.name}")
+        pango_context = self.font_preview.get_pango_context()
+        font_map = Pango.FontMap.get_default()
+        if self.project_manager.project_path and os.path.exists(os.path.join(self.project_manager.project_path, font.file_path)):
+            font_map.load_font(os.path.join(self.project_manager.project_path, font.file_path))
+
+        attr_list = Pango.AttrList()
+        attr_list.insert(Pango.attr_family_new(font.name))
+        self.font_preview.set_attributes(attr_list)
+
 
     def _clear_font_preview(self):
+        print("DEBUG: FontManager._clear_font_preview")
         self.font_preview.set_attributes(None)
 
     def _on_add_font(self, button):
-        dialog = Gtk.FileChooserDialog(
-            title="Add Font",
-            parent=self.get_root(),
-            action=Gtk.FileChooserAction.OPEN,
-        )
-        dialog.add_buttons(
-            "_Cancel", Gtk.ResponseType.CANCEL, "_Ok", Gtk.ResponseType.OK
+        print("DEBUG: FontManager._on_add_font")
+        dialog = Gtk.FileChooserNative.new(
+            "Add Font",
+            self.get_root(),
+            Gtk.FileChooserAction.OPEN,
         )
 
+        font_filter = Gtk.FileFilter()
+        font_filter.set_name("Font Files")
+        font_filter.add_pattern("*.ttf")
+        font_filter.add_pattern("*.otf")
+        dialog.add_filter(font_filter)
+
         def on_dialog_response(dialog, response):
-            if response == Gtk.ResponseType.OK:
+            if response == Gtk.ResponseType.ACCEPT:
                 file = dialog.get_file()
                 file_path = file.get_path()
                 font_name = os.path.basename(file_path)
-                new_font = self.project_manager.add_font(id=f"font_{len(self.model) + 1}", name=font_name, file_path=file_path)
+                relative_path = os.path.relpath(file_path, self.project_manager.project_path)
+                new_font = self.project_manager.add_font(id=f"font_{len(self.model) + 1}", name=font_name, file_path=relative_path)
                 self.model.append(FontGObject(new_font))
+                self._update_visibility()
             dialog.destroy()
 
         dialog.connect("response", on_dialog_response)
         dialog.show()
 
     def _on_delete_font(self, button):
+        print("DEBUG: FontManager._on_delete_font")
         selected_font = self.selection.get_selected_item()
         if selected_font:
             self.project_manager.remove_font(selected_font.id)
@@ -122,3 +142,4 @@ class FontManager(Adw.Bin):
                 if item.id == selected_font.id:
                     self.model.remove(i)
                     break
+            self._update_visibility()

@@ -26,6 +26,7 @@ class SceneEditor(Adw.Bin):
         Args:
             project_manager: The project manager instance.
         """
+        print("DEBUG: SceneEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.selected_scene_gobject = None
@@ -45,11 +46,13 @@ class SceneEditor(Adw.Bin):
 
     def _on_project_loaded(self, *args):
         """Handles the project-loaded signal from the project manager."""
+        print("DEBUG: SceneEditor._on_project_loaded")
         self._update_scene_list()
         self._update_visibility()
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        print("DEBUG: SceneEditor._build_ui")
         root_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
 
         scene_list_panel = self._create_scene_list_panel()
@@ -68,6 +71,7 @@ class SceneEditor(Adw.Bin):
 
     def _create_scene_list_panel(self):
         """Creates the panel with the list of scenes."""
+        print("DEBUG: SceneEditor._create_scene_list_panel")
         panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         panel.set_margin_top(12)
         panel.set_margin_bottom(12)
@@ -115,6 +119,7 @@ class SceneEditor(Adw.Bin):
 
     def _create_canvas_area(self):
         """Creates the canvas area."""
+        print("DEBUG: SceneEditor._create_canvas_area")
         self.content_stack = Gtk.Stack()
 
         canvas_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -164,6 +169,7 @@ class SceneEditor(Adw.Bin):
 
     def _create_properties_panel(self):
         """Creates the properties panel."""
+        print("DEBUG: SceneEditor._create_properties_panel")
         clamp = Adw.Clamp()
         panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         panel.set_margin_top(12)
@@ -249,9 +255,10 @@ class SceneEditor(Adw.Bin):
 
     def _on_layer_selected(self, selection, position, n_items):
         """Handles the selection-changed signal from the layer list."""
+        print("DEBUG: SceneEditor._on_layer_selected")
         hotspot_gobject = selection.get_selected_item()
         if hotspot_gobject:
-            self.selected_hotspot = hotspot_gobject.hotspot_data
+            self.selected_hotspot = hotspot_gobject.hotspot
         else:
             self.selected_hotspot = None
         self._update_props_panel()
@@ -259,8 +266,9 @@ class SceneEditor(Adw.Bin):
 
     def _update_layer_list(self):
         """Updates the layer list."""
+        print("DEBUG: SceneEditor._update_layer_list")
         self.hotspot_model.remove_all()
-        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        scene = self.selected_scene_gobject.scene if self.selected_scene_gobject else None
         if scene:
             for hotspot in scene.hotspots:
                 self.hotspot_model.append(HotspotGObject(hotspot))
@@ -268,6 +276,7 @@ class SceneEditor(Adw.Bin):
     def _update_visibility(self):
         """Updates the visibility of the main content."""
         has_scenes = self.scene_model.get_n_items() > 0
+        print(f"DEBUG: SceneEditor._update_visibility: has_scenes={has_scenes}")
         if has_scenes:
             self.content_stack.set_visible_child_name("canvas")
         else:
@@ -275,12 +284,14 @@ class SceneEditor(Adw.Bin):
 
     def _update_scene_list(self):
         """Updates the scene list."""
+        print("DEBUG: SceneEditor._update_scene_list")
         self.scene_model.remove_all()
         for scene in self.project_manager.data.scenes:
             self.scene_model.append(SceneGObject(scene))
 
     def _on_scene_selected(self, selection, position, n_items):
         """Handles the selection-changed signal from the scene list."""
+        print("DEBUG: SceneEditor._on_scene_selected")
         self.selected_scene_gobject = selection.get_selected_item()
         self.delete_scene_button.set_sensitive(
             self.selected_scene_gobject is not None)
@@ -291,6 +302,7 @@ class SceneEditor(Adw.Bin):
 
     def _on_add_scene(self, button):
         """Handles the clicked signal from the add scene button."""
+        print("DEBUG: SceneEditor._on_add_scene")
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(), modal=True, heading="Create New Scene")
         entry = Adw.EntryRow(title="Scene Name")
@@ -311,6 +323,7 @@ class SceneEditor(Adw.Bin):
 
     def _on_remove_scene(self, button):
         """Handles the clicked signal from the remove scene button."""
+        print("DEBUG: SceneEditor._on_remove_scene")
         if not self.selected_scene_gobject:
             return
         dialog = Adw.MessageDialog(transient_for=self.get_root(), modal=True, heading="Delete Scene?",
@@ -324,13 +337,15 @@ class SceneEditor(Adw.Bin):
 
     def _on_delete_scene_response(self, dialog, response):
         """Handles the response from the delete scene dialog."""
+        print(f"DEBUG: SceneEditor._on_delete_scene_response: response={response}")
         if response == "delete":
             self.project_manager.delete_scene(
-                self.selected_scene_gobject.scene_data.id)
+                self.selected_scene_gobject.scene.id)
             self._update_scene_list()
 
     def _on_set_background(self, button):
         """Handles the clicked signal from the set background button."""
+        print("DEBUG: SceneEditor._on_set_background")
         if not self.selected_scene_gobject:
             return
         dialog = Gtk.FileChooserNative.new(
@@ -343,11 +358,12 @@ class SceneEditor(Adw.Bin):
 
     def _on_file_chooser_response(self, dialog, response_id):
         """Handles the response from the file chooser dialog."""
+        print(f"DEBUG: SceneEditor._on_file_chooser_response: response_id={response_id}")
         if response_id == Gtk.ResponseType.ACCEPT:
             file_path = dialog.get_file().get_path()
             relative_path = os.path.relpath(
                 file_path, self.project_manager.project_path)
-            scene = self.selected_scene_gobject.scene_data
+            scene = self.selected_scene_gobject.scene
             scene.background_image = relative_path
             self.project_manager.set_dirty(True)
             self._update_background_preview()
@@ -355,7 +371,8 @@ class SceneEditor(Adw.Bin):
 
     def _update_background_preview(self):
         """Updates the background preview image."""
-        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        print("DEBUG: SceneEditor._update_background_preview")
+        scene = self.selected_scene_gobject.scene if self.selected_scene_gobject else None
         if scene and scene.background_image and self.project_manager.project_path:
             full_path = os.path.join(
                 self.project_manager.project_path, scene.background_image)
@@ -366,6 +383,7 @@ class SceneEditor(Adw.Bin):
 
     def _update_props_panel(self):
         """Updates the properties panel."""
+        print("DEBUG: SceneEditor._update_props_panel")
         if self.selected_hotspot:
             self.prop_name.set_text(self.selected_hotspot.name)
             self.prop_x.set_value(self.selected_hotspot.x)
@@ -379,6 +397,7 @@ class SceneEditor(Adw.Bin):
 
     def _on_prop_changed(self, widget, *args):
         """Handles the changed signal from a property widget."""
+        print("DEBUG: SceneEditor._on_prop_changed")
         if not self.selected_hotspot:
             return
         self.selected_hotspot.name = self.prop_name.get_text()
@@ -394,7 +413,7 @@ class SceneEditor(Adw.Bin):
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
 
-        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        scene = self.selected_scene_gobject.scene if self.selected_scene_gobject else None
         if not scene:
             return
 
@@ -437,9 +456,10 @@ class SceneEditor(Adw.Bin):
 
     def _on_canvas_click(self, gesture, n_press, x, y):
         """Handles a click on the canvas."""
+        print(f"DEBUG: SceneEditor._on_canvas_click at ({x}, {y})")
         world_x = (x - self.pan_x) / self.zoom_level
         world_y = (y - self.pan_y) / self.zoom_level
-        scene = self.selected_scene_gobject.scene_data if self.selected_scene_gobject else None
+        scene = self.selected_scene_gobject.scene if self.selected_scene_gobject else None
 
         if self.hotspot_mode and scene:
             grid_size = 50

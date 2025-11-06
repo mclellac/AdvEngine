@@ -26,11 +26,12 @@ class GlobalStateEditor(Adw.Bin):
         Args:
             project_manager: The project manager instance.
         """
+        print("DEBUG: GlobalStateEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        self.main_box = self._build_ui()
-        self.set_child(self.main_box)
+        root_widget = self._build_ui()
+        self.set_child(root_widget)
 
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
@@ -41,13 +42,16 @@ class GlobalStateEditor(Adw.Bin):
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        print("DEBUG: GlobalStateEditor._build_ui")
+        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        self.content_clamp = Adw.Clamp()
+        root_box.append(self.content_clamp)
+
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         main_box.set_margin_top(12)
         main_box.set_margin_bottom(12)
-
-        clamp = Adw.Clamp()
-        clamp.set_child(main_box)
-        self.set_child(clamp)
+        self.content_clamp.set_child(main_box)
 
         header = Adw.HeaderBar()
         main_box.append(header)
@@ -79,12 +83,13 @@ class GlobalStateEditor(Adw.Bin):
             description="Create a new variable to manage game state.",
             icon_name="preferences-system-symbolic"
         )
-        self.set_child(self.empty_state)
+        root_box.append(self.empty_state)
 
-        return main_box
+        return root_box
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
+        print("DEBUG: GlobalStateEditor._setup_model")
         model = Gio.ListStore(item_type=GlobalVariableGObject)
         for var in self.project_manager.data.global_variables:
             model.append(GlobalVariableGObject(var))
@@ -93,6 +98,7 @@ class GlobalStateEditor(Adw.Bin):
 
     def _setup_filter_model(self):
         """Sets up the filter model for the editor."""
+        print("DEBUG: GlobalStateEditor._setup_filter_model")
         filter_model = Gtk.FilterListModel(model=self.model)
         self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         filter_model.set_filter(self.filter)
@@ -100,113 +106,107 @@ class GlobalStateEditor(Adw.Bin):
 
     def _setup_selection_model(self):
         """Sets up the selection model for the editor."""
+        print("DEBUG: GlobalStateEditor._setup_selection_model")
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
 
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
+        print("DEBUG: GlobalStateEditor._setup_column_view")
         column_view = Gtk.ColumnView()
         self._create_columns(column_view)
         return column_view
 
     def _create_columns(self, column_view):
         """Creates and appends all columns to the ColumnView."""
-        id_factory = Gtk.SignalListItemFactory()
-        id_factory.connect("setup", self._setup_text_cell)
-        id_factory.connect("bind", self._bind_text_cell, "id")
-        id_column = Gtk.ColumnViewColumn(title="ID", factory=id_factory)
-        id_column.set_expand(True)
-        column_view.append_column(id_column)
+        columns_def = {
+            "id": {"title": "ID", "expand": True, "type": "text"},
+            "name": {"title": "Name", "expand": True, "type": "text"},
+            "category": {"title": "Category", "expand": True, "type": "text"},
+            "type": {"title": "Type", "expand": False, "type": "combo"},
+            "initial_value_str": {"title": "Initial Value", "expand": True, "type": "text"}
+        }
 
-        name_factory = Gtk.SignalListItemFactory()
-        name_factory.connect("setup", self._setup_text_cell)
-        name_factory.connect("bind", self._bind_text_cell, "name")
-        name_column = Gtk.ColumnViewColumn(title="Name", factory=name_factory)
-        name_column.set_expand(True)
-        column_view.append_column(name_column)
-
-        category_factory = Gtk.SignalListItemFactory()
-        category_factory.connect("setup", self._setup_text_cell)
-        category_factory.connect("bind", self._bind_text_cell, "category")
-        category_column = Gtk.ColumnViewColumn(
-            title="Category", factory=category_factory)
-        category_column.set_expand(True)
-        column_view.append_column(category_column)
-
-        type_factory = Gtk.SignalListItemFactory()
-        type_factory.connect("setup", self._setup_type_cell)
-        type_factory.connect("bind", self._bind_type_cell)
-        type_column = Gtk.ColumnViewColumn(title="Type", factory=type_factory)
-        column_view.append_column(type_column)
-
-        value_factory = Gtk.SignalListItemFactory()
-        value_factory.connect("setup", self._setup_text_cell)
-        value_factory.connect("bind", self._bind_text_cell, "initial_value_str")
-        value_column = Gtk.ColumnViewColumn(
-            title="Initial Value", factory=value_factory)
-        value_column.set_expand(True)
-        column_view.append_column(value_column)
+        for col_id, col_info in columns_def.items():
+            factory = Gtk.SignalListItemFactory()
+            if col_info["type"] == "combo":
+                factory.connect("setup", self._setup_type_cell)
+                factory.connect("bind", self._bind_type_cell)
+            else:
+                factory.connect("setup", self._setup_text_cell)
+                factory.connect("bind", self._bind_text_cell, col_id)
+            factory.connect("unbind", self._unbind_cell)
+            column = Gtk.ColumnViewColumn(
+                title=col_info["title"], factory=factory)
+            column.set_expand(col_info["expand"])
+            column_view.append_column(column)
 
     def _setup_text_cell(self, factory, list_item):
         """Sets up a text cell in the column view."""
-        entry = Adw.EntryRow()
-        entry.set_show_apply_button(True)
-        list_item.set_child(entry)
+        widget = Gtk.Entry()
+        list_item.set_child(widget)
 
     def _bind_text_cell(self, factory, list_item, column_id):
         """Binds a text cell to the data model."""
         var_gobject = list_item.get_item()
-        entry = list_item.get_child()
-        entry.bind_property(
-            "text", var_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        handler_id = entry.connect(
-            "apply", self._on_value_changed, var_gobject)
-        list_item.disconnect_handler = handler_id
+        widget = list_item.get_child()
+        list_item.bindings = [
+            widget.bind_property(
+                "text", var_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        ]
+        list_item.handler_id = widget.connect(
+            "changed", self._on_value_changed, var_gobject)
 
     def _setup_type_cell(self, factory, list_item):
         """Sets up a type cell in the column view."""
-        combo = Adw.ComboRow(model=Gtk.StringList.new(["bool", "int", "str"]))
-        list_item.set_child(combo)
+        widget = Gtk.DropDown.new_from_strings(["bool", "int", "str"])
+        list_item.set_child(widget)
 
     def _bind_type_cell(self, factory, list_item):
         """Binds a type cell to the data model."""
         var_gobject = list_item.get_item()
-        combo = list_item.get_child()
+        widget = list_item.get_child()
 
         def update_combo_from_gobject(*args):
             type_str = var_gobject.get_property("type")
             if type_str == "bool":
-                combo.set_selected(0)
+                widget.set_selected(0)
             elif type_str == "int":
-                combo.set_selected(1)
+                widget.set_selected(1)
             else:
-                combo.set_selected(2)
-
-        def update_gobject_from_combo(*args):
-            selected_str = combo.get_selected_item().get_string()
-            var_gobject.set_property("type", selected_str)
-            self._on_value_changed(combo, var_gobject)
+                widget.set_selected(2)
 
         update_combo_from_gobject()
-        gobject_handler_id = var_gobject.connect(
-            "notify::type", update_combo_from_gobject)
-        combo_handler_id = combo.connect(
-            "notify::selected", update_gobject_from_combo)
 
-        list_item.disconnect_handlers = [
-            (var_gobject, gobject_handler_id),
-            (combo, combo_handler_id)
-        ]
+        handler_id = widget.connect("notify::selected", self._on_type_changed, var_gobject)
+        list_item.handler_id = handler_id
+
+    def _unbind_cell(self, factory, list_item):
+        """Unbinds a cell from the data model."""
+        if hasattr(list_item, "bindings"):
+            for binding in list_item.bindings:
+                binding.unbind()
+            del list_item.bindings
+        if hasattr(list_item, "handler_id"):
+            list_item.get_child().disconnect(list_item.handler_id)
+            del list_item.handler_id
 
     def _on_value_changed(self, widget, var_gobject: GlobalVariableGObject):
         """Handles the value-changed signal from a cell."""
         self.project_manager.update_global_variable(
-            var_gobject.variable_data, var_gobject)
-        self.project_manager.set_dirty(True)
+            var_gobject.variable, var_gobject)
+
+    def _on_type_changed(self, dropdown, pspec, var_gobject: GlobalVariableGObject):
+        """Handles the selected signal from the type dropdown."""
+        selected_str = dropdown.get_selected_item().get_string()
+        var_gobject.set_property("type", selected_str)
+        self.project_manager.update_global_variable(
+            var_gobject.variable, var_gobject)
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
+        print(f"DEBUG: GlobalStateEditor._on_search_changed: {search_entry.get_text()}")
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
@@ -219,13 +219,15 @@ class GlobalStateEditor(Adw.Bin):
                 search_text in item.category.lower())
 
     def _update_visibility(self, *args):
-        """Updates the visibility of the main box and empty state."""
+        """Updates the visibility of the main content and empty state."""
         has_items = self.model.get_n_items() > 0
-        self.main_box.set_visible(has_items)
+        print(f"DEBUG: GlobalStateEditor._update_visibility: has_items={has_items}")
+        self.content_clamp.set_visible(has_items)
         self.empty_state.set_visible(not has_items)
 
     def _on_add_clicked(self, button):
         """Handles the clicked signal from the add button."""
+        print("DEBUG: GlobalStateEditor._on_add_clicked")
         new_id_base = "new_variable"
         new_id = new_id_base
         count = 1
@@ -247,6 +249,7 @@ class GlobalStateEditor(Adw.Bin):
 
     def _on_delete_clicked(self, button):
         """Handles the clicked signal from the delete button."""
+        print("DEBUG: GlobalStateEditor._on_delete_clicked")
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -267,8 +270,9 @@ class GlobalStateEditor(Adw.Bin):
 
     def _on_delete_dialog_response(self, dialog, response, var_gobject):
         """Handles the response from the delete confirmation dialog."""
+        print(f"DEBUG: GlobalStateEditor._on_delete_dialog_response: response={response}")
         if response == "delete":
-            if self.project_manager.remove_global_variable(var_gobject.variable_data):
+            if self.project_manager.remove_global_variable(var_gobject.variable):
                 is_found, pos = self.model.find(var_gobject)
                 if is_found:
                     self.model.remove(pos)
@@ -277,4 +281,5 @@ class GlobalStateEditor(Adw.Bin):
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
+        print(f"DEBUG: GlobalStateEditor._on_selection_changed: is_selected={is_selected}")
         self.delete_button.set_sensitive(is_selected)

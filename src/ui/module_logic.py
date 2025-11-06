@@ -58,6 +58,7 @@ class DynamicNodeEditor(Adw.Bin):
 
     def __init__(self, project_manager=None, on_update_callback=None, **kwargs):
         """Initializes a new DynamicNodeEditor instance."""
+        print("DEBUG: DynamicNodeEditor.__init__")
         super().__init__(**kwargs)
         self.node = None
         self.project_manager = project_manager
@@ -74,11 +75,13 @@ class DynamicNodeEditor(Adw.Bin):
 
     def set_node(self, node):
         """Sets the node to be edited."""
+        print(f"DEBUG: DynamicNodeEditor.set_node: {node.id if node else 'None'}")
         self.node = node
         GLib.idle_add(self.build_ui)
 
     def build_ui(self):
         """Builds the UI for the editor."""
+        print("DEBUG: DynamicNodeEditor.build_ui")
         if self.main_group:
             self.container_box.remove(self.main_group)
         if self.params_group:
@@ -140,6 +143,7 @@ class DynamicNodeEditor(Adw.Bin):
 
     def update_params_ui(self, *args):
         """Updates the parameters UI."""
+        print("DEBUG: DynamicNodeEditor.update_params_ui")
         if self.params_group:
             self.container_box.remove(self.params_group)
         self.param_widgets.clear()
@@ -199,6 +203,7 @@ class DynamicNodeEditor(Adw.Bin):
 
     def on_combo_changed(self, combo, _):
         """Handles the changed signal from a combo box."""
+        print("DEBUG: DynamicNodeEditor.on_combo_changed")
         self.on_value_changed(combo)
         self.update_params_ui()
 
@@ -208,6 +213,7 @@ class DynamicNodeEditor(Adw.Bin):
             return
 
         values = self.get_values()
+        print(f"DEBUG: DynamicNodeEditor.on_value_changed: {values}")
         for key, value in values.items():
             if hasattr(self.node, key):
                 field_type = getattr(self.node.__class__, '__annotations__', {}).get(key, 'any')
@@ -251,7 +257,6 @@ class DynamicNodeEditor(Adw.Bin):
             if value is not None:
                 values[key] = value
         return values
-        return values
 
 
 class LogicEditor(Adw.Bin):
@@ -267,6 +272,7 @@ class LogicEditor(Adw.Bin):
 
     def __init__(self, project_manager, **kwargs):
         """Initializes a new LogicEditor instance."""
+        print("DEBUG: LogicEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.active_graph = None
@@ -295,6 +301,7 @@ class LogicEditor(Adw.Bin):
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        print("DEBUG: LogicEditor._build_ui")
         split_view = Adw.OverlaySplitView()
         split_view.set_sidebar_position(Gtk.PackType.START)
         split_view.set_content(self._create_canvas_area())
@@ -303,6 +310,7 @@ class LogicEditor(Adw.Bin):
 
     def _create_canvas_area(self):
         """Creates the canvas area."""
+        print("DEBUG: LogicEditor._create_canvas_area")
         canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.canvas.set_draw_func(self.on_canvas_draw, None)
@@ -313,6 +321,7 @@ class LogicEditor(Adw.Bin):
 
     def _create_sidebar(self):
         """Creates the sidebar."""
+        print("DEBUG: LogicEditor._create_sidebar")
         sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         sidebar.set_margin_top(12)
         sidebar.set_margin_bottom(12)
@@ -343,6 +352,7 @@ class LogicEditor(Adw.Bin):
 
     def _setup_canvas_controllers(self):
         """Sets up the event controllers for the canvas."""
+        print("DEBUG: LogicEditor._setup_canvas_controllers")
         node_drag = Gtk.GestureDrag.new()
         node_drag.connect("drag-begin", self.on_drag_begin)
         node_drag.connect("drag-update", self.on_drag_update)
@@ -376,6 +386,7 @@ class LogicEditor(Adw.Bin):
 
     def _create_context_menus(self):
         """Creates the context menus for the canvas and nodes."""
+        print("DEBUG: LogicEditor._create_context_menus")
         menu = Gio.Menu.new()
         menu.append("Add Dialogue Node", "app.add_dialogue_node")
         menu.append("Add Condition Node", "app.add_condition_node")
@@ -478,7 +489,7 @@ class LogicEditor(Adw.Bin):
                 params = defs[node.action_command]['params']
                 param_strings = []
                 for param, p_type in params.items():
-                    param_snake_case = param.replace("-", "_").lower()
+                    param_snake_case = self.pascal_to_snake(param)
                     value = getattr(node, param_snake_case, "")
                     param_strings.append(f"{param}: {value}")
                 body_text += f"  ({', '.join(param_strings)})"
@@ -486,6 +497,7 @@ class LogicEditor(Adw.Bin):
 
     def update_node_and_redraw(self):
         """Updates the node and redraws the canvas."""
+        print("DEBUG: LogicEditor.update_node_and_redraw")
         if self.selected_nodes:
             for node in self.selected_nodes:
                 self.update_node_body_text(node)
@@ -514,6 +526,7 @@ class LogicEditor(Adw.Bin):
 
     def on_add_node(self, node_class, node_type):
         """Handles the add-node signal from the tool palette."""
+        print(f"DEBUG: LogicEditor.on_add_node: {node_type}")
         if self.active_graph:
             new_id = f"node_{len(self.active_graph.nodes)}"
             existing_ids = {node.id for node in self.active_graph.nodes}
@@ -537,6 +550,7 @@ class LogicEditor(Adw.Bin):
 
     def on_drag_begin(self, gesture, x, y):
         """Handles the drag-begin signal from the node drag gesture."""
+        print("DEBUG: LogicEditor.on_drag_begin")
         node_clicked = self.get_node_at(x, y)
         if node_clicked:
             if node_clicked not in self.selected_nodes:
@@ -564,6 +578,7 @@ class LogicEditor(Adw.Bin):
 
     def on_drag_end(self, gesture, x, y):
         """Handles the drag-end signal from the node drag gesture."""
+        print("DEBUG: LogicEditor.on_drag_end")
         if self.drag_offsets:
             self.project_manager.set_dirty()
             self.drag_offsets = {}
@@ -585,6 +600,7 @@ class LogicEditor(Adw.Bin):
 
     def on_canvas_click(self, gesture, n_press, x, y):
         """Handles a click on the canvas."""
+        print(f"DEBUG: LogicEditor.on_canvas_click at ({x}, {y})")
         node = self.get_node_at(x, y)
         if node:
             if not gesture.get_current_event_state() & Gdk.ModifierType.SHIFT_MASK:
@@ -602,6 +618,7 @@ class LogicEditor(Adw.Bin):
 
     def on_key_pressed(self, controller, keyval, keycode, state):
         """Handles a key-pressed event on the canvas."""
+        print(f"DEBUG: LogicEditor.on_key_pressed: {keyval}")
         if keyval == Gdk.KEY_Delete:
             for node_to_delete in self.selected_nodes:
                 self.active_graph.nodes.remove(node_to_delete)
@@ -617,6 +634,7 @@ class LogicEditor(Adw.Bin):
 
     def on_connection_drag_begin(self, gesture, x, y):
         """Handles the drag-begin signal from the connection drag gesture."""
+        print("DEBUG: LogicEditor.on_connection_drag_begin")
         for node in reversed(self.active_graph.nodes):
             out_x, out_y = self.get_connector_pos(node, "out")
             if abs(x - out_x) < 10 and abs(y - out_y) < 10:
@@ -635,6 +653,7 @@ class LogicEditor(Adw.Bin):
 
     def on_connection_drag_end(self, gesture, x, y):
         """Handles the drag-end signal from the connection drag gesture."""
+        print("DEBUG: LogicEditor.on_connection_drag_end")
         if self.connecting_from_node:
             for node in self.active_graph.nodes:
                 in_x, in_y = self.get_connector_pos(node, "in")
@@ -648,6 +667,7 @@ class LogicEditor(Adw.Bin):
 
     def on_resize_drag_begin(self, gesture, x, y):
         """Handles the drag-begin signal from the resize drag gesture."""
+        print("DEBUG: LogicEditor.on_resize_drag_begin")
         for node in reversed(self.active_graph.nodes):
             if x >= node.x + node.width - 10 and x <= node.x + node.width and \
                y >= node.y + node.height - 10 and y <= node.y + node.height:
@@ -670,6 +690,7 @@ class LogicEditor(Adw.Bin):
 
     def on_resize_drag_end(self, gesture, x, y):
         """Handles the drag-end signal from the resize drag gesture."""
+        print("DEBUG: LogicEditor.on_resize_drag_end")
         if self.resizing_node:
             self.project_manager.set_dirty(True)
             self.resizing_node = None
@@ -684,6 +705,7 @@ class LogicEditor(Adw.Bin):
 
     def on_right_click(self, gesture, n_press, x, y):
         """Handles a right-click on the canvas."""
+        print("DEBUG: LogicEditor.on_right_click")
         node = self.get_node_at(x, y)
         if node:
             self.selected_nodes = [node]

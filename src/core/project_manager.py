@@ -40,6 +40,7 @@ class ProjectManager:
         Args:
             project_path: The absolute path to the project directory.
         """
+        print(f"DEBUG: ProjectManager.__init__: {project_path}")
         self.project_path = project_path
         self.data = ProjectData()
         self.settings = SettingsManager(project_path)
@@ -55,6 +56,7 @@ class ProjectManager:
         and populates the `self.data` attribute with the loaded data. It is
         called once when a project is opened.
         """
+        print("DEBUG: ProjectManager.load_project: Starting project load.")
         self._load_csv("ItemData.csv", Item, self.data.items)
         self._load_csv("Attributes.csv", Attribute, self.data.attributes)
         self._load_csv("CharacterData.csv", Character, self.data.characters)
@@ -72,6 +74,7 @@ class ProjectManager:
         self._load_fonts()
         self.is_new_project = False
         self.set_dirty(False)  # Project is clean after loading
+        print("DEBUG: ProjectManager.load_project: Project load complete.")
         self._notify_project_loaded()
 
     def register_project_loaded_callback(self, callback: callable):
@@ -93,6 +96,7 @@ class ProjectManager:
         This method writes all data from the `self.data` attribute to the
         project's data files. It is called when the user saves the project.
         """
+        print("DEBUG: ProjectManager.save_project: Starting project save.")
         self._save_csv("ItemData.csv", self.data.items, Item)
         self._save_csv("Attributes.csv", self.data.attributes, Attribute)
         self._save_global_variables()
@@ -109,6 +113,7 @@ class ProjectManager:
         self._save_ui_layouts()
         self._save_fonts()
         self.set_dirty(False)
+        print("DEBUG: ProjectManager.save_project: Project save complete.")
 
     def register_dirty_state_callback(self, callback: callable):
         """Registers a callback to be called when the dirty state changes.
@@ -134,6 +139,7 @@ class ProjectManager:
             state: The new dirty state. Defaults to True.
         """
         if self.is_dirty != state:
+            print(f"DEBUG: ProjectManager.set_dirty: Changing dirty state to {state}")
             self.is_dirty = state
             self._notify_dirty_state_changed()
 
@@ -146,6 +152,7 @@ class ProjectManager:
             dataclass_type: The type of the dataclass objects.
         """
         file_path = os.path.join(self.project_path, "Data", filename)
+        print(f"DEBUG: ProjectManager._save_csv: Saving to {file_path}")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w", newline="") as f:
@@ -173,6 +180,7 @@ class ProjectManager:
             target_list: The list to which the loaded objects will be appended.
         """
         file_path = os.path.join(self.project_path, "Data", filename)
+        print(f"DEBUG: ProjectManager._load_csv: Loading from {file_path}")
         try:
             with open(file_path, "r", newline="") as f:
                 reader = csv.DictReader(f)
@@ -200,6 +208,7 @@ class ProjectManager:
             object_hook: An optional function to process each loaded object.
         """
         file_path = os.path.join(self.project_path, filename)
+        print(f"DEBUG: ProjectManager._load_json: Loading from {file_path}")
         try:
             with open(file_path, "r") as f:
                 data = json.load(f)
@@ -222,6 +231,7 @@ class ProjectManager:
             data_list: A list of dataclass objects to save.
         """
         file_path = os.path.join(self.project_path, filename)
+        print(f"DEBUG: ProjectManager._save_json: Saving to {file_path}")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
@@ -737,12 +747,14 @@ class ProjectManager:
             string. If the project is created successfully, the error string
             will be None.
         """
+        print(f"DEBUG: ProjectManager.create_project: Creating new project at {project_path} with template {template}")
         if template:
-            template_dir = os.path.join(os.path.dirname(
-                __file__), "..", "..", "templates", template)
+            template_dir = os.path.join(
+                os.path.dirname(__file__), "..", "..", "templates", template)
             if os.path.exists(template_dir):
                 import shutil
-                shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
+                shutil.copytree(template_dir, project_path,
+                                dirs_exist_ok=True)
 
         try:
             # Create base directories

@@ -171,6 +171,7 @@ class QuestEditor(Adw.Bin):
         Args:
             project_manager: The project manager instance.
         """
+        print("DEBUG: QuestEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
@@ -181,6 +182,7 @@ class QuestEditor(Adw.Bin):
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        print("DEBUG: QuestEditor._build_ui")
         paned = Adw.OverlaySplitView()
         paned.set_sidebar(self._create_quest_list_panel())
         paned.set_content(self._create_quest_details_panel())
@@ -188,6 +190,7 @@ class QuestEditor(Adw.Bin):
 
     def _create_quest_list_panel(self):
         """Creates the panel with the list of quests."""
+        print("DEBUG: QuestEditor._create_quest_list_panel")
         panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         header = Adw.HeaderBar()
         panel.append(header)
@@ -212,7 +215,7 @@ class QuestEditor(Adw.Bin):
         factory.connect(
             "setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
         factory.connect(
-            "bind", lambda _, list_item: list_item.get_child().set_label(list_item.get_item().name))
+            "bind", self._bind_quest_list_item)
 
         self.quest_list_view = Gtk.ListView(
             model=self.selection, factory=factory)
@@ -222,8 +225,19 @@ class QuestEditor(Adw.Bin):
         panel.append(scrolled)
         return panel
 
+    def _bind_quest_list_item(self, factory, list_item):
+        """Binds a quest list item to the data model."""
+        label = list_item.get_child()
+        quest_gobject = list_item.get_item()
+        label.set_text(quest_gobject.name)
+
+        # Two-way binding
+        quest_gobject.bind_property("name", label, "label", GObject.BindingFlags.BIDIRECTIONAL)
+
+
     def _create_quest_details_panel(self):
         """Creates the panel for editing the quest details."""
+        print("DEBUG: QuestEditor._create_quest_details_panel")
         self.quest_details = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.quest_details.set_margin_top(10)
@@ -240,44 +254,58 @@ class QuestEditor(Adw.Bin):
     def _update_visibility(self):
         """Updates the visibility of the quest list and status page."""
         has_quests = self.model.get_n_items() > 0
+        print(f"DEBUG: QuestEditor._update_visibility: has_quests={has_quests}")
         self.quest_list_view.get_parent().set_visible(has_quests)
-        self.status_page.set_visible(not has_quests)
+        self.status_page.set_visible(not has_quests or self.selection.get_selected() == Gtk.INVALID_LIST_POSITION)
+
 
     def _on_quest_selected(self, selection, _):
         """Handles the selection-changed signal from the quest list."""
+        print("DEBUG: QuestEditor._on_quest_selected")
         selected_quest_gobject = selection.get_selected_item()
         self.delete_quest_button.set_sensitive(selected_quest_gobject is not None)
         if selected_quest_gobject:
-            self._display_quest_details(selected_quest_gobject.quest_data)
+            self._display_quest_details(selected_quest_gobject.quest)
         else:
             self._clear_quest_details()
+        self._update_visibility()
 
     def _display_quest_details(self, quest):
         """Displays the details of the selected quest."""
+        print(f"DEBUG: QuestEditor._display_quest_details for quest: {quest.id}")
         self._clear_quest_details()
 
         if not quest:
             return
 
-        grid = Gtk.Grid(column_spacing=10, row_spacing=10)
-        self.quest_details.append(grid)
+        clamp = Adw.Clamp()
+        self.quest_details.append(clamp)
 
-        grid.attach(Gtk.Label(label="ID:"), 0, 0, 1, 1)
-        id_entry = Gtk.Entry(text=quest.id)
-        id_entry.connect("changed", self._on_detail_changed, quest, "id")
-        grid.attach(id_entry, 1, 0, 1, 1)
+        details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        clamp.set_child(details_box)
 
-        grid.attach(Gtk.Label(label="Name:"), 0, 1, 1, 1)
-        name_entry = Gtk.Entry(text=quest.name)
-        name_entry.connect("changed", self._on_detail_changed, quest, "name")
-        grid.attach(name_entry, 1, 1, 1, 1)
+        group = Adw.PreferencesGroup()
+        details_box.append(group)
+
+        self.id_entry = Adw.EntryRow(title="ID", text=quest.id)
+        self.id_entry.connect("apply", self._on_detail_changed, quest, "id")
+        group.add(self.id_entry)
+
+        self.name_entry = Adw.EntryRow(title="Name", text=quest.name)
+        self.name_entry.connect("apply", self._on_detail_changed, quest, "name")
+        group.add(self.name_entry)
+
+        objective_group = Adw.PreferencesGroup(title="Objectives")
+        details_box.append(objective_group)
 
         self.objective_list = self._setup_objective_list(quest)
         scrolled_window = Gtk.ScrolledWindow(child=self.objective_list)
-        self.quest_details.append(scrolled_window)
+        scrolled_window.set_min_content_height(200)
+        objective_group.add(scrolled_window)
 
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.quest_details.append(button_box)
+        button_box.set_halign(Gtk.Align.CENTER)
+        details_box.append(button_box)
 
         add_obj_button = Gtk.Button(label="Add Objective")
         add_obj_button.connect("clicked", self._on_add_objective, quest)
@@ -287,18 +315,14 @@ class QuestEditor(Adw.Bin):
         edit_obj_button.connect("clicked", self._on_edit_objective, quest)
         button_box.append(edit_obj_button)
 
-        edit_quest_button = Gtk.Button(label="Edit Quest")
-        edit_quest_button.connect("clicked", self._on_edit_quest)
-        button_box.append(edit_quest_button)
-
         delete_obj_button = Gtk.Button(label="Delete Objective")
         delete_obj_button.connect("clicked", self._on_delete_objective, quest)
         button_box.append(delete_obj_button)
 
     def _setup_objective_list(self, quest):
         """Sets up the list of objectives for the selected quest."""
+        print("DEBUG: QuestEditor._setup_objective_list")
         objective_list = Gtk.ColumnView()
-        objective_list.set_vexpand(True)
         self.objective_model = Gio.ListStore(item_type=ObjectiveGObject)
         for objective in quest.objectives:
             self.objective_model.append(ObjectiveGObject(objective))
@@ -307,78 +331,64 @@ class QuestEditor(Adw.Bin):
             model=self.objective_model)
         objective_list.set_model(self.objective_selection)
 
-        self._create_objective_column(objective_list, "ID", Gtk.StringSorter(
-        ), lambda obj: obj.id)
-        self._create_objective_column(objective_list, "Name", Gtk.StringSorter(
-        ), lambda obj: obj.name)
+        self._create_objective_column(objective_list, "ID", "id")
+        self._create_objective_column(objective_list, "Name", "name")
 
         return objective_list
 
-    def _create_objective_column(self, objective_list, title, sorter, expression_func):
+    def _create_objective_column(self, objective_list, title, col_id):
         """Creates a column for the objective list."""
         factory = Gtk.SignalListItemFactory()
         factory.connect(
             "setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
         factory.connect(
-            "bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
+            "bind", lambda _, list_item: list_item.get_child().set_text(getattr(list_item.get_item(), col_id)))
 
-        col = Gtk.ColumnViewColumn(title=title, factory=factory, sorter=sorter)
+        col = Gtk.ColumnViewColumn(title=title, factory=factory)
         objective_list.append_column(col)
 
     def _on_detail_changed(self, widget, quest, property_name):
         """Handles the changed signal from a detail entry."""
+        print(f"DEBUG: QuestEditor._on_detail_changed: {property_name}")
         new_value = widget.get_text()
         original_id = quest.id
-        self.project_manager.update_quest(
-            original_id, {property_name: new_value})
 
+        # Update the model before changing the ID property
+        if property_name == 'id':
+            self.project_manager.update_quest(original_id, {property_name: new_value})
+            quest.id = new_value
+        else:
+             setattr(quest, property_name, new_value)
+             self.project_manager.set_dirty()
+
+        # Refresh the main quest list view
         for i, item in enumerate(self.model):
-            if item.id == original_id:
-                setattr(item, property_name, new_value)
+            if item.quest == quest:
                 self.model.items_changed(i, 1, 1)
                 break
-        if property_name == 'id':
-            quest.id = new_value
 
     def _on_add_quest(self, button):
         """Handles the clicked signal from the add quest button."""
+        print("DEBUG: QuestEditor._on_add_quest")
         dialog = QuestEditorDialog(self.get_root(), self.project_manager)
         dialog.connect("response", self._on_add_quest_dialog_response)
         dialog.present()
 
     def _on_add_quest_dialog_response(self, dialog, response):
         """Handles the response from the add quest dialog."""
+        print(f"DEBUG: QuestEditor._on_add_quest_dialog_response: {response}")
         if response == "ok":
             new_quest = self.project_manager.add_quest(
                 id=dialog.id_entry.get_text(),
                 name=dialog.name_entry.get_text()
             )
             self.model.append(QuestGObject(new_quest))
-        dialog.destroy()
-
-    def _on_edit_quest(self, button):
-        """Handles the clicked signal from the edit quest button."""
-        selected_quest_gobject = self.selection.get_selected_item()
-        if selected_quest_gobject:
-            dialog = QuestEditorDialog(
-                self.get_root(), self.project_manager, quest=selected_quest_gobject.quest_data)
-            dialog.connect(
-                "response", self._on_edit_quest_dialog_response, selected_quest_gobject)
-            dialog.present()
-
-    def _on_edit_quest_dialog_response(self, dialog, response, quest_gobject):
-        """Handles the response from the edit quest dialog."""
-        if response == "ok":
-            quest_gobject.quest_data.id = dialog.id_entry.get_text()
-            quest_gobject.quest_data.name = dialog.name_entry.get_text()
-            self.project_manager.set_dirty(True)
-            pos = self.model.find(quest_gobject)[1]
-            if pos >= 0:
-                self.model.items_changed(pos, 1, 1)
+            self._update_visibility()
         dialog.destroy()
 
     def _on_delete_quest(self, button):
         """Handles the clicked signal from the delete quest button."""
+        print("DEBUG: QuestEditor._on_delete_quest")
         selected_quest_gobject = self.selection.get_selected_item()
         if selected_quest_gobject:
             dialog = Adw.MessageDialog(
@@ -397,15 +407,18 @@ class QuestEditor(Adw.Bin):
 
     def _on_delete_quest_dialog_response(self, dialog, response, quest_gobject):
         """Handles the response from the delete quest dialog."""
+        print(f"DEBUG: QuestEditor._on_delete_quest_dialog_response: {response}")
         if response == "delete":
             self.project_manager.remove_quest(quest_gobject.id)
-            pos = self.model.find(quest_gobject)[1]
-            if pos >= 0:
+            is_found, pos = self.model.find(quest_gobject)
+            if is_found:
                 self.model.remove(pos)
+            self._update_visibility()
         dialog.destroy()
 
     def _on_add_objective(self, button, quest):
         """Handles the clicked signal from the add objective button."""
+        print("DEBUG: QuestEditor._on_add_objective")
         dialog = ObjectiveEditorDialog(
             self.get_root(), self.project_manager, quest)
         dialog.connect(
@@ -414,38 +427,44 @@ class QuestEditor(Adw.Bin):
 
     def _on_add_objective_dialog_response(self, dialog, response, quest):
         """Handles the response from the add objective dialog."""
+        print(f"DEBUG: QuestEditor._on_add_objective_dialog_response: {response}")
         if response == "ok":
             new_objective = self.project_manager.add_objective_to_quest(
                 quest.id,
                 dialog.id_entry.get_text(),
                 dialog.name_entry.get_text()
             )
-            self.objective_model.append(ObjectiveGObject(new_objective))
+            if new_objective:
+                self.objective_model.append(ObjectiveGObject(new_objective))
         dialog.destroy()
 
     def _on_edit_objective(self, button, quest):
         """Handles the clicked signal from the edit objective button."""
+        print("DEBUG: QuestEditor._on_edit_objective")
         selected_objective_gobject = self.objective_selection.get_selected_item()
         if selected_objective_gobject:
             dialog = ObjectiveEditorDialog(
-                self.get_root(), self.project_manager, quest, objective=selected_objective_gobject.objective_data)
+                self.get_root(), self.project_manager, quest, objective=selected_objective_gobject.objective)
             dialog.connect(
                 "response", self._on_edit_objective_dialog_response, quest, selected_objective_gobject)
             dialog.present()
 
     def _on_edit_objective_dialog_response(self, dialog, response, quest, objective_gobject):
         """Handles the response from the edit objective dialog."""
+        print(f"DEBUG: QuestEditor._on_edit_objective_dialog_response: {response}")
         if response == "ok":
-            objective_gobject.objective_data.id = dialog.id_entry.get_text()
-            objective_gobject.objective_data.name = dialog.name_entry.get_text()
-            self.project_manager.set_dirty(True)
-            pos = self.objective_model.find(objective_gobject)[1]
-            if pos >= 0:
+            self.project_manager.update_objective(quest.id, objective_gobject.id, {
+                'id': dialog.id_entry.get_text(),
+                'name': dialog.name_entry.get_text()
+            })
+            is_found, pos = self.objective_model.find(objective_gobject)
+            if is_found:
                 self.objective_model.items_changed(pos, 1, 1)
         dialog.destroy()
 
     def _on_delete_objective(self, button, quest):
         """Handles the clicked signal from the delete objective button."""
+        print("DEBUG: QuestEditor._on_delete_objective")
         selected_objective_gobject = self.objective_selection.get_selected_item()
         if selected_objective_gobject:
             dialog = Adw.MessageDialog(
@@ -464,15 +483,18 @@ class QuestEditor(Adw.Bin):
 
     def _on_delete_objective_dialog_response(self, dialog, response, quest, objective_gobject):
         """Handles the response from the delete objective dialog."""
+        print(f"DEBUG: QuestEditor._on_delete_objective_dialog_response: {response}")
         if response == "delete":
             self.project_manager.remove_objective_from_quest(
                 quest.id, objective_gobject.id)
-            pos = self.objective_model.find(objective_gobject)[1]
-            if pos >= 0:
+            is_found, pos = self.objective_model.find(objective_gobject)
+            if is_found:
                 self.objective_model.remove(pos)
         dialog.destroy()
 
     def _clear_quest_details(self):
         """Clears the quest details panel."""
+        print("DEBUG: QuestEditor._clear_quest_details")
         while child := self.quest_details.get_first_child():
             self.quest_details.remove(child)
+        self.quest_details.append(self.status_page)

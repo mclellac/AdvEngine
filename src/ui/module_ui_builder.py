@@ -10,9 +10,11 @@ class UIBuilder(Adw.Bin):
     ORDER = 10
 
     def __init__(self, project_manager, **kwargs):
+        print("DEBUG: UIBuilder.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.active_layout = None
+        self.active_element = None
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         main_box.set_margin_top(10)
@@ -31,8 +33,8 @@ class UIBuilder(Adw.Bin):
         self.selection = Gtk.SingleSelection(model=self.model)
         self.layout_list.set_model(self.selection)
 
-        self._create_column("ID", Gtk.StringSorter(), lambda layout: layout.id)
-        self._create_column("Name", Gtk.StringSorter(), lambda layout: layout.name)
+        self._create_column("ID", lambda layout: layout.id)
+        self._create_column("Name", lambda layout: layout.name)
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.layout_list)
@@ -85,17 +87,19 @@ class UIBuilder(Adw.Bin):
 
     def _update_visibility(self):
         has_layouts = self.model.get_n_items() > 0
+        print(f"DEBUG: UIBuilder._update_visibility: has_layouts={has_layouts}")
         if has_layouts:
             self.main_stack.set_visible_child_name("list")
         else:
             self.main_stack.set_visible_child_name("status")
 
     def _on_canvas_click(self, gesture, n_press, x, y):
+        print(f"DEBUG: UIBuilder._on_canvas_click at ({x}, {y})")
         if not self.active_layout:
             return
 
         element_clicked = None
-        for element in self.active_layout.elements:
+        for element in self.active_layout.layout.elements:
             if x >= element.x and x <= element.x + element.width and y >= element.y and y <= element.y + element.height:
                 element_clicked = element
                 break
@@ -103,15 +107,16 @@ class UIBuilder(Adw.Bin):
         self.active_element = element_clicked
         self._populate_properties_editor(self.active_element)
 
-    def _create_column(self, title, sorter, expression_func):
+    def _create_column(self, title, expression_func):
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
         factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
 
-        col = Gtk.ColumnViewColumn(title=title, factory=factory, sorter=sorter)
+        col = Gtk.ColumnViewColumn(title=title, factory=factory)
         self.layout_list.append_column(col)
 
     def _on_layout_selected(self, selection, _):
+        print("DEBUG: UIBuilder._on_layout_selected")
         selected_layout = selection.get_selected_item()
         if selected_layout:
             self.active_layout = selected_layout
@@ -119,12 +124,13 @@ class UIBuilder(Adw.Bin):
         else:
             self.active_layout = None
             self.canvas.queue_draw()
+        self._clear_properties_editor()
 
     def on_canvas_draw(self, drawing_area, cr, width, height, data):
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
         if self.active_layout:
-            for element in self.active_layout.elements:
+            for element in self.active_layout.layout.elements:
                 self._draw_element(cr, element)
 
     def _draw_element(self, cr, element):
@@ -136,11 +142,13 @@ class UIBuilder(Adw.Bin):
         cr.show_text(f"{element.type}: {element.id}")
 
     def _on_add_layout(self, button):
-        # You would typically open a dialog here to get the new layout's details
+        print("DEBUG: UIBuilder._on_add_layout")
         new_layout = self.project_manager.add_ui_layout(id=f"layout_{len(self.model) + 1}", name="New Layout")
-        self.model.append(new_layout)
+        self.model.append(UILayoutGObject(new_layout))
+        self._update_visibility()
 
     def _on_delete_layout(self, button):
+        print("DEBUG: UIBuilder._on_delete_layout")
         selected_layout = self.selection.get_selected_item()
         if selected_layout:
             self.project_manager.remove_ui_layout(selected_layout.id)
@@ -148,14 +156,16 @@ class UIBuilder(Adw.Bin):
                 if item.id == selected_layout.id:
                     self.model.remove(i)
                     break
+            self._update_visibility()
 
     def _on_add_element(self, button):
+        print("DEBUG: UIBuilder._on_add_element")
         if self.active_layout:
-            # You would typically open a dialog here to get the new element's details
-            new_element = self.project_manager.add_element_to_layout(self.active_layout.id, f"elem_{len(self.active_layout.elements) + 1}", "Button", 10, 10, 100, 30)
+            new_element = self.project_manager.add_element_to_layout(self.active_layout.id, f"elem_{len(self.active_layout.layout.elements) + 1}", "Button", 10, 10, 100, 30)
             self.canvas.queue_draw()
 
     def _on_delete_element(self, button):
+        print("DEBUG: UIBuilder._on_delete_element")
         if self.active_layout and self.active_element:
             self.project_manager.remove_element_from_layout(self.active_layout.id, self.active_element.id)
             self.active_element = None
@@ -163,7 +173,8 @@ class UIBuilder(Adw.Bin):
             self._clear_properties_editor()
 
     def _clear_properties_editor(self):
-        for child in self.properties_editor.observe_children():
+        print("DEBUG: UIBuilder._clear_properties_editor")
+        while child := self.properties_editor.get_first_child():
             self.properties_editor.remove(child)
 
     def _populate_properties_editor(self, element):
@@ -171,6 +182,7 @@ class UIBuilder(Adw.Bin):
         if not element:
             return
 
+        print(f"DEBUG: UIBuilder._populate_properties_editor for element: {element.id}")
         grid = Gtk.Grid(column_spacing=10, row_spacing=10)
         self.properties_editor.append(grid)
 
@@ -205,6 +217,7 @@ class UIBuilder(Adw.Bin):
         grid.attach(height_spin, 1, 5, 1, 1)
 
     def _on_element_detail_changed(self, widget, element, property_name):
+        print(f"DEBUG: UIBuilder._on_element_detail_changed: {property_name}")
         if isinstance(widget, Gtk.Entry):
             new_value = widget.get_text()
         elif isinstance(widget, Gtk.SpinButton):
@@ -212,9 +225,6 @@ class UIBuilder(Adw.Bin):
         else:
             return
 
-        original_id = element.id
-        self.project_manager.update_element(self.active_layout.id, original_id, {property_name: new_value})
-        if property_name == 'id':
-            element.id = new_value
-
+        setattr(element, property_name, new_value)
+        self.project_manager.set_dirty(True)
         self.canvas.queue_draw()

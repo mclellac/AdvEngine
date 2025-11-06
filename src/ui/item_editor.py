@@ -16,6 +16,9 @@ class ItemEditor(Adw.Bin):
     deleting in-game items. It includes features for searching and sorting.
     """
     __gtype_name__ = "ItemEditor"
+    EDITOR_NAME = "Items"
+    VIEW_NAME = "item_editor"
+    ORDER = 1
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
         """Initializes a new ItemEditor instance.
@@ -23,6 +26,7 @@ class ItemEditor(Adw.Bin):
         Args:
             project_manager: The project manager instance.
         """
+        print("DEBUG: ItemEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
@@ -38,6 +42,7 @@ class ItemEditor(Adw.Bin):
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        print("DEBUG: ItemEditor._build_ui")
         root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         self.content_clamp = Adw.Clamp()
@@ -84,6 +89,7 @@ class ItemEditor(Adw.Bin):
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
+        print("DEBUG: ItemEditor._setup_model")
         model = Gio.ListStore(item_type=ItemGObject)
         for item in self.project_manager.data.items:
             model.append(ItemGObject(item))
@@ -92,6 +98,7 @@ class ItemEditor(Adw.Bin):
 
     def _setup_filter_model(self):
         """Sets up the filter model for the editor."""
+        print("DEBUG: ItemEditor._setup_filter_model")
         filter_model = Gtk.FilterListModel(model=self.model)
         self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         filter_model.set_filter(self.filter)
@@ -99,12 +106,14 @@ class ItemEditor(Adw.Bin):
 
     def _setup_selection_model(self):
         """Sets up the selection model for the editor."""
+        print("DEBUG: ItemEditor._setup_selection_model")
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
 
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
+        print("DEBUG: ItemEditor._setup_column_view")
         column_view = Gtk.ColumnView()
         columns_def = {
             "id": {"title": "ID", "expand": True, "type": "text"},
@@ -172,6 +181,7 @@ class ItemEditor(Adw.Bin):
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
+        print(f"DEBUG: ItemEditor._on_search_changed: {search_entry.get_text()}")
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
@@ -186,11 +196,13 @@ class ItemEditor(Adw.Bin):
     def _update_visibility(self, *args):
         """Updates the visibility of the main content and empty state."""
         has_items = self.model.get_n_items() > 0
+        print(f"DEBUG: ItemEditor._update_visibility: has_items={has_items}")
         self.content_clamp.set_visible(has_items)
         self.empty_state.set_visible(not has_items)
 
     def _on_add_clicked(self, button):
         """Handles the clicked signal from the add button."""
+        print("DEBUG: ItemEditor._on_add_clicked")
         new_id_base = "new_item"
         new_id = new_id_base
         count = 1
@@ -211,6 +223,7 @@ class ItemEditor(Adw.Bin):
 
     def _on_delete_clicked(self, button):
         """Handles the clicked signal from the delete button."""
+        print("DEBUG: ItemEditor._on_delete_clicked")
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -231,6 +244,7 @@ class ItemEditor(Adw.Bin):
 
     def _on_delete_dialog_response(self, dialog, response, item_gobject):
         """Handles the response from the delete confirmation dialog."""
+        print(f"DEBUG: ItemEditor._on_delete_dialog_response: response={response}")
         if response == "delete":
             if self.project_manager.remove_item(item_gobject.item):
                 is_found, pos = self.model.find(item_gobject)
@@ -241,4 +255,5 @@ class ItemEditor(Adw.Bin):
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
+        print(f"DEBUG: ItemEditor._on_selection_changed: is_selected={is_selected}")
         self.delete_button.set_sensitive(is_selected)
