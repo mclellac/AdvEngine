@@ -47,6 +47,7 @@ class DialogueEditor(Adw.Bin):
         Args:
             project_manager: The project manager instance.
         """
+        print("DEBUG: DialogueEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.active_graph = None
@@ -58,6 +59,7 @@ class DialogueEditor(Adw.Bin):
 
     def _build_ui(self):
         """Builds the user interface for the editor."""
+        print("DEBUG: DialogueEditor._build_ui")
         root_box = Gtk.Box()
         paned = Adw.OverlaySplitView()
         paned.set_sidebar(self._create_tree_panel())
@@ -67,6 +69,7 @@ class DialogueEditor(Adw.Bin):
 
     def _create_tree_panel(self):
         """Creates the panel with the dialogue tree."""
+        print("DEBUG: DialogueEditor._create_tree_panel")
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
 
         toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -106,6 +109,7 @@ class DialogueEditor(Adw.Bin):
 
     def _create_properties_panel(self):
         """Creates the panel for editing the properties of the selected node."""
+        print("DEBUG: DialogueEditor._create_properties_panel")
         self.properties_stack = Gtk.Stack()
         self.properties_stack.set_transition_type(
             Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -159,6 +163,7 @@ class DialogueEditor(Adw.Bin):
 
     def _load_dialogue_graphs(self):
         """Loads the dialogue graphs from the project manager."""
+        print("DEBUG: DialogueEditor._load_dialogue_graphs")
         self.model.remove_all()
         if self.project_manager.data.dialogue_graphs:
             self.active_graph = self.project_manager.data.dialogue_graphs[0]
@@ -174,6 +179,7 @@ class DialogueEditor(Adw.Bin):
 
     def _on_add_dialogue_node(self, button):
         """Handles the clicked signal from the add dialogue button."""
+        print("DEBUG: DialogueEditor._on_add_dialogue_node")
         if not self.active_graph:
             return
 
@@ -192,10 +198,13 @@ class DialogueEditor(Adw.Bin):
             self.model.append(DialogueNodeGObject(new_node))
 
         self.project_manager.set_dirty()
-        self._load_dialogue_graphs()
+        # A bit of a hack to force the tree to update
+        self.tree_model.set_model(Gio.ListStore(item_type=DialogueNodeGObject))
+        self.tree_model.set_model(self.model)
 
     def _on_add_action_node(self, button):
         """Handles the clicked signal from the add action button."""
+        print("DEBUG: DialogueEditor._on_add_action_node")
         if not self.active_graph:
             return
 
@@ -216,10 +225,13 @@ class DialogueEditor(Adw.Bin):
 
         self.active_graph.nodes.append(new_node)
         self.project_manager.set_dirty()
-        self._load_dialogue_graphs()
+        # A bit of a hack to force the tree to update
+        self.tree_model.set_model(Gio.ListStore(item_type=DialogueNodeGObject))
+        self.tree_model.set_model(self.model)
 
     def _on_delete_node(self, button):
         """Handles the clicked signal from the delete button."""
+        print("DEBUG: DialogueEditor._on_delete_node")
         selected_item = self.selection.get_selected_item()
         if not selected_item or not self.active_graph:
             return
@@ -227,12 +239,17 @@ class DialogueEditor(Adw.Bin):
         node_to_delete = selected_item.get_item().node
         self.active_graph.nodes.remove(node_to_delete)
 
-        self._load_dialogue_graphs()
+        # Also remove from parent outputs
+        for node in self.active_graph.nodes:
+            if node_to_delete.id in node.outputs:
+                node.outputs.remove(node_to_delete.id)
 
+        self._load_dialogue_graphs()
         self.project_manager.set_dirty()
 
     def _on_selection_changed(self, selection, position, n_items):
         """Handles the selection-changed signal from the selection model."""
+        print("DEBUG: DialogueEditor._on_selection_changed")
         selected_item = selection.get_selected_item()
         if selected_item:
             self.delete_button.set_sensitive(True)
@@ -245,6 +262,7 @@ class DialogueEditor(Adw.Bin):
 
     def _on_node_updated(self):
         """Handles the node-updated signal from the dynamic node editor."""
+        print("DEBUG: DialogueEditor._on_node_updated")
         selected_item = self.selection.get_selected_item()
         if selected_item:
             node_gobject = selected_item.get_item()
@@ -253,4 +271,7 @@ class DialogueEditor(Adw.Bin):
                 node_gobject.display_text = f"{node.character_id}: {node.dialogue_text[:30]}..."
             elif isinstance(node, ActionNode):
                 node_gobject.display_text = f"-> ACTION: {node.action_command}"
-        self._load_dialogue_graphs()
+
+        # A bit of a hack to force the tree to update
+        self.tree_model.set_model(Gio.ListStore(item_type=DialogueNodeGObject))
+        self.tree_model.set_model(self.model)
