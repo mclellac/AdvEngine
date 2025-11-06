@@ -5,7 +5,7 @@ The Audio Editor is used to manage all the sound files for your project, includi
 ## 1. Purpose
 
 -   **Import Audio Files**: Provides an interface for importing audio files (e.g., `.mp3`, `.wav`, `.ogg`) into the project.
--   **Organize Audio**: Assigns a unique ID to each imported audio file, which can be used to trigger them from logic graphs or cutscenes.
+-   **Organize Audio**: Assigns a unique ID to each imported audio file, which can be used to trigger them from logic graphs.
 -   **Preview Audio**: Includes an embedded media player to listen to imported audio files directly within the editor.
 
 ## 2. Interface Overview
@@ -52,7 +52,7 @@ When you select an audio file from the list, the preview panel at the bottom of 
 
 ### B. Triggering the Sound Effect in the Game
 
-To play this sound effect, you would use an `ActionNode` in a `LogicGraph` (or a command in a cutscene).
+To play this sound effect, you would use an `ActionNode` in a `LogicGraph`.
 
 -   **Example**: In your `unlock_door_logic` graph, you would add an `ActionNode` with the following properties:
     -   **Command**: `PLAY_SFX`
