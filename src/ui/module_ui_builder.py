@@ -4,20 +4,22 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw
 from ..core.data_schemas import UILayout, UIElement, UILayoutGObject
 
-class UIBuilder(Gtk.Box):
+class UIBuilder(Adw.Bin):
     EDITOR_NAME = "UI Builder"
     VIEW_NAME = "ui_builder"
     ORDER = 10
 
-    def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+    def __init__(self, project_manager, **kwargs):
+        super().__init__(**kwargs)
         self.project_manager = project_manager
         self.active_layout = None
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        main_box.set_margin_top(10)
+        main_box.set_margin_bottom(10)
+        main_box.set_margin_start(10)
+        main_box.set_margin_end(10)
+        self.set_child(main_box)
 
         # UI Layout List
         self.layout_list = Gtk.ColumnView()
@@ -40,19 +42,19 @@ class UIBuilder(Gtk.Box):
         self.main_stack = Gtk.Stack()
         self.main_stack.add_named(scrolled_window, "list")
         self.main_stack.add_named(self.status_page, "status")
-        self.append(self.main_stack)
+        main_box.append(self.main_stack)
 
         # UI Canvas
         self.canvas = Gtk.DrawingArea()
         self.canvas.set_hexpand(True)
         self.canvas.set_vexpand(True)
         self.canvas.set_draw_func(self.on_canvas_draw, None)
-        self.append(self.canvas)
+        main_box.append(self.canvas)
 
         # Properties Editor
         self.properties_editor = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.properties_editor.set_size_request(200, -1)
-        self.append(self.properties_editor)
+        main_box.append(self.properties_editor)
 
         self.selection.connect("selection-changed", self._on_layout_selected)
         self._on_layout_selected(self.selection, None)
@@ -77,7 +79,7 @@ class UIBuilder(Gtk.Box):
         delete_element_button = Gtk.Button(label="Delete Element")
         delete_element_button.connect("clicked", self._on_delete_element)
         button_box.append(delete_element_button)
-        self.append(button_box)
+        main_box.append(button_box)
 
         self._update_visibility()
 

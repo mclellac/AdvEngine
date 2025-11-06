@@ -1,12 +1,18 @@
+"""The quest editor for the AdvEngine application."""
+
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, Adw, Gdk
+from gi.repository import Gtk, Gio, Adw, GObject
 from ..core.data_schemas import Quest, QuestGObject, Objective, ObjectiveGObject
 
+
 class QuestEditorDialog(Adw.MessageDialog):
-    def __init__(self, parent, project_manager, quest=None):
-        super().__init__(transient_for=parent, modal=True)
+    """A dialog for adding and editing quests."""
+
+    def __init__(self, parent, project_manager, quest=None, **kwargs):
+        """Initializes a new QuestEditorDialog instance."""
+        super().__init__(transient_for=parent, modal=True, **kwargs)
         self.set_heading("Add New Quest" if quest is None else "Edit Quest")
         self.project_manager = project_manager
         self.quest = quest
@@ -22,12 +28,15 @@ class QuestEditorDialog(Adw.MessageDialog):
         content.append(group)
 
         self.id_entry = Gtk.Entry(text=quest.id if quest else "")
-        self.id_entry.set_tooltip_text("A unique string identifier for the quest (e.g., 'main_quest_01').")
-        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
+        self.id_entry.set_tooltip_text(
+            "A unique string identifier for the quest (e.g., 'main_quest_01').")
+        group.add(self._create_action_row(
+            "ID", "Unique string identifier", self.id_entry))
 
         self.name_entry = Gtk.Entry(text=quest.name if quest else "")
         self.name_entry.set_tooltip_text("The in-game name of the quest.")
-        group.add(self._create_action_row("Name", "In-game display name", self.name_entry))
+        group.add(self._create_action_row(
+            "Name", "In-game display name", self.name_entry))
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
@@ -39,10 +48,12 @@ class QuestEditorDialog(Adw.MessageDialog):
         self._validate(None)
 
     def _validate(self, entry):
+        """Validates the input fields."""
         is_valid = True
         id_text = self.id_entry.get_text()
         is_new_quest = self.quest is None
-        id_is_duplicate = any(q.id == id_text for q in self.project_manager.data.quests if (is_new_quest or q.id != self.quest.id))
+        id_is_duplicate = any(q.id == id_text for q in self.project_manager.data.quests if (
+            is_new_quest or q.id != self.quest.id))
 
         if not id_text or id_is_duplicate:
             if not id_text:
@@ -62,15 +73,21 @@ class QuestEditorDialog(Adw.MessageDialog):
         self.set_response_enabled("ok", is_valid)
 
     def _create_action_row(self, title, subtitle, widget):
+        """Creates an Adw.ActionRow."""
         row = Adw.ActionRow(title=title, subtitle=subtitle)
         row.add_suffix(widget)
         row.set_activatable_widget(widget)
         return row
 
+
 class ObjectiveEditorDialog(Adw.MessageDialog):
-    def __init__(self, parent, project_manager, quest, objective=None):
-        super().__init__(transient_for=parent, modal=True)
-        self.set_heading("Add New Objective" if objective is None else "Edit Objective")
+    """A dialog for adding and editing objectives."""
+
+    def __init__(self, parent, project_manager, quest, objective=None, **kwargs):
+        """Initializes a new ObjectiveEditorDialog instance."""
+        super().__init__(transient_for=parent, modal=True, **kwargs)
+        self.set_heading(
+            "Add New Objective" if objective is None else "Edit Objective")
         self.project_manager = project_manager
         self.quest = quest
         self.objective = objective
@@ -86,12 +103,15 @@ class ObjectiveEditorDialog(Adw.MessageDialog):
         content.append(group)
 
         self.id_entry = Gtk.Entry(text=objective.id if objective else "")
-        self.id_entry.set_tooltip_text("A unique string identifier for the objective (e.g., 'obj_01').")
-        group.add(self._create_action_row("ID", "Unique string identifier", self.id_entry))
+        self.id_entry.set_tooltip_text(
+            "A unique string identifier for the objective (e.g., 'obj_01').")
+        group.add(self._create_action_row(
+            "ID", "Unique string identifier", self.id_entry))
 
         self.name_entry = Gtk.Entry(text=objective.name if objective else "")
         self.name_entry.set_tooltip_text("The in-game name of the objective.")
-        group.add(self._create_action_row("Name", "In-game display name", self.name_entry))
+        group.add(self._create_action_row(
+            "Name", "In-game display name", self.name_entry))
 
         self.add_response("cancel", "_Cancel")
         self.add_response("ok", "_OK")
@@ -103,10 +123,12 @@ class ObjectiveEditorDialog(Adw.MessageDialog):
         self._validate(None)
 
     def _validate(self, entry):
+        """Validates the input fields."""
         is_valid = True
         id_text = self.id_entry.get_text()
         is_new_objective = self.objective is None
-        id_is_duplicate = any(obj.id == id_text for obj in self.quest.objectives if (is_new_objective or obj.id != self.objective.id))
+        id_is_duplicate = any(obj.id == id_text for obj in self.quest.objectives if (
+            is_new_objective or obj.id != self.objective.id))
 
         if not id_text or id_is_duplicate:
             if not id_text:
@@ -126,77 +148,112 @@ class ObjectiveEditorDialog(Adw.MessageDialog):
         self.set_response_enabled("ok", is_valid)
 
     def _create_action_row(self, title, subtitle, widget):
+        """Creates an Adw.ActionRow."""
         row = Adw.ActionRow(title=title, subtitle=subtitle)
         row.add_suffix(widget)
         row.set_activatable_widget(widget)
         return row
 
-class QuestEditor(Gtk.Box):
+
+class QuestEditor(Adw.Bin):
+    """A widget for editing quests.
+
+    This editor provides a list of quests and a detail view for editing the
+    selected quest's properties and objectives.
+    """
     EDITOR_NAME = "Quests"
     VIEW_NAME = "quest_editor"
     ORDER = 9
 
-    def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+    def __init__(self, project_manager, **kwargs):
+        """Initializes a new QuestEditor instance.
+
+        Args:
+            project_manager: The project manager instance.
+        """
+        super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+        self.main_box = self._build_ui()
+        self.set_child(self.main_box)
 
-        # Quest List
-        self.quest_list = Gtk.ColumnView()
-        self.quest_list.set_vexpand(True)
+        self._update_visibility()
+
+    def _build_ui(self):
+        """Builds the user interface for the editor."""
+        paned = Adw.OverlaySplitView()
+        paned.set_sidebar(self._create_quest_list_panel())
+        paned.set_content(self._create_quest_details_panel())
+        return paned
+
+    def _create_quest_list_panel(self):
+        """Creates the panel with the list of quests."""
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        header = Adw.HeaderBar()
+        panel.append(header)
+
+        add_button = Gtk.Button(icon_name="list-add-symbolic")
+        add_button.connect("clicked", self._on_add_quest)
+        header.pack_start(add_button)
+
+        self.delete_quest_button = Gtk.Button(icon_name="edit-delete-symbolic")
+        self.delete_quest_button.set_sensitive(False)
+        self.delete_quest_button.connect("clicked", self._on_delete_quest)
+        header.pack_end(self.delete_quest_button)
+
         self.model = Gio.ListStore(item_type=QuestGObject)
         for quest in self.project_manager.data.quests:
             self.model.append(QuestGObject(quest))
 
         self.selection = Gtk.SingleSelection(model=self.model)
-        self.quest_list.set_model(self.selection)
-
-        self._create_column("ID", Gtk.StringSorter(), lambda quest: quest.id)
-        self._create_column("Name", Gtk.StringSorter(), lambda quest: quest.name)
-
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_child(self.quest_list)
-        self.append(scrolled_window)
-
-        # Quest Details
-        self.quest_details = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.quest_details.set_hexpand(True)
-        self.append(self.quest_details)
-
         self.selection.connect("selection-changed", self._on_quest_selected)
 
-        self.status_page = Adw.StatusPage(title="No Quests", icon_name="dialog-question-symbolic")
-        self.append(self.status_page)
+        factory = Gtk.SignalListItemFactory()
+        factory.connect(
+            "setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        factory.connect(
+            "bind", lambda _, list_item: list_item.get_child().set_label(list_item.get_item().name))
 
-        self._on_quest_selected(self.selection, None)
-        self._update_visibility()
+        self.quest_list_view = Gtk.ListView(
+            model=self.selection, factory=factory)
+
+        scrolled = Gtk.ScrolledWindow(child=self.quest_list_view)
+        scrolled.set_vexpand(True)
+        panel.append(scrolled)
+        return panel
+
+    def _create_quest_details_panel(self):
+        """Creates the panel for editing the quest details."""
+        self.quest_details = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.quest_details.set_margin_top(10)
+        self.quest_details.set_margin_bottom(10)
+        self.quest_details.set_margin_start(10)
+        self.quest_details.set_margin_end(10)
+
+        self.status_page = Adw.StatusPage(
+            title="No Quest Selected", icon_name="dialog-question-symbolic")
+        self.quest_details.append(self.status_page)
+
+        return self.quest_details
 
     def _update_visibility(self):
+        """Updates the visibility of the quest list and status page."""
         has_quests = self.model.get_n_items() > 0
-        self.quest_list.get_parent().set_visible(has_quests) # The scrolled window
-        self.quest_details.set_visible(has_quests)
+        self.quest_list_view.get_parent().set_visible(has_quests)
         self.status_page.set_visible(not has_quests)
 
-    def _create_column(self, title, sorter, expression_func):
-        factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
-        factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
-
-        col = Gtk.ColumnViewColumn(title=title, factory=factory, sorter=sorter)
-        self.quest_list.append_column(col)
-
     def _on_quest_selected(self, selection, _):
+        """Handles the selection-changed signal from the quest list."""
         selected_quest_gobject = selection.get_selected_item()
+        self.delete_quest_button.set_sensitive(selected_quest_gobject is not None)
         if selected_quest_gobject:
             self._display_quest_details(selected_quest_gobject.quest_data)
         else:
             self._clear_quest_details()
 
     def _display_quest_details(self, quest):
+        """Displays the details of the selected quest."""
         self._clear_quest_details()
 
         if not quest:
@@ -215,68 +272,65 @@ class QuestEditor(Gtk.Box):
         name_entry.connect("changed", self._on_detail_changed, quest, "name")
         grid.attach(name_entry, 1, 1, 1, 1)
 
-        # Objectives List
-        self.objective_list = Gtk.ColumnView()
-        self.objective_list.set_vexpand(True)
+        self.objective_list = self._setup_objective_list(quest)
+        scrolled_window = Gtk.ScrolledWindow(child=self.objective_list)
+        self.quest_details.append(scrolled_window)
+
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.quest_details.append(button_box)
+
+        add_obj_button = Gtk.Button(label="Add Objective")
+        add_obj_button.connect("clicked", self._on_add_objective, quest)
+        button_box.append(add_obj_button)
+
+        edit_obj_button = Gtk.Button(label="Edit Objective")
+        edit_obj_button.connect("clicked", self._on_edit_objective, quest)
+        button_box.append(edit_obj_button)
+
+        edit_quest_button = Gtk.Button(label="Edit Quest")
+        edit_quest_button.connect("clicked", self._on_edit_quest)
+        button_box.append(edit_quest_button)
+
+        delete_obj_button = Gtk.Button(label="Delete Objective")
+        delete_obj_button.connect("clicked", self._on_delete_objective, quest)
+        button_box.append(delete_obj_button)
+
+    def _setup_objective_list(self, quest):
+        """Sets up the list of objectives for the selected quest."""
+        objective_list = Gtk.ColumnView()
+        objective_list.set_vexpand(True)
         self.objective_model = Gio.ListStore(item_type=ObjectiveGObject)
         for objective in quest.objectives:
             self.objective_model.append(ObjectiveGObject(objective))
 
-        self.objective_selection = Gtk.SingleSelection(model=self.objective_model)
-        self.objective_list.set_model(self.objective_selection)
+        self.objective_selection = Gtk.SingleSelection(
+            model=self.objective_model)
+        objective_list.set_model(self.objective_selection)
 
-        self._create_objective_column("ID", Gtk.StringSorter(), lambda obj: obj.id)
-        self._create_objective_column("Name", Gtk.StringSorter(), lambda obj: obj.name)
+        self._create_objective_column(objective_list, "ID", Gtk.StringSorter(
+        ), lambda obj: obj.id)
+        self._create_objective_column(objective_list, "Name", Gtk.StringSorter(
+        ), lambda obj: obj.name)
 
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_child(self.objective_list)
-        self.quest_details.append(scrolled_window)
+        return objective_list
 
-        # Add and Delete buttons
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        add_button = Gtk.Button(label="Add Quest")
-        add_button.connect("clicked", self._on_add_quest)
-        button_box.append(add_button)
-
-        edit_button = Gtk.Button(label="Edit Quest")
-        edit_button.connect("clicked", self._on_edit_quest)
-        button_box.append(edit_button)
-
-        delete_button = Gtk.Button(label="Delete Quest")
-        delete_button.connect("clicked", self._on_delete_quest)
-        button_box.append(delete_button)
-        self.quest_details.append(button_box)
-
-        obj_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        add_obj_button = Gtk.Button(label="Add Objective")
-        add_obj_button.connect("clicked", self._on_add_objective, quest)
-        obj_button_box.append(add_obj_button)
-
-        edit_obj_button = Gtk.Button(label="Edit Objective")
-        edit_obj_button.connect("clicked", self._on_edit_objective, quest)
-        obj_button_box.append(edit_obj_button)
-
-        delete_obj_button = Gtk.Button(label="Delete Objective")
-        delete_obj_button.connect("clicked", self._on_delete_objective, quest)
-        obj_button_box.append(delete_obj_button)
-        self.quest_details.append(obj_button_box)
-
-    def _create_objective_column(self, title, sorter, expression_func):
+    def _create_objective_column(self, objective_list, title, sorter, expression_func):
+        """Creates a column for the objective list."""
         factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
-        factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
+        factory.connect(
+            "setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        factory.connect(
+            "bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
 
         col = Gtk.ColumnViewColumn(title=title, factory=factory, sorter=sorter)
-        self.objective_list.append_column(col)
+        objective_list.append_column(col)
 
     def _on_detail_changed(self, widget, quest, property_name):
-        if isinstance(widget, Gtk.Entry):
-            new_value = widget.get_text()
-        else:
-            return
-
+        """Handles the changed signal from a detail entry."""
+        new_value = widget.get_text()
         original_id = quest.id
-        self.project_manager.update_quest(original_id, {property_name: new_value})
+        self.project_manager.update_quest(
+            original_id, {property_name: new_value})
 
         for i, item in enumerate(self.model):
             if item.id == original_id:
@@ -287,11 +341,13 @@ class QuestEditor(Gtk.Box):
             quest.id = new_value
 
     def _on_add_quest(self, button):
+        """Handles the clicked signal from the add quest button."""
         dialog = QuestEditorDialog(self.get_root(), self.project_manager)
         dialog.connect("response", self._on_add_quest_dialog_response)
         dialog.present()
 
     def _on_add_quest_dialog_response(self, dialog, response):
+        """Handles the response from the add quest dialog."""
         if response == "ok":
             new_quest = self.project_manager.add_quest(
                 id=dialog.id_entry.get_text(),
@@ -301,13 +357,17 @@ class QuestEditor(Gtk.Box):
         dialog.destroy()
 
     def _on_edit_quest(self, button):
+        """Handles the clicked signal from the edit quest button."""
         selected_quest_gobject = self.selection.get_selected_item()
         if selected_quest_gobject:
-            dialog = QuestEditorDialog(self.get_root(), self.project_manager, quest=selected_quest_gobject.quest_data)
-            dialog.connect("response", self._on_edit_quest_dialog_response, selected_quest_gobject)
+            dialog = QuestEditorDialog(
+                self.get_root(), self.project_manager, quest=selected_quest_gobject.quest_data)
+            dialog.connect(
+                "response", self._on_edit_quest_dialog_response, selected_quest_gobject)
             dialog.present()
 
     def _on_edit_quest_dialog_response(self, dialog, response, quest_gobject):
+        """Handles the response from the edit quest dialog."""
         if response == "ok":
             quest_gobject.quest_data.id = dialog.id_entry.get_text()
             quest_gobject.quest_data.name = dialog.name_entry.get_text()
@@ -318,6 +378,7 @@ class QuestEditor(Gtk.Box):
         dialog.destroy()
 
     def _on_delete_quest(self, button):
+        """Handles the clicked signal from the delete quest button."""
         selected_quest_gobject = self.selection.get_selected_item()
         if selected_quest_gobject:
             dialog = Adw.MessageDialog(
@@ -328,11 +389,14 @@ class QuestEditor(Gtk.Box):
             )
             dialog.add_response("cancel", "_Cancel")
             dialog.add_response("delete", "_Delete")
-            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-            dialog.connect("response", self._on_delete_quest_dialog_response, selected_quest_gobject)
+            dialog.set_response_appearance(
+                "delete", Adw.ResponseAppearance.DESTRUCTIVE)
+            dialog.connect(
+                "response", self._on_delete_quest_dialog_response, selected_quest_gobject)
             dialog.present()
 
     def _on_delete_quest_dialog_response(self, dialog, response, quest_gobject):
+        """Handles the response from the delete quest dialog."""
         if response == "delete":
             self.project_manager.remove_quest(quest_gobject.id)
             pos = self.model.find(quest_gobject)[1]
@@ -341,11 +405,15 @@ class QuestEditor(Gtk.Box):
         dialog.destroy()
 
     def _on_add_objective(self, button, quest):
-        dialog = ObjectiveEditorDialog(self.get_root(), self.project_manager, quest)
-        dialog.connect("response", self._on_add_objective_dialog_response, quest)
+        """Handles the clicked signal from the add objective button."""
+        dialog = ObjectiveEditorDialog(
+            self.get_root(), self.project_manager, quest)
+        dialog.connect(
+            "response", self._on_add_objective_dialog_response, quest)
         dialog.present()
 
     def _on_add_objective_dialog_response(self, dialog, response, quest):
+        """Handles the response from the add objective dialog."""
         if response == "ok":
             new_objective = self.project_manager.add_objective_to_quest(
                 quest.id,
@@ -356,13 +424,17 @@ class QuestEditor(Gtk.Box):
         dialog.destroy()
 
     def _on_edit_objective(self, button, quest):
+        """Handles the clicked signal from the edit objective button."""
         selected_objective_gobject = self.objective_selection.get_selected_item()
         if selected_objective_gobject:
-            dialog = ObjectiveEditorDialog(self.get_root(), self.project_manager, quest, objective=selected_objective_gobject.objective_data)
-            dialog.connect("response", self._on_edit_objective_dialog_response, quest, selected_objective_gobject)
+            dialog = ObjectiveEditorDialog(
+                self.get_root(), self.project_manager, quest, objective=selected_objective_gobject.objective_data)
+            dialog.connect(
+                "response", self._on_edit_objective_dialog_response, quest, selected_objective_gobject)
             dialog.present()
 
     def _on_edit_objective_dialog_response(self, dialog, response, quest, objective_gobject):
+        """Handles the response from the edit objective dialog."""
         if response == "ok":
             objective_gobject.objective_data.id = dialog.id_entry.get_text()
             objective_gobject.objective_data.name = dialog.name_entry.get_text()
@@ -373,6 +445,7 @@ class QuestEditor(Gtk.Box):
         dialog.destroy()
 
     def _on_delete_objective(self, button, quest):
+        """Handles the clicked signal from the delete objective button."""
         selected_objective_gobject = self.objective_selection.get_selected_item()
         if selected_objective_gobject:
             dialog = Adw.MessageDialog(
@@ -383,18 +456,23 @@ class QuestEditor(Gtk.Box):
             )
             dialog.add_response("cancel", "_Cancel")
             dialog.add_response("delete", "_Delete")
-            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-            dialog.connect("response", self._on_delete_objective_dialog_response, quest, selected_objective_gobject)
+            dialog.set_response_appearance(
+                "delete", Adw.ResponseAppearance.DESTRUCTIVE)
+            dialog.connect(
+                "response", self._on_delete_objective_dialog_response, quest, selected_objective_gobject)
             dialog.present()
 
     def _on_delete_objective_dialog_response(self, dialog, response, quest, objective_gobject):
+        """Handles the response from the delete objective dialog."""
         if response == "delete":
-            self.project_manager.remove_objective_from_quest(quest.id, objective_gobject.id)
+            self.project_manager.remove_objective_from_quest(
+                quest.id, objective_gobject.id)
             pos = self.objective_model.find(objective_gobject)[1]
             if pos >= 0:
                 self.objective_model.remove(pos)
         dialog.destroy()
 
     def _clear_quest_details(self):
+        """Clears the quest details panel."""
         while child := self.quest_details.get_first_child():
             self.quest_details.remove(child)

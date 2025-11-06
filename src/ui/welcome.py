@@ -1,10 +1,20 @@
+"""The welcome window for the AdvEngine application."""
+
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
+
 class WelcomeWindow(Adw.ApplicationWindow):
+    """The main welcome window for the application.
+
+    This window is displayed on startup and provides options to create a new
+    project, open an existing project, or open a recent project.
+    """
+
     def __init__(self, **kwargs):
+        """Initializes a new WelcomeWindow instance."""
         super().__init__(**kwargs)
         self.set_default_size(600, 400)
         self.set_title("AdvEngine - Welcome")
@@ -18,7 +28,10 @@ class WelcomeWindow(Adw.ApplicationWindow):
 
 
 class WelcomeWidget(Adw.Bin):
+    """The main widget for the WelcomeWindow."""
+
     def __init__(self, **kwargs):
+        """Initializes a new WelcomeWidget instance."""
         super().__init__(**kwargs)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
@@ -55,10 +68,16 @@ class WelcomeWidget(Adw.Bin):
         self.recent_projects_list.set_selection_mode(Gtk.SelectionMode.NONE)
         recent_projects_group.add(self.recent_projects_list)
 
-    def populate_recent_projects(self, recent_projects):
+    def populate_recent_projects(self, recent_projects: list[str]):
+        """Populates the recent projects list.
+
+        Args:
+            recent_projects: A list of paths to recent projects.
+        """
         # Clear existing
         while self.recent_projects_list.get_first_child():
-            self.recent_projects_list.remove(self.recent_projects_list.get_first_child())
+            self.recent_projects_list.remove(
+                self.recent_projects_list.get_first_child())
 
         for project_path in recent_projects:
             row = Adw.ActionRow(title=project_path)
@@ -68,11 +87,22 @@ class WelcomeWidget(Adw.Bin):
             row.set_activatable_widget(button)
             self.recent_projects_list.append(row)
 
-    def on_new_project(self, button):
-        self.get_ancestor(Adw.ApplicationWindow).get_application().lookup_action("new-project").activate(None)
+    def on_new_project(self, button: Gtk.Button):
+        """Handles the clicked signal from the new project button."""
+        self.get_ancestor(
+            Adw.ApplicationWindow).get_application().lookup_action("new-project").activate(None)
 
-    def on_open_project(self, button):
-        self.get_ancestor(Adw.ApplicationWindow).get_application().lookup_action("open-project").activate(None)
+    def on_open_project(self, button: Gtk.Button):
+        """Handles the clicked signal from the open project button."""
+        self.get_ancestor(
+            Adw.ApplicationWindow).get_application().lookup_action("open-project").activate(None)
 
-    def on_open_recent(self, button, project_path):
-        self.get_ancestor(Adw.ApplicationWindow).get_application().load_project(project_path)
+    def on_open_recent(self, button: Gtk.Button, project_path: str):
+        """Handles the clicked signal from a recent project's open button.
+
+        Args:
+            button: The button that was clicked.
+            project_path: The path of the project to open.
+        """
+        self.get_ancestor(
+            Adw.ApplicationWindow).get_application().load_project(project_path)

@@ -2,7 +2,7 @@ import sys
 import subprocess
 import gi
 import os
-import pkg_resources
+from importlib import resources
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -160,7 +160,7 @@ class EditorWindow(Adw.ApplicationWindow):
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
         for editor_class in editors:
-            editor_instance = editor_class(self.project_manager)
+            editor_instance = editor_class(project_manager=self.project_manager)
             self.add_editor(editor_class.EDITOR_NAME,
                             editor_class.VIEW_NAME, editor_instance)
             if editor_class.VIEW_NAME == 'logic_editor':
@@ -256,10 +256,8 @@ class AdvEngine(Adw.Application):
             app: The application instance.
         """
         from .ui import welcome
-        if not self.win:
-            self.win = welcome.WelcomeWindow(application=self)
+        self.win = welcome.WelcomeWindow(application=app)
         self.win.present()
-
         self._setup_actions()
 
     def _setup_actions(self):

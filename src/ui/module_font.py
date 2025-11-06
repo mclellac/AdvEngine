@@ -5,19 +5,21 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, Pango
 from ..core.data_schemas import Font, FontGObject
 
-class FontManager(Gtk.Box):
+class FontManager(Adw.Bin):
     EDITOR_NAME = "Fonts"
     VIEW_NAME = "font_manager"
     ORDER = 11
 
-    def __init__(self, project_manager):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+    def __init__(self, project_manager, **kwargs):
+        super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        self.set_margin_top(10)
-        self.set_margin_bottom(10)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        main_box.set_margin_top(10)
+        main_box.set_margin_bottom(10)
+        main_box.set_margin_start(10)
+        main_box.set_margin_end(10)
+        self.set_child(main_box)
 
         # Font List
         self.font_list = Gtk.ColumnView()
@@ -40,12 +42,12 @@ class FontManager(Gtk.Box):
         self.main_stack = Gtk.Stack()
         self.main_stack.add_named(scrolled_window, "list")
         self.main_stack.add_named(self.status_page, "status")
-        self.append(self.main_stack)
+        main_box.append(self.main_stack)
 
         # Font Preview
         self.font_preview = Gtk.Label(label="The quick brown fox jumps over the lazy dog")
         self.font_preview.set_hexpand(True)
-        self.append(self.font_preview)
+        main_box.append(self.font_preview)
 
         self.selection.connect("selection-changed", self._on_font_selected)
         self._on_font_selected(self.selection, None)
@@ -58,7 +60,7 @@ class FontManager(Gtk.Box):
         delete_button = Gtk.Button(label="Delete Font")
         delete_button.connect("clicked", self._on_delete_font)
         button_box.append(delete_button)
-        self.append(button_box)
+        main_box.append(button_box)
 
         self._update_visibility()
 
