@@ -257,6 +257,21 @@ class LogicEditor(Gtk.Box):
         self.create_canvas_context_menu()
         self.create_node_context_menu()
 
+        # --- TEST CODE ---
+        def _test_persistence():
+            if self.active_graph and self.active_graph.nodes:
+                node_to_test = self.active_graph.nodes[0]
+                if isinstance(node_to_test, DialogueNode):
+                    print(f"--- Original dialogue text: {node_to_test.dialogue_text} ---")
+                    node_to_test.dialogue_text = "This is a test"
+                    print(f"--- Changed dialogue text to: {node_to_test.dialogue_text} ---")
+                    self.project_manager.set_dirty(True)
+                    self.project_manager.save_project()
+                    print("--- Project saved ---")
+            return False
+        GLib.timeout_add_seconds(2, _test_persistence)
+        # --- END TEST CODE ---
+
     def _create_canvas_area(self):
         canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)

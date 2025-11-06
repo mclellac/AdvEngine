@@ -17,6 +17,7 @@ from .ui import search_results
 
 class EditorWindow(Adw.ApplicationWindow):
     def __init__(self, project_manager, **kwargs):
+        print("--- EditorWindow.__init__ ---")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.base_title = "AdvEngine"
@@ -161,6 +162,7 @@ from .core.settings_manager import SettingsManager
 
 class AdvEngine(Adw.Application):
     def __init__(self, **kwargs):
+        print("--- AdvEngine.__init__ ---")
         super().__init__(**kwargs)
         self.project_manager = None
         self.settings_manager = SettingsManager()
@@ -168,10 +170,13 @@ class AdvEngine(Adw.Application):
         self.connect("activate", self.on_activate)
 
     def on_activate(self, app):
+        print("--- AdvEngine.on_activate ---")
         from .ui import welcome
-        if not self.win:
-            self.win = welcome.WelcomeWindow(application=self)
-        self.win.present()
+        # if not self.win:
+        #     self.win = welcome.WelcomeWindow(application=self)
+        # self.win.present()
+        print("--- Loading project ---")
+        self.load_project(project_path="/app/TestGame")
 
         save_action = Gio.SimpleAction.new("save", None)
         save_action.connect("activate", lambda a, p: self.save_project())
