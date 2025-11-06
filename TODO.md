@@ -6,7 +6,7 @@ This document outlines the necessary fixes and improvements to make AdvEngine a 
 
 These issues cause data loss and must be fixed first.
 
--   [ ] **Fix Logic Node Data Saving:**
+-   [x] **Fix Logic Node Data Saving:**
     -   Modify the `_save_logic_graphs` method in `src/core/project_manager.py` to correctly serialize all node attributes, including dynamic parameters from the `DynamicNodeEditor`.
     -   Ensure that `DialogueNode`, `ConditionNode`, and `ActionNode` attributes are saved to the `LogicGraphs.json` and `DialogueGraphs.json` files.
 
@@ -16,7 +16,7 @@ These issues cause data loss and must be fixed first.
 
 ## II. Editor Functionality
 
--   [ ] **Fix Logic Node Resizing:**
+-   [x] **Fix Logic Node Resizing:**
     -   In `src/ui/module_logic.py`, correct the calculation in `on_resize_drag_update` to properly account for the drag offset, ensuring that node resizing is smooth and predictable.
 
 -   [ ] **Implement Global State Editor:**
@@ -25,10 +25,10 @@ These issues cause data loss and must be fixed first.
 
 ## III. Code Quality and Refactoring
 
--   [ ] **Refactor `ProjectManager` Loading:**
+-   [x] **Refactor `ProjectManager` Loading:**
     -   Combine the duplicated `_load_logic_graphs` and `_load_dialogue_graphs` methods into a single, reusable `_load_graph_data` method.
 
--   [ ] **Refactor `module_logic.py`:**
+-   [x] **Refactor `module_logic.py`:**
     -   Refactor the repetitive `on_add_*_node` methods into a single, parameterized method to reduce code duplication.
 
 ## IV. Feature Completeness

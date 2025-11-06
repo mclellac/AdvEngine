@@ -282,7 +282,11 @@ class LogicEditor(Gtk.Box):
             ("Add Action Node", "Add Action", ActionNode, "Action")
         ]
         for title, label, node_class, node_type in node_types:
-            self.add_node_button(palette, title, label, node_class, node_type)
+            button = Gtk.Button(label=label)
+            button.connect("clicked", lambda _, nc=node_class, nt=node_type: self.on_add_node(nc, nt))
+            row = Adw.ActionRow(title=title, activatable_widget=button)
+            row.add_suffix(button)
+            palette.add(row)
 
         self.props_panel = DynamicNodeEditor(project_manager=self.project_manager, on_update_callback=self.canvas.queue_draw)
         sidebar.append(self.props_panel)
@@ -365,13 +369,6 @@ class LogicEditor(Gtk.Box):
         cr.move_to(start_x, start_y)
         cr.curve_to(start_x + 50, start_y, end_x - 50, end_y, end_x, end_y)
         cr.stroke()
-
-    def add_node_button(self, palette, title, label, node_class, node_type):
-        button = Gtk.Button(label=label)
-        button.connect("clicked", lambda w, nc=node_class, nt=node_type: self.on_add_node(nc, nt))
-        row = Adw.ActionRow(title=title, activatable_widget=button)
-        row.add_suffix(button)
-        palette.add(row)
 
     def on_add_node(self, node_class, node_type):
         if self.active_graph:
