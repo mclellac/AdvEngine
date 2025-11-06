@@ -141,7 +141,11 @@ class LogicNode:
     outputs: List[str] = field(default_factory=list)
 
     def to_dict(self):
-        return asdict(self)
+        from dataclasses import asdict
+        data = self.__dict__.copy()
+        if 'action_node' in data and data.get('action_node'):
+            data['action_node'] = data['action_node'].to_dict()
+        return data
 
 @dataclass
 class DialogueNode(LogicNode):
