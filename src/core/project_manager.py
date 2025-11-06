@@ -188,11 +188,11 @@ class ProjectManager:
 
     def _load_logic_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
-        self.data.logic_graphs = self._load_graph_data(file_path)
+        self._load_graph_data(file_path, self.data.logic_graphs)
 
     def _load_dialogue_graphs(self):
         file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        self.data.dialogue_graphs = self._load_graph_data(file_path)
+        self._load_graph_data(file_path, self.data.dialogue_graphs)
 
     def _save_graph_data(self, file_path, graph_list):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)

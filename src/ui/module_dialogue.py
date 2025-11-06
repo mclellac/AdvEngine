@@ -85,7 +85,7 @@ class DialogueEditor(Gtk.Box):
 
         self._load_dialogue_graphs()
 
-    def _get_children(self, item, user_data):
+    def _get_children(self, item):
         node = item.node
         if isinstance(node, DialogueNode):
             children = Gio.ListStore(item_type=DialogueNodeGObject)
