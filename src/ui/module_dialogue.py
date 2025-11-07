@@ -31,7 +31,7 @@ class DialogueNodeGObject(GObject.Object):
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_dialogue.ui"))
-class DialogueEditor(Adw.OverlaySplitView):
+class DialogueEditor(Adw.Bin):
     """A widget for editing dialogue trees."""
     __gtype_name__ = 'DialogueEditor'
 
@@ -46,15 +46,16 @@ class DialogueEditor(Adw.OverlaySplitView):
     properties_stack = Gtk.Template.Child()
     dialogue_node_editor_placeholder = Gtk.Template.Child()
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         """Initializes a new DialogueEditor instance."""
         print("DEBUG: DialogueEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
         self.active_graph = None
 
         self.dialogue_node_editor = DynamicNodeEditor(
-            project_manager=self.project_manager, on_update_callback=self._on_node_updated)
+            project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self._on_node_updated)
         self.dialogue_node_editor_placeholder.set_child(self.dialogue_node_editor)
 
         self._setup_tree_view()

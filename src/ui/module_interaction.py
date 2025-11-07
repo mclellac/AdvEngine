@@ -23,11 +23,12 @@ class InteractionEditor(Gtk.Box):
     status_page = Gtk.Template.Child()
     scrolled_window = Gtk.Template.Child()
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         """Initializes a new InteractionEditor instance."""
         print("DEBUG: InteractionEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
 
         self._setup_model()
         self._create_columns()

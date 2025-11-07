@@ -10,10 +10,11 @@ class FontManager(Adw.Bin):
     VIEW_NAME = "font_manager"
     ORDER = 11
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         print("DEBUG: FontManager.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         main_box.set_margin_top(10)

@@ -2,10 +2,12 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <template class="DialogueEditor" parent="AdwOverlaySplitView">
-    <property name="sidebar">
-      <object class="GtkBox" id="tree_panel">
-        <property name="orientation">vertical</property>
+  <template class="DialogueEditor" parent="AdwBin">
+    <child>
+      <object class="AdwOverlaySplitView">
+        <property name="sidebar">
+          <object class="GtkBox" id="tree_panel">
+            <property name="orientation">vertical</property>
         <property name="spacing">5</property>
         <child>
           <object class="GtkBox" id="toolbar">
@@ -63,5 +65,7 @@
         </child>
       </object>
     </property>
+      </object>
+    </child>
   </template>
 </interface>

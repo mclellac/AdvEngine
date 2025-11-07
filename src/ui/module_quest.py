@@ -9,7 +9,7 @@ from ..core.data_schemas import Quest, QuestGObject, Objective, ObjectiveGObject
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_quest.ui"))
-class QuestEditor(Adw.OverlaySplitView):
+class QuestEditor(Adw.Bin):
     """A widget for editing quests."""
     __gtype_name__ = 'QuestEditor'
 
@@ -23,11 +23,12 @@ class QuestEditor(Adw.OverlaySplitView):
     quest_details_panel = Gtk.Template.Child()
     status_page = Gtk.Template.Child()
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         """Initializes a new QuestEditor instance."""
         print("DEBUG: QuestEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
 
         self._setup_quest_list()
         self._connect_signals()

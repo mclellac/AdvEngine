@@ -418,6 +418,14 @@ class ProjectManager:
         self.set_dirty()
         return new_verb
 
+    def remove_verb(self, verb):
+        """Removes a verb from the project."""
+        if verb in self.data.verbs:
+            self.data.verbs.remove(verb)
+            self.set_dirty()
+            return True
+        return False
+
     def create_scene(self, name):
         new_id = f"scene_{len(self.data.scenes) + 1}"
         new_scene = Scene(id=new_id, name=name)

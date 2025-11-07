@@ -9,10 +9,11 @@ class UIBuilder(Adw.Bin):
     VIEW_NAME = "ui_builder"
     ORDER = 10
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         print("DEBUG: UIBuilder.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
         self.active_layout = None
         self.active_element = None
 
