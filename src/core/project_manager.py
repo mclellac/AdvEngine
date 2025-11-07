@@ -293,6 +293,8 @@ class ProjectManager:
         def graph_object_hook(data):
             nodes = []
             for node_data in data.get("nodes", []):
+                if "parent_id" in node_data:
+                    del node_data["parent_id"]
                 node_type = node_data.get("node_type")
                 if "parameters" in node_data:
                     for key, value in node_data["parameters"].items():
