@@ -134,6 +134,7 @@ class VerbEditor(Adw.Bin):
 
     def _setup_cell(self, factory, list_item):
         """Sets up a cell in the column view."""
+        print("DEBUG: VerbEditor._setup_cell")
         widget = Gtk.Entry()
         list_item.set_child(widget)
 
@@ -141,6 +142,7 @@ class VerbEditor(Adw.Bin):
         """Binds a cell to the data model."""
         verb_gobject = list_item.get_item()
         widget = list_item.get_child()
+        print(f"DEBUG: VerbEditor._bind_cell: column_id={column_id}, verb_id={verb_gobject.id}")
 
         list_item.bindings = []
         binding = widget.bind_property(
@@ -153,6 +155,8 @@ class VerbEditor(Adw.Bin):
 
     def _unbind_cell(self, factory, list_item):
         """Unbinds a cell from the data model."""
+        verb_gobject = list_item.get_item()
+        print(f"DEBUG: VerbEditor._unbind_cell: verb_id={verb_gobject.id if verb_gobject else 'N/A'}")
         if hasattr(list_item, "bindings"):
             for binding in list_item.bindings:
                 binding.unbind()

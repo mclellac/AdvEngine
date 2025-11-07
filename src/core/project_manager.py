@@ -209,7 +209,11 @@ class ProjectManager:
         print(f"DEBUG: ProjectManager._load_json: Loading from {file_path}")
         try:
             with open(file_path, "r") as f:
-                data = json.load(f)
+                content = f.read()
+                if not content:
+                    print(f"Warning: {file_path} is empty.")
+                    return
+                data = json.loads(content)
                 if object_hook:
                     for item_data in data:
                         target_list.append(object_hook(item_data))
@@ -218,6 +222,8 @@ class ProjectManager:
         except FileNotFoundError:
             if not self.is_new_project:
                 print(f"Warning: {file_path} not found.")
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON from {file_path}: {e}")
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
@@ -229,7 +235,7 @@ class ProjectManager:
             data_list: A list of dataclass objects to save.
         """
         file_path = os.path.join(self.project_path, filename)
-        print(f"DEBUG: ProjectManager._save_json: Saving to {file_path}")
+        print(f"DEBUG: ProjectManager._save_json: Saving to {file_path} ({len(data_list)} items)")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
@@ -776,7 +782,7 @@ class ProjectManager:
             for file_path, default_content in json_files.items():
                 if not os.path.exists(file_path):
                     with open(file_path, "w") as f:
-                        json.dump(default_content, f)
+                        json.dump(default_content, f, indent=2)
 
             project_manager = ProjectManager(project_path)
             project_manager.is_new_project = True

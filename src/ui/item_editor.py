@@ -138,6 +138,7 @@ class ItemEditor(Adw.Bin):
 
     def _setup_cell(self, factory, list_item, column_id):
         """Sets up a cell in the column view."""
+        print(f"DEBUG: ItemEditor._setup_cell: column_id={column_id}")
         if column_id in ["buy_price", "sell_price"]:
             widget = Gtk.SpinButton(
                 adjustment=Gtk.Adjustment(
@@ -152,6 +153,7 @@ class ItemEditor(Adw.Bin):
         """Binds a cell to the data model."""
         item_gobject = list_item.get_item()
         widget = list_item.get_child()
+        print(f"DEBUG: ItemEditor._bind_cell: column_id={column_id}, item_id={item_gobject.id}")
 
         list_item.bindings = []
         if isinstance(widget, Gtk.SpinButton):
@@ -171,6 +173,8 @@ class ItemEditor(Adw.Bin):
 
     def _unbind_cell(self, factory, list_item):
         """Unbinds a cell from the data model."""
+        item_gobject = list_item.get_item()
+        print(f"DEBUG: ItemEditor._unbind_cell: item_id={item_gobject.id if item_gobject else 'N/A'}")
         if hasattr(list_item, "bindings"):
             for binding in list_item.bindings:
                 binding.unbind()
