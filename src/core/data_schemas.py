@@ -279,6 +279,7 @@ class SceneGObject(GObject.Object):
 
 
 # --- Logic Editor Schemas (Node-Based) ---
+@dataclass
 class LogicNode:
     """Base class for all nodes in a logic graph.
 
