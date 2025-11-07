@@ -324,6 +324,7 @@ class AdvEngine(Adw.Application):
         """Loads a project and displays it in a new EditorWindow."""
         if project_manager:
             self.project_manager = project_manager
+            self.project_manager.load_project()
         else:
             self.project_manager = ProjectManager(project_path)
             self.project_manager.load_project()

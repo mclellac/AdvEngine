@@ -1,3 +1,20 @@
 id,name,description,type,buy_price,sell_price
 keycard,"Keycard","A standard issue keycard for the Arcada.",item,10,5
 buckazoids,"Buckazoids","The currency of the future.",currency,1,1
+laser_cutter,"Laser Cutter","Cuts through metal, and probably other things.",item,100,50
+thermal_detonator,"Thermal Detonator","A powerful explosive. Handle with care.",item,250,100
+grappling_hook,"Grappling Hook","For all your grappling needs.",item,75,30
+duct_tape,"Duct Tape","Can fix anything. Even in space.",item,5,2
+space_helmet,"Space Helmet","Don't leave the ship without it.",item,150,75
+oxygen_tank,"Oxygen Tank","A tank full of breathable air.",item,200,100
+jetpack,"Jetpack","For flying around in style.",item,500,250
+id_card,"ID Card","Official identification for the Arcada.",item,20,10
+wrench,"Wrench","A trusty tool for any mechanic.",item,15,7
+medkit,"Medkit","Heals minor wounds.",item,50,25
+blaster,"Blaster","A standard issue sidearm.",weapon,300,150
+ammo,"Ammo","Energy cells for the blaster.",item,25,10
+rations,"Rations","Tastes like chicken.",consumable,10,5
+glow_stick,"Glow Stick","Emits a green glow.",item,5,2
+data_pad,"Data Pad","Stores important information.",item,100,50
+navi_computer,"Navi-Computer","Helps with navigation.",item,1000,500
+secret_plans,"Secret Plans","The secret plans to the Death Star.",item,10000,5000

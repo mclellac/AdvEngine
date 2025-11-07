@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "interaction_1",
+    "verb_id": "use",
+    "primary_item_id": "keycard",
+    "secondary_item_id": "",
+    "target_hotspot_id": "keycard_reader",
+    "logic_graph_id": "door_puzzle"
+  }
+]
