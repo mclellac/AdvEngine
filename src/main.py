@@ -376,23 +376,31 @@ class AdvEngine(Adw.Application):
             if response == "create":
                 name = entry.get_text()
                 selected_item = combo.get_selected_item()
-                if not name or not selected_item:
+
+                error_body = ""
+                if not name:
+                    error_body = "Project name cannot be empty."
+                elif not selected_item:
+                    error_body = "A project template must be selected."
+
+                if error_body:
                     error_dialog = Adw.MessageDialog(
                         transient_for=self.win,
                         heading="Error",
-                        body="Project name cannot be empty.",
+                        body=error_body,
                     )
                     error_dialog.add_response("ok", "OK")
-                    error_dialog.connect("response", lambda d, r: d.destroy())
+                    error_dialog.connect("response", lambda dlg, resp: dlg.destroy())
                     error_dialog.present()
+                    d.destroy() # Destroy the original dialog
                     return
+
                 template = selected_item.get_string()
-                if name:
-                    file_dialog = Gtk.FileChooserNative(
-                        title="Select Project Location", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
-                    file_dialog.connect(
-                        "response", lambda fd, resp: self.on_new_project_folder_selected(fd, resp, name, template))
-                    file_dialog.show()
+                file_dialog = Gtk.FileChooserNative(
+                    title="Select Project Location", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
+                file_dialog.connect(
+                    "response", lambda fd, resp: self.on_new_project_folder_selected(fd, resp, name, template))
+                file_dialog.show()
             d.destroy()
         dialog.connect("response", on_response)
         dialog.present()
