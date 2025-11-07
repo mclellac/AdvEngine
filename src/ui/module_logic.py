@@ -537,8 +537,8 @@ class LogicEditor(Adw.Bin):
                 new_id = f"node_{len(self.active_graph.nodes)}_{count}"
                 count += 1
 
-            node_width = self.project_manager.settings_manager.get("default_node_width", 240)
-            node_height = self.project_manager.settings_manager.get("default_node_height", 160)
+            node_width = self.settings_manager.get("default_node_width", 240)
+            node_height = self.settings_manager.get("default_node_height", 160)
             new_node = node_class(id=new_id, node_type=node_type, x=50, y=50, width=node_width, height=node_height)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
@@ -575,8 +575,8 @@ class LogicEditor(Adw.Bin):
                 new_x = start_x + x - offset_x
                 new_y = start_y + y - offset_y
 
-                if self.project_manager.settings_manager.get("grid_snap_enabled", True):
-                    grid_size = self.project_manager.settings_manager.get("grid_size", 20)
+                if self.settings_manager.get("grid_snap_enabled", True):
+                    grid_size = self.settings_manager.get("grid_size", 20)
                     new_x = round(new_x / grid_size) * grid_size
                     new_y = round(new_y / grid_size) * grid_size
 
