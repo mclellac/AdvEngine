@@ -20,14 +20,21 @@ class SettingsManager:
         return {
             "recent_projects": [],
             "autosave_enabled": True,
-            "autosave_interval": 5, # in minutes
-            "default_project_dir": os.path.expanduser("~/Documents/AdvEngineProjects")
+            "autosave_interval": 5,
+            "default_project_dir": os.path.expanduser("~/Documents/AdvEngineProjects"),
+            "author": "",
+            "ue_path": "",
+            "default_node_width": 240,
+            "default_node_height": 160,
+            "grid_snap_enabled": True,
+            "grid_size": 20,
         }
 
     def _get_default_project_settings(self):
         return {
             "project_name": "New Project",
-            "default_scene": None
+            "default_scene": None,
+            "author": self.get_app_setting("author"),
         }
 
     def _load_settings(self, file_path, defaults):
@@ -64,6 +71,19 @@ class SettingsManager:
     def set_project_setting(self, key, value):
         self.project_settings[key] = value
         self._save_settings(self.project_settings_file, self.project_settings)
+
+    def get(self, key, default=None):
+        """Gets a setting value, checking project settings first, then app settings."""
+        if self.project_settings and key in self.project_settings:
+            return self.project_settings[key]
+        return self.app_settings.get(key, default)
+
+    def set(self, key, value, is_project_specific=False):
+        """Sets a setting value."""
+        if is_project_specific:
+            self.set_project_setting(key, value)
+        else:
+            self.set_app_setting(key, value)
 
     def add_recent_project(self, project_path):
         """Adds a project to the list of recent projects, ensuring no duplicates."""

@@ -6,9 +6,9 @@ This document tracks the status of major features and refactoring efforts.
 
 The primary goal is to move all UI layout definitions from procedural Python code to declarative `.ui` files.
 
-- [ ] **Main Application Window (`EditorWindow`)**
-    - [ ] Create `main_window.ui`
-    - [ ] Refactor `main.py` to load `main_window.ui`
+- [x] **Main Application Window (`EditorWindow`)**
+    - [x] Create `main_window.ui`
+    - [x] Refactor `main.py` to load `main_window.ui`
 - [ ] **Scene Editor (`module_scene.py`)**
     - [ ] Create `module_scene.ui`
     - [ ] Refactor `module_scene.py` to load `module_scene.ui`
@@ -45,15 +45,15 @@ The primary goal is to move all UI layout definitions from procedural Python cod
 - [ ] **Verb Editor (`verb_editor.py`)**
     - [ ] Create `verb_editor.ui`
     - [ ] Refactor `verb_editor.py` to load `verb_editor.ui`
-- [ ] **Welcome Window (`welcome.py`)**
-    - [ ] Create `welcome.ui`
-    - [ ] Refactor `welcome.py` to load `welcome.ui`
-- [ ] **Preferences Dialog (`preferences.py`)**
+- [x] **Welcome Window (`welcome.py`)**
+    - [x] Create `welcome.ui`
+    - [x] Refactor `welcome.py` to load `welcome.ui`
+- [x] **Preferences Dialog (`preferences.py`)**
     - [ ] Create `preferences.ui`
-    - [ ] Refactor `preferences.py` to load `preferences.ui`
-- [ ] **Shortcuts Dialog (`shortcuts.py`)**
-    - [ ] Create `shortcuts.ui`
-    - [ ] Refactor `shortcuts.py` to load `shortcuts.ui`
+    - [x] Refactor `preferences.py` to load `preferences.ui`
+- [x] **Shortcuts Dialog (`shortcuts.py`)**
+    - [x] Create `shortcuts.ui`
+    - [x] Refactor `shortcuts.py` to load `shortcuts.ui`
 
 ## Core Features
 
@@ -69,8 +69,8 @@ The primary goal is to move all UI layout definitions from procedural Python cod
 - [ ] Database Editors (Items, Attributes, Verbs)
 - [ ] Localization Support (Import/Export)
 - [ ] Application-wide Search
-- [ ] Unreal Engine Integration (Play button)
-- [ ] Settings/Preferences Management
-- [ ] Keyboard Shortcuts
-- [ ] Recent Projects on Welcome Screen
-- [ ] Project Templates
+- [x] Unreal Engine Integration (Play button)
+- [x] Settings/Preferences Management
+- [x] Keyboard Shortcuts
+- [x] Recent Projects on Welcome Screen
+- [x] Project Templates

@@ -3,28 +3,30 @@
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwAlertDialog">
-    <property name="modal">true</property>
     <property name="heading">Create a New Project</property>
-    <property name="content_width">400</property>
-    <property name="content_height">200</property>
-    <child>
-      <object class="AdwPreferencesPage">
-        <child>
-          <object class="AdwPreferencesGroup">
+    <property name="extra-child">
+        <object class="GtkBox">
+            <property name="orientation">vertical</property>
             <child>
-              <object class="AdwEntryRow" id="project_name_entry">
-                <property name="title">Project Name</property>
-              </object>
+                <object class="AdwPreferencesPage">
+                    <child>
+                        <object class="AdwPreferencesGroup">
+                            <child>
+                                <object class="AdwEntryRow" id="project_name_entry">
+                                    <property name="title">Project Name</property>
+                                </object>
+                            </child>
+                            <child>
+                                <object class="AdwComboRow" id="template_combo">
+                                    <property name="title">Template</property>
+                                </object>
+                            </child>
+                        </object>
+                    </child>
+                </object>
             </child>
-            <child>
-              <object class="AdwComboRow" id="template_combo">
-                <property name="title">Template</property>
-              </object>
-            </child>
-          </object>
-        </child>
-      </object>
-    </child>
+        </object>
+    </property>
     <responses>
       <response id="cancel" appearance="destructive">_Cancel</response>
       <response id="create" appearance="suggested" default="true">_Create</response>

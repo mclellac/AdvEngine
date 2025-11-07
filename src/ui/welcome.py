@@ -15,15 +15,20 @@ class WelcomeWindow(Adw.ApplicationWindow):
     open_project_button = Gtk.Template.Child()
     recent_projects_list = Gtk.Template.Child()
     recent_projects_group = Gtk.Template.Child()
-    quit_button = Gtk.Template.Child()
+    menu_button = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         """Initializes a new WelcomeWindow instance."""
         super().__init__(**kwargs)
 
+        menu = Gio.Menu.new()
+        menu.append("Preferences", "app.preferences")
+        menu.append("Keyboard Shortcuts", "app.shortcuts")
+        menu.append("About", "app.about")
+        self.menu_button.set_menu_model(menu)
+
         self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
         self.open_project_button.connect("clicked", lambda w: self.get_application().lookup_action("open-project").activate(None))
-        self.quit_button.connect("clicked", lambda w: self.close())
 
         self.settings = self.get_application().settings_manager
         self.populate_recent_projects()

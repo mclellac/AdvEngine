@@ -115,7 +115,7 @@ class EditorWindow(Adw.ApplicationWindow):
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
         for editor_class in editors:
-            editor_instance = editor_class(project_manager=self.project_manager)
+            editor_instance = editor_class(project_manager=self.project_manager, settings_manager=self.get_application().settings_manager)
             self.add_editor(editor_class.EDITOR_NAME, editor_class.VIEW_NAME, editor_instance)
             if editor_class.VIEW_NAME == 'logic_editor':
                 self.logic_editor = editor_instance
