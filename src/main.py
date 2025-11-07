@@ -337,50 +337,34 @@ class AdvEngine(Adw.Application):
 
     def on_new_project_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the new-project action."""
-        dialog = Adw.MessageDialog(
-            transient_for=self.win, heading="Create New Project")
-        entry = Adw.EntryRow(title="Project Name")
-        templates = ProjectManager.get_templates()
-        combo = Adw.ComboRow(
-            title="Template", model=Gtk.StringList.new(templates))
-        combo.set_selected(0)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        box.append(entry)
-        box.append(combo)
-        dialog.set_extra_child(box)
-        dialog.add_response("cancel", "_Cancel")
-        dialog.add_response("create", "_Create")
+        from .ui.new_project_dialog import NewProjectDialog
 
-        def on_response(d, response):
-            if response == "create":
-                name = entry.get_text()
-                selected_item = combo.get_selected_item()
+        dialog = NewProjectDialog(parent=self.win)
 
-                error_body = ""
-                if not name:
-                    error_body = "Project name cannot be empty."
-                elif not selected_item:
-                    error_body = "A project template must be selected."
+        def on_response(d, response_id):
+            if response_id == "create":
+                name = dialog.get_project_name()
+                template = dialog.get_selected_template()
 
-                if error_body:
+                if not name or not template:
                     error_dialog = Adw.MessageDialog(
                         transient_for=self.win,
                         heading="Error",
-                        body=error_body,
+                        body="Project name and template are required.",
                     )
                     error_dialog.add_response("ok", "OK")
                     error_dialog.connect("response", lambda dlg, resp: dlg.destroy())
                     error_dialog.present()
-                    d.destroy() # Destroy the original dialog
                     return
 
-                template = selected_item.get_string()
                 file_dialog = Gtk.FileChooserNative(
                     title="Select Project Location", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
                 file_dialog.connect(
                     "response", lambda fd, resp: self.on_new_project_folder_selected(fd, resp, name, template))
                 file_dialog.show()
-            d.destroy()
+
+            dialog.destroy()
+
         dialog.connect("response", on_response)
         dialog.present()
 
