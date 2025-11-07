@@ -10,12 +10,32 @@ import csv
 import json
 from dataclasses import asdict
 from .data_schemas import (
-    ProjectData, Item, Attribute, Character, Scene, Hotspot,
-    LogicGraph, LogicNode, DialogueNode, ConditionNode, ActionNode,
-    Asset, Animation, Audio, GlobalVariable, Verb, Cutscene, Interaction,
-    Quest, Objective, UILayout, UIElement, Font, SearchResult
+    ProjectData,
+    Item,
+    Attribute,
+    Character,
+    Scene,
+    Hotspot,
+    LogicGraph,
+    LogicNode,
+    DialogueNode,
+    ConditionNode,
+    ActionNode,
+    Asset,
+    Animation,
+    Audio,
+    GlobalVariable,
+    Verb,
+    Interaction,
+    Quest,
+    Objective,
+    UILayout,
+    UIElement,
+    Font,
+    SearchResult,
 )
 from .settings_manager import SettingsManager
+
 
 class ProjectManager:
     """Manages all data for a single AdvEngine project.
@@ -156,13 +176,13 @@ class ProjectManager:
             with open(file_path, "w", newline="") as f:
                 if not data_list:
                     # Get field names from an empty instance of the dataclass
-                    fieldnames = asdict(dataclass_type(
-                        *[None] * len(dataclass_type.__annotations__))).keys()
+                    fieldnames = asdict(
+                        dataclass_type(*[None] * len(dataclass_type.__annotations__))
+                    ).keys()
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
                 else:
-                    writer = csv.DictWriter(
-                        f, fieldnames=asdict(data_list[0]).keys())
+                    writer = csv.DictWriter(f, fieldnames=asdict(data_list[0]).keys())
                     writer.writeheader()
                     for item in data_list:
                         writer.writerow(asdict(item))
@@ -189,7 +209,7 @@ class ProjectManager:
                         if field_type == int:
                             row[key] = int(value)
                         elif field_type == bool:
-                            row[key] = value.lower() in ['true', '1']
+                            row[key] = value.lower() in ["true", "1"]
                     target_list.append(dataclass_type(**row))
         except FileNotFoundError:
             if not self.is_new_project:
@@ -197,7 +217,9 @@ class ProjectManager:
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
-    def _load_json(self, filename: str, target_list: list, object_hook: callable = None):
+    def _load_json(
+        self, filename: str, target_list: list, object_hook: callable = None
+    ):
         """Loads data from a JSON file.
 
         Args:
@@ -235,7 +257,9 @@ class ProjectManager:
             data_list: A list of dataclass objects to save.
         """
         file_path = os.path.join(self.project_path, filename)
-        print(f"DEBUG: ProjectManager._save_json: Saving to {file_path} ({len(data_list)} items)")
+        print(
+            f"DEBUG: ProjectManager._save_json: Saving to {file_path} ({len(data_list)} items)"
+        )
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
@@ -248,7 +272,10 @@ class ProjectManager:
             hotspots = [Hotspot(**hs) for hs in data.get("hotspots", [])]
             data["hotspots"] = hotspots
             return Scene(**data)
-        self._load_json(os.path.join("Logic", "Scenes.json"), self.data.scenes, scene_object_hook)
+
+        self._load_json(
+            os.path.join("Logic", "Scenes.json"), self.data.scenes, scene_object_hook
+        )
 
     def _save_scenes(self):
         self._save_json(os.path.join("Logic", "Scenes.json"), self.data.scenes)
@@ -256,7 +283,8 @@ class ProjectManager:
     def _load_graph_data(self, file_path, target_list):
         def pascal_to_snake(name):
             import re
-            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
+            name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
             if name == "varname":
                 return "var_name"
             return name
@@ -310,22 +338,35 @@ class ProjectManager:
             if data.get("asset_type") == "animation":
                 return Animation(**data)
             return Asset(**data)
-        self._load_json(os.path.join("Data", "Assets.json"), self.data.assets, asset_object_hook)
+
+        self._load_json(
+            os.path.join("Data", "Assets.json"), self.data.assets, asset_object_hook
+        )
 
     def _save_assets(self):
         self._save_json(os.path.join("Data", "Assets.json"), self.data.assets)
 
     def _load_audio(self):
-        self._load_json(os.path.join("Data", "Audio.json"), self.data.audio_files, lambda data: Audio(**data))
+        self._load_json(
+            os.path.join("Data", "Audio.json"),
+            self.data.audio_files,
+            lambda data: Audio(**data),
+        )
 
     def _save_audio(self):
         self._save_json(os.path.join("Data", "Audio.json"), self.data.audio_files)
 
     def _load_global_variables(self):
-        self._load_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables, lambda data: GlobalVariable(**data))
+        self._load_json(
+            os.path.join("Data", "GlobalState.json"),
+            self.data.global_variables,
+            lambda data: GlobalVariable(**data),
+        )
 
     def _save_global_variables(self):
-        self._save_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables)
+        self._save_json(
+            os.path.join("Data", "GlobalState.json"), self.data.global_variables
+        )
 
     def add_global_variable(self, variable):
         """Adds a new global variable to the project."""
@@ -352,13 +393,17 @@ class ProjectManager:
             except ValueError:
                 variable.initial_value = 0
         elif gobject.type == "bool":
-            variable.initial_value = gobject.initial_value_str.lower() in ['true', '1']
+            variable.initial_value = gobject.initial_value_str.lower() in ["true", "1"]
         else:
             variable.initial_value = gobject.initial_value_str
         self.set_dirty()
 
     def _load_verbs(self):
-        self._load_json(os.path.join("Data", "Verbs.json"), self.data.verbs, lambda data: Verb(**data))
+        self._load_json(
+            os.path.join("Data", "Verbs.json"),
+            self.data.verbs,
+            lambda data: Verb(**data),
+        )
 
     def _save_verbs(self):
         self._save_json(os.path.join("Data", "Verbs.json"), self.data.verbs)
@@ -387,7 +432,9 @@ class ProjectManager:
         for scene in self.data.scenes:
             if scene.id == scene_id:
                 new_hotspot_id = f"hs_{len(scene.hotspots) + 1}"
-                new_hotspot = Hotspot(id=new_hotspot_id, name=name, x=x, y=y, width=width, height=height)
+                new_hotspot = Hotspot(
+                    id=new_hotspot_id, name=name, x=x, y=y, width=width, height=height
+                )
                 scene.hotspots.append(new_hotspot)
                 self.set_dirty()
                 return new_hotspot
@@ -449,7 +496,9 @@ class ProjectManager:
         return new_graph
 
     def remove_dialogue_graph(self, graph_id):
-        self.data.dialogue_graphs = [g for g in self.data.dialogue_graphs if g.id != graph_id]
+        self.data.dialogue_graphs = [
+            g for g in self.data.dialogue_graphs if g.id != graph_id
+        ]
         self.set_dirty()
 
     def _load_dialogue_graphs(self):
@@ -461,10 +510,16 @@ class ProjectManager:
         self._save_graph_data(file_path, self.data.dialogue_graphs)
 
     def _load_interactions(self):
-        self._load_json(os.path.join("Logic", "Interactions.json"), self.data.interactions, lambda data: Interaction(**data))
+        self._load_json(
+            os.path.join("Logic", "Interactions.json"),
+            self.data.interactions,
+            lambda data: Interaction(**data),
+        )
 
     def _save_interactions(self):
-        self._save_json(os.path.join("Logic", "Interactions.json"), self.data.interactions)
+        self._save_json(
+            os.path.join("Logic", "Interactions.json"), self.data.interactions
+        )
 
     def add_interaction(self, interaction):
         self.data.interactions.append(interaction)
@@ -480,7 +535,10 @@ class ProjectManager:
             objectives = [Objective(**obj) for obj in data.get("objectives", [])]
             data["objectives"] = objectives
             return Quest(**data)
-        self._load_json(os.path.join("Logic", "Quests.json"), self.data.quests, quest_object_hook)
+
+        self._load_json(
+            os.path.join("Logic", "Quests.json"), self.data.quests, quest_object_hook
+        )
 
     def _save_quests(self):
         self._save_json(os.path.join("Logic", "Quests.json"), self.data.quests)
@@ -516,7 +574,9 @@ class ProjectManager:
     def remove_objective_from_quest(self, quest_id, objective_id):
         for quest in self.data.quests:
             if quest.id == quest_id:
-                quest.objectives = [obj for obj in quest.objectives if obj.id != objective_id]
+                quest.objectives = [
+                    obj for obj in quest.objectives if obj.id != objective_id
+                ]
                 self.set_dirty()
                 return True
         return False
@@ -537,7 +597,12 @@ class ProjectManager:
             elements = [UIElement(**elem) for elem in data.get("elements", [])]
             data["elements"] = elements
             return UILayout(**data)
-        self._load_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts, ui_layout_object_hook)
+
+        self._load_json(
+            os.path.join("UI", "WindowLayout.json"),
+            self.data.ui_layouts,
+            ui_layout_object_hook,
+        )
 
     def _save_ui_layouts(self):
         self._save_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts)
@@ -549,7 +614,9 @@ class ProjectManager:
         return new_layout
 
     def remove_ui_layout(self, layout_id):
-        self.data.ui_layouts = [layout for layout in self.data.ui_layouts if layout.id != layout_id]
+        self.data.ui_layouts = [
+            layout for layout in self.data.ui_layouts if layout.id != layout_id
+        ]
         self.set_dirty()
 
     def update_ui_layout(self, layout_id, new_data):
@@ -561,10 +628,19 @@ class ProjectManager:
                 return True
         return False
 
-    def add_element_to_layout(self, layout_id, element_id, element_type, x, y, width, height):
+    def add_element_to_layout(
+        self, layout_id, element_id, element_type, x, y, width, height
+    ):
         for layout in self.data.ui_layouts:
             if layout.id == layout_id:
-                new_element = UIElement(id=element_id, type=element_type, x=x, y=y, width=width, height=height)
+                new_element = UIElement(
+                    id=element_id,
+                    type=element_type,
+                    x=x,
+                    y=y,
+                    width=width,
+                    height=height,
+                )
                 layout.elements.append(new_element)
                 self.set_dirty()
                 return new_element
@@ -573,7 +649,9 @@ class ProjectManager:
     def remove_element_from_layout(self, layout_id, element_id):
         for layout in self.data.ui_layouts:
             if layout.id == layout_id:
-                layout.elements = [elem for elem in layout.elements if elem.id != element_id]
+                layout.elements = [
+                    elem for elem in layout.elements if elem.id != element_id
+                ]
                 self.set_dirty()
                 return True
         return False
@@ -590,7 +668,11 @@ class ProjectManager:
         return False
 
     def _load_fonts(self):
-        self._load_json(os.path.join("Data", "Fonts.json"), self.data.fonts, lambda data: Font(**data))
+        self._load_json(
+            os.path.join("Data", "Fonts.json"),
+            self.data.fonts,
+            lambda data: Font(**data),
+        )
 
     def _save_fonts(self):
         self._save_json(os.path.join("Data", "Fonts.json"), self.data.fonts)
@@ -625,21 +707,40 @@ class ProjectManager:
                 writer.writerow([f"item_{item.id}_description", item.description, ""])
 
             for character in self.data.characters:
-                writer.writerow([f"character_{character.id}_display_name", character.display_name, ""])
+                writer.writerow(
+                    [
+                        f"character_{character.id}_display_name",
+                        character.display_name,
+                        "",
+                    ]
+                )
 
-            for dialogue_node in [node for graph in self.data.dialogue_graphs for node in graph.nodes if isinstance(node, DialogueNode)]:
-                writer.writerow([f"dialogue_{dialogue_node.id}_dialogue_text", dialogue_node.dialogue_text, ""])
+            for dialogue_node in [
+                node
+                for graph in self.data.dialogue_graphs
+                for node in graph.nodes
+                if isinstance(node, DialogueNode)
+            ]:
+                writer.writerow(
+                    [
+                        f"dialogue_{dialogue_node.id}_dialogue_text",
+                        dialogue_node.dialogue_text,
+                        "",
+                    ]
+                )
 
             for quest in self.data.quests:
                 writer.writerow([f"quest_{quest.id}_name", quest.name, ""])
                 for objective in quest.objectives:
-                    writer.writerow([f"objective_{objective.id}_name", objective.name, ""])
+                    writer.writerow(
+                        [f"objective_{objective.id}_name", objective.name, ""]
+                    )
 
     def import_localization(self, file_path):
         """Imports translated text from a CSV file."""
         with open(file_path, "r", newline="") as f:
             reader = csv.reader(f)
-            next(reader) # Skip header
+            next(reader)  # Skip header
             for row in reader:
                 id_parts = row[0].split("_")
                 text_type = id_parts[0]
@@ -705,16 +806,19 @@ class ProjectManager:
         for i, scene in enumerate(self.data.scenes):
             for j, hotspot in enumerate(scene.hotspots):
                 if hotspot.id == hotspot_id:
-                    return i * 1000 + j # A bit of a hack to get a unique index
+                    return i * 1000 + j  # A bit of a hack to get a unique index
         return -1
 
     @staticmethod
     def get_templates():
         """Returns a list of available project templates."""
-        template_dir = os.path.join(os.path.dirname(
-            __file__), "..", "..", "templates")
+        template_dir = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
         if os.path.exists(template_dir):
-            return [d for d in os.listdir(template_dir) if os.path.isdir(os.path.join(template_dir, d))]
+            return [
+                d
+                for d in os.listdir(template_dir)
+                if os.path.isdir(os.path.join(template_dir, d))
+            ]
         return []
 
     @staticmethod
@@ -734,14 +838,17 @@ class ProjectManager:
             string. If the project is created successfully, the error string
             will be None.
         """
-        print(f"DEBUG: ProjectManager.create_project: Creating new project at {project_path} with template {template}")
+        print(
+            f"DEBUG: ProjectManager.create_project: Creating new project at {project_path} with template {template}"
+        )
         if template:
             template_dir = os.path.join(
-                os.path.dirname(__file__), "..", "..", "templates", template)
+                os.path.dirname(__file__), "..", "..", "templates", template
+            )
             if os.path.exists(template_dir):
                 import shutil
-                shutil.copytree(template_dir, project_path,
-                                dirs_exist_ok=True)
+
+                shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
 
         try:
             # Create base directories
@@ -754,9 +861,25 @@ class ProjectManager:
 
             # Create CSV files with headers
             csv_files = {
-                "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
+                "ItemData.csv": [
+                    "id",
+                    "name",
+                    "description",
+                    "type",
+                    "buy_price",
+                    "sell_price",
+                ],
                 "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id", "sprite_sheet_asset_id", "animations"],
+                "CharacterData.csv": [
+                    "id",
+                    "display_name",
+                    "dialogue_start_id",
+                    "is_merchant",
+                    "shop_id",
+                    "portrait_asset_id",
+                    "sprite_sheet_asset_id",
+                    "animations",
+                ],
             }
             for filename, headers in csv_files.items():
                 file_path = os.path.join(data_dir, filename)
@@ -809,31 +932,31 @@ class ProjectManager:
         # Search Items
         for item in self.data.items:
             if query_lower in item.name.lower() or query_lower in item.id.lower():
-                results.append(
-                    SearchResult(id=item.id, name=item.name, type="Item"))
+                results.append(SearchResult(id=item.id, name=item.name, type="Item"))
 
         # Search Characters
         for char in self.data.characters:
-            if query_lower in char.display_name.lower() or query_lower in char.id.lower():
-                results.append(SearchResult(
-                    id=char.id, name=char.display_name, type="Character"))
+            if (
+                query_lower in char.display_name.lower()
+                or query_lower in char.id.lower()
+            ):
+                results.append(
+                    SearchResult(id=char.id, name=char.display_name, type="Character")
+                )
 
         # Search Scenes
         for scene in self.data.scenes:
             if query_lower in scene.name.lower() or query_lower in scene.id.lower():
-                results.append(
-                    SearchResult(id=scene.id, name=scene.name, type="Scene"))
+                results.append(SearchResult(id=scene.id, name=scene.name, type="Scene"))
 
         # Search Quests
         for quest in self.data.quests:
             if query_lower in quest.name.lower() or query_lower in quest.id.lower():
-                results.append(
-                    SearchResult(id=quest.id, name=quest.name, type="Quest"))
+                results.append(SearchResult(id=quest.id, name=quest.name, type="Quest"))
 
         # Search Assets
         for asset in self.data.assets:
             if query_lower in asset.name.lower() or query_lower in asset.id.lower():
-                results.append(
-                    SearchResult(id=asset.id, name=asset.name, type="Asset"))
+                results.append(SearchResult(id=asset.id, name=asset.name, type="Asset"))
 
         return results

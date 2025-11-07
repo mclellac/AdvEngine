@@ -1,6 +1,7 @@
 """The shortcuts window for the AdvEngine application."""
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk
@@ -12,6 +13,7 @@ class ShortcutsDialog(Gtk.ShortcutsWindow):
     This window is organized into sections and groups to make it easy for
     users to find the shortcuts they are looking for.
     """
+
     __gtype_name__ = "ShortcutsDialog"
 
     def __init__(self, **kwargs):
@@ -46,13 +48,11 @@ class ShortcutsDialog(Gtk.ShortcutsWindow):
         self._add_shortcut(nav_group, "<Primary>2", "Go to Logic")
         self._add_shortcut(nav_group, "<Primary>3", "Go to Interactions")
         self._add_shortcut(nav_group, "<Primary>4", "Go to Dialogue")
-        self._add_shortcut(nav_group, "<Primary>5", "Go to Cutscenes")
         self._add_shortcut(nav_group, "<Primary>6", "Go to Assets")
         self._add_shortcut(nav_group, "<Primary>7", "Go to Global State")
         self._add_shortcut(nav_group, "<Primary>8", "Go to Characters")
         self._add_shortcut(nav_group, "<Primary>9", "Go to Quests")
-        self._add_shortcut(nav_group, "<Primary>0",
-                           "Go to Database (Items, etc.)")
+        self._add_shortcut(nav_group, "<Primary>0", "Go to Database (Items, etc.)")
         return main_section
 
     def _create_editor_section(self):
@@ -72,5 +72,4 @@ class ShortcutsDialog(Gtk.ShortcutsWindow):
             accelerator: The accelerator for the shortcut.
             title: The title of the shortcut.
         """
-        group.append(Gtk.ShortcutsShortcut(
-            accelerator=accelerator, title=title))
+        group.append(Gtk.ShortcutsShortcut(accelerator=accelerator, title=title))

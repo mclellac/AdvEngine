@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
 from gi.repository import GObject
 
+
 # Schema for ItemData.csv
 @dataclass
 class Item:
@@ -29,6 +30,7 @@ class Item:
         sell_price: The price to sell the item.
         description: A description of the item.
     """
+
     id: str
     name: str
     type: str
@@ -39,7 +41,8 @@ class Item:
 
 class ItemGObject(GObject.Object):
     """GObject wrapper for the Item dataclass."""
-    __gtype_name__ = 'ItemGObject'
+
+    __gtype_name__ = "ItemGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     type = GObject.Property(type=str)
@@ -80,6 +83,7 @@ class Attribute:
         initial_value: The starting value of the attribute.
         max_value: The maximum value of the attribute.
     """
+
     id: str
     name: str
     initial_value: int
@@ -88,7 +92,8 @@ class Attribute:
 
 class AttributeGObject(GObject.Object):
     """GObject wrapper for the Attribute dataclass."""
-    __gtype_name__ = 'AttributeGObject'
+
+    __gtype_name__ = "AttributeGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     initial_value = GObject.Property(type=int)
@@ -104,12 +109,15 @@ class AttributeGObject(GObject.Object):
 
         self.connect("notify::id", self._on_property_changed, "id")
         self.connect("notify::name", self._on_property_changed, "name")
-        self.connect("notify::initial_value", self._on_property_changed, "initial_value")
+        self.connect(
+            "notify::initial_value", self._on_property_changed, "initial_value"
+        )
         self.connect("notify::max_value", self._on_property_changed, "max_value")
 
     def _on_property_changed(self, obj, pspec, data_key):
         """Handles the notify signal for a property."""
         setattr(self.attribute, data_key, getattr(self, data_key))
+
 
 # Schema for CharacterData.csv
 @dataclass
@@ -126,6 +134,7 @@ class Character:
         portrait_asset_id: The ID of the asset to use for this character's
             portrait.
     """
+
     id: str
     display_name: str
     dialogue_start_id: str
@@ -136,7 +145,8 @@ class Character:
 
 class CharacterGObject(GObject.Object):
     """GObject wrapper for the Character dataclass."""
-    __gtype_name__ = 'CharacterGObject'
+
+    __gtype_name__ = "CharacterGObject"
     id = GObject.Property(type=str)
     display_name = GObject.Property(type=str)
     dialogue_start_id = GObject.Property(type=str)
@@ -156,14 +166,19 @@ class CharacterGObject(GObject.Object):
 
         self.connect("notify::id", self._on_property_changed, "id")
         self.connect("notify::display_name", self._on_property_changed, "display_name")
-        self.connect("notify::dialogue_start_id", self._on_property_changed, "dialogue_start_id")
+        self.connect(
+            "notify::dialogue_start_id", self._on_property_changed, "dialogue_start_id"
+        )
         self.connect("notify::is_merchant", self._on_property_changed, "is_merchant")
         self.connect("notify::shop_id", self._on_property_changed, "shop_id")
-        self.connect("notify::portrait_asset_id", self._on_property_changed, "portrait_asset_id")
+        self.connect(
+            "notify::portrait_asset_id", self._on_property_changed, "portrait_asset_id"
+        )
 
     def _on_property_changed(self, obj, pspec, data_key):
         """Handles the notify signal for a property."""
         setattr(self.character, data_key, getattr(self, data_key))
+
 
 # --- Scene Schemas ---
 @dataclass
@@ -178,6 +193,7 @@ class Hotspot:
         width: The width of the hotspot.
         height: The height of the hotspot.
     """
+
     id: str
     name: str
     x: int
@@ -188,7 +204,8 @@ class Hotspot:
 
 class HotspotGObject(GObject.Object):
     """GObject wrapper for the Hotspot dataclass."""
-    __gtype_name__ = 'HotspotGObject'
+
+    __gtype_name__ = "HotspotGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     x = GObject.Property(type=int)
@@ -228,6 +245,7 @@ class Scene:
         background_image: The file path of the background image for the scene.
         hotspots: A list of hotspots in the scene.
     """
+
     id: str
     name: str
     background_image: Optional[str] = None
@@ -236,7 +254,8 @@ class Scene:
 
 class SceneGObject(GObject.Object):
     """GObject wrapper for the Scene dataclass."""
-    __gtype_name__ = 'SceneGObject'
+
+    __gtype_name__ = "SceneGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     background_image = GObject.Property(type=str)
@@ -250,11 +269,14 @@ class SceneGObject(GObject.Object):
 
         self.connect("notify::id", self._on_property_changed, "id")
         self.connect("notify::name", self._on_property_changed, "name")
-        self.connect("notify::background_image", self._on_property_changed, "background_image")
+        self.connect(
+            "notify::background_image", self._on_property_changed, "background_image"
+        )
 
     def _on_property_changed(self, obj, pspec, data_key):
         """Handles the notify signal for a property."""
         setattr(self.scene, data_key, getattr(self, data_key))
+
 
 # --- Logic Editor Schemas (Node-Based) ---
 class LogicNode:
@@ -270,6 +292,7 @@ class LogicNode:
         inputs: A list of IDs of nodes that connect to this node's inputs.
         outputs: A list of IDs of nodes that this node's outputs connect to.
     """
+
     id: str
     node_type: str
     x: int
@@ -290,14 +313,16 @@ class DialogueNode(LogicNode):
         action_node: An optional action to perform when this dialogue is
             triggered.
     """
+
     character_id: str = ""
     dialogue_text: str = ""
-    action_node: Optional['ActionNode'] = None
+    action_node: Optional["ActionNode"] = None
 
 
 @dataclass
 class ConditionNode(LogicNode):
     """A node that checks a condition in the game world."""
+
     condition_type: str = ""
     var_name: str = ""
     value: str = ""
@@ -319,6 +344,7 @@ class ConditionNode(LogicNode):
 @dataclass
 class ActionNode(LogicNode):
     """A node that performs an action in the game world."""
+
     action_command: str = ""
     var_name: str = ""
     value: str = ""
@@ -351,57 +377,11 @@ class LogicGraph:
         name: The display name of the logic graph.
         nodes: A list of nodes in the logic graph.
     """
+
     id: str
     name: str
     nodes: List[LogicNode] = field(default_factory=list)
 
-# --- Cutscene Schemas ---
-@dataclass
-class CutsceneAction:
-    """Represents a single action in a cutscene.
-
-    Attributes:
-        command: The command to execute.
-        parameters: A list of parameters for the command.
-    """
-    command: str
-    parameters: List[str] = field(default_factory=list)
-
-
-@dataclass
-class Cutscene:
-    """Represents a cutscene.
-
-    Attributes:
-        id: A unique identifier for the cutscene.
-        name: The display name of the cutscene.
-        script: The plain text script for the cutscene.
-        actions: A list of actions in the cutscene.
-    """
-    id: str
-    name: str
-    script: str = ""
-    actions: List[CutsceneAction] = field(default_factory=list)
-
-
-class CutsceneGObject(GObject.Object):
-    """GObject wrapper for the Cutscene dataclass."""
-    __gtype_name__ = 'CutsceneGObject'
-    id = GObject.Property(type=str)
-    name = GObject.Property(type=str)
-
-    def __init__(self, cutscene: Cutscene):
-        super().__init__()
-        self.cutscene = cutscene
-        self.id = cutscene.id
-        self.name = cutscene.name
-
-        self.connect("notify::id", self._on_property_changed, "id")
-        self.connect("notify::name", self._on_property_changed, "name")
-
-    def _on_property_changed(self, obj, pspec, data_key):
-        """Handles the notify signal for a property."""
-        setattr(self.cutscene, data_key, getattr(self, data_key))
 
 # --- Asset Schemas ---
 @dataclass
@@ -414,6 +394,7 @@ class Asset:
         asset_type: The type of the asset (e.g., "image", "sound").
         file_path: The path to the asset file.
     """
+
     id: str
     name: str
     asset_type: str
@@ -422,7 +403,8 @@ class Asset:
 
 class AssetGObject(GObject.Object):
     """GObject wrapper for the Asset dataclass."""
-    __gtype_name__ = 'AssetGObject'
+
+    __gtype_name__ = "AssetGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     asset_type = GObject.Property(type=str)
@@ -455,9 +437,11 @@ class Animation(Asset):
         frame_rate: The frame rate of the animation.
         frames: A list of file paths for each frame of the animation.
     """
+
     frame_count: int
     frame_rate: int
     frames: List[str] = field(default_factory=list)
+
 
 # --- Audio Schemas ---
 @dataclass
@@ -467,12 +451,14 @@ class Audio(Asset):
     Attributes:
         duration: The duration of the audio in seconds.
     """
+
     duration: float
 
 
 class AudioGObject(GObject.Object):
     """GObject wrapper for the Audio dataclass."""
-    __gtype_name__ = 'AudioGObject'
+
+    __gtype_name__ = "AudioGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     file_path = GObject.Property(type=str)
@@ -508,6 +494,7 @@ class GlobalVariable:
         initial_value: The initial value of the variable.
         category: The category of the variable, for organization.
     """
+
     id: str
     name: str
     type: str
@@ -517,7 +504,8 @@ class GlobalVariable:
 
 class GlobalVariableGObject(GObject.Object):
     """GObject wrapper for the GlobalVariable dataclass."""
-    __gtype_name__ = 'GlobalVariableGObject'
+
+    __gtype_name__ = "GlobalVariableGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     type = GObject.Property(type=str)
@@ -536,7 +524,9 @@ class GlobalVariableGObject(GObject.Object):
         self.connect("notify::id", self._on_property_changed, "id")
         self.connect("notify::name", self._on_property_changed, "name")
         self.connect("notify::type", self._on_property_changed, "type")
-        self.connect("notify::initial_value_str", self._on_property_changed, "initial_value")
+        self.connect(
+            "notify::initial_value_str", self._on_property_changed, "initial_value"
+        )
         self.connect("notify::category", self._on_property_changed, "category")
 
     def _on_property_changed(self, obj, pspec, data_key):
@@ -550,7 +540,7 @@ class GlobalVariableGObject(GObject.Object):
                 except (ValueError, TypeError):
                     value = 0
             elif self.type == "bool":
-                value = value.lower() in ['true', '1']
+                value = value.lower() in ["true", "1"]
         setattr(self.variable, data_key, value)
 
 
@@ -563,13 +553,15 @@ class Verb:
         id: A unique identifier for the verb.
         name: The display name of the verb.
     """
+
     id: str
     name: str
 
 
 class VerbGObject(GObject.Object):
     """GObject wrapper for the Verb dataclass."""
-    __gtype_name__ = 'VerbGObject'
+
+    __gtype_name__ = "VerbGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
 
@@ -586,6 +578,7 @@ class VerbGObject(GObject.Object):
         """Handles the notify signal for a property."""
         setattr(self.verb, data_key, getattr(self, data_key))
 
+
 # --- Interaction Schemas ---
 @dataclass
 class Interaction:
@@ -601,6 +594,7 @@ class Interaction:
         target_hotspot_id: The ID of the hotspot that is the target of the
             interaction.
     """
+
     id: str
     verb_id: str
     logic_graph_id: str
@@ -618,6 +612,7 @@ class Font:
         name: The display name of the font.
         file_path: The path to the font file.
     """
+
     id: str
     name: str
     file_path: str
@@ -636,6 +631,7 @@ class UIElement:
         height: The height of the element.
         properties: A dictionary of properties for the element.
     """
+
     id: str
     type: str
     x: int
@@ -654,14 +650,16 @@ class UILayout:
         name: The display name of the layout.
         elements: A list of UI elements in the layout.
     """
+
     id: str
     name: str
-    elements: List['UIElement'] = field(default_factory=list)
+    elements: List["UIElement"] = field(default_factory=list)
 
 
 class UILayoutGObject(GObject.Object):
     """GObject wrapper for the UILayout dataclass."""
-    __gtype_name__ = 'UILayoutGObject'
+
+    __gtype_name__ = "UILayoutGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
 
@@ -681,7 +679,8 @@ class UILayoutGObject(GObject.Object):
 
 class FontGObject(GObject.Object):
     """GObject wrapper for the Font dataclass."""
-    __gtype_name__ = 'FontGObject'
+
+    __gtype_name__ = "FontGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     file_path = GObject.Property(type=str)
@@ -701,6 +700,7 @@ class FontGObject(GObject.Object):
         """Handles the notify signal for a property."""
         setattr(self.font, data_key, getattr(self, data_key))
 
+
 @dataclass
 class Objective:
     """Represents a single objective in a quest.
@@ -710,6 +710,7 @@ class Objective:
         name: The display name of the objective.
         completed: True if the objective has been completed.
     """
+
     id: str
     name: str
     completed: bool = False
@@ -724,6 +725,7 @@ class Quest:
         name: The display name of the quest.
         objectives: A list of objectives in the quest.
     """
+
     id: str
     name: str
     objectives: List[Objective] = field(default_factory=list)
@@ -731,7 +733,8 @@ class Quest:
 
 class ObjectiveGObject(GObject.Object):
     """GObject wrapper for the Objective dataclass."""
-    __gtype_name__ = 'ObjectiveGObject'
+
+    __gtype_name__ = "ObjectiveGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     completed = GObject.Property(type=bool, default=False)
@@ -754,7 +757,8 @@ class ObjectiveGObject(GObject.Object):
 
 class QuestGObject(GObject.Object):
     """GObject wrapper for the Quest dataclass."""
-    __gtype_name__ = 'QuestGObject'
+
+    __gtype_name__ = "QuestGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
 
@@ -774,7 +778,8 @@ class QuestGObject(GObject.Object):
 
 class InteractionGObject(GObject.Object):
     """GObject wrapper for the Interaction dataclass."""
-    __gtype_name__ = 'InteractionGObject'
+
+    __gtype_name__ = "InteractionGObject"
     id = GObject.Property(type=str)
     verb_id = GObject.Property(type=str)
     primary_item_id = GObject.Property(type=str)
@@ -794,10 +799,18 @@ class InteractionGObject(GObject.Object):
 
         self.connect("notify::id", self._on_property_changed, "id")
         self.connect("notify::verb_id", self._on_property_changed, "verb_id")
-        self.connect("notify::primary_item_id", self._on_property_changed, "primary_item_id")
-        self.connect("notify::secondary_item_id", self._on_property_changed, "secondary_item_id")
-        self.connect("notify::target_hotspot_id", self._on_property_changed, "target_hotspot_id")
-        self.connect("notify::logic_graph_id", self._on_property_changed, "logic_graph_id")
+        self.connect(
+            "notify::primary_item_id", self._on_property_changed, "primary_item_id"
+        )
+        self.connect(
+            "notify::secondary_item_id", self._on_property_changed, "secondary_item_id"
+        )
+        self.connect(
+            "notify::target_hotspot_id", self._on_property_changed, "target_hotspot_id"
+        )
+        self.connect(
+            "notify::logic_graph_id", self._on_property_changed, "logic_graph_id"
+        )
 
     def _on_property_changed(self, obj, pspec, data_key):
         """Handles the notify signal for a property."""
@@ -814,6 +827,7 @@ class SearchResult:
         name: The display name of the search result.
         type: The type of the search result (e.g., "Item", "Character").
     """
+
     id: str
     name: str
     type: str
@@ -821,7 +835,8 @@ class SearchResult:
 
 class SearchResultGObject(GObject.Object):
     """GObject wrapper for the SearchResult dataclass."""
-    __gtype_name__ = 'SearchResultGObject'
+
+    __gtype_name__ = "SearchResultGObject"
     id = GObject.Property(type=str)
     name = GObject.Property(type=str)
     type = GObject.Property(type=str)
@@ -837,6 +852,7 @@ class SearchResultGObject(GObject.Object):
 @dataclass
 class ProjectData:
     """A container for all data in an AdvEngine project."""
+
     global_variables: List[GlobalVariable] = field(default_factory=list)
     verbs: List[Verb] = field(default_factory=list)
     items: List[Item] = field(default_factory=list)
@@ -849,13 +865,14 @@ class ProjectData:
     dialogue_graphs: List[LogicGraph] = field(default_factory=list)
     interactions: List[Interaction] = field(default_factory=list)
     quests: List[Quest] = field(default_factory=list)
-    ui_layouts: List['UILayout'] = field(default_factory=list)
-    fonts: List['Font'] = field(default_factory=list)
+    ui_layouts: List["UILayout"] = field(default_factory=list)
+    fonts: List["Font"] = field(default_factory=list)
 
 
 class StringGObject(GObject.Object):
     """A GObject wrapper for a simple Python string."""
-    __gtype_name__ = 'StringGObject'
+
+    __gtype_name__ = "StringGObject"
     value = GObject.Property(type=str)
 
     def __init__(self, value):
