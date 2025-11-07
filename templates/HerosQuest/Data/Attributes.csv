@@ -1,0 +1,5 @@
+id,name,initial_value,max_value
+strength,"Strength",10,100
+intelligence,"Intelligence",10,100
+agility,"Agility",10,100
+vitality,"Vitality",10,100
