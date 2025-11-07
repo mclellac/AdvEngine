@@ -888,12 +888,36 @@ class ProjectManager:
                         writer = csv.writer(f)
                         writer.writerow(headers)
 
+            # Add a default player character
+            character_file_path = os.path.join(data_dir, "CharacterData.csv")
+            if os.path.exists(character_file_path):
+                with open(character_file_path, "a", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["player", "Player", "", "False", "", "", "", "{}"])
+
             # Create empty JSON files
+            # Create default verbs
+            default_verbs = [
+                {"id": "walk_to", "name": "Walk To"},
+                {"id": "look_at", "name": "Look At"},
+                {"id": "take", "name": "Take"},
+                {"id": "use", "name": "Use"},
+                {"id": "talk_to", "name": "Talk To"},
+                {"id": "open", "name": "Open"},
+                {"id": "close", "name": "Close"},
+                {"id": "push", "name": "Push"},
+                {"id": "pull", "name": "Pull"}
+            ]
+
+            default_global_variables = [
+                {"id": "score", "name": "Score", "type": "int", "initial_value": 0, "category": "Default"}
+            ]
+
             json_files = {
                 os.path.join(data_dir, "Assets.json"): [],
                 os.path.join(data_dir, "Audio.json"): [],
-                os.path.join(data_dir, "GlobalState.json"): [],
-                os.path.join(data_dir, "Verbs.json"): [],
+                os.path.join(data_dir, "GlobalState.json"): default_global_variables,
+                os.path.join(data_dir, "Verbs.json"): default_verbs,
                 os.path.join(data_dir, "Fonts.json"): [],
                 os.path.join(logic_dir, "Scenes.json"): [],
                 os.path.join(logic_dir, "LogicGraphs.json"): [],
