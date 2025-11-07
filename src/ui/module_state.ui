@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <object class="GtkBox" id="root_box">
+  <template class="GlobalStateEditor" parent="GtkBox">
     <property name="orientation">vertical</property>
     <child>
       <object class="AdwClamp" id="content_clamp">
@@ -54,5 +54,5 @@
         <property name="icon-name">preferences-system-symbolic</property>
       </object>
     </child>
-  </object>
+  </template>
 </interface>

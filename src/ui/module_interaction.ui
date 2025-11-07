@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <object class="GtkBox" id="main_box">
+  <template class="InteractionEditor" parent="GtkBox">
     <property name="orientation">vertical</property>
     <child>
       <object class="AdwClamp" id="clamp">
@@ -48,5 +48,5 @@
         <property name="icon-name">emblem-synchronizing-symbolic</property>
       </object>
     </child>
-  </object>
+  </template>
 </interface>

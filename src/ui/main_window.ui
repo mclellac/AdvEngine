@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <object class="AdwApplicationWindow" id="main_window">
+  <template class="EditorWindow" parent="AdwApplicationWindow">
     <property name="default-width">1280</property>
     <property name="default-height">800</property>
     <property name="title">AdvEngine</property>
@@ -64,5 +64,5 @@
         </property>
       </object>
     </property>
-  </object>
+  </template>
 </interface>
