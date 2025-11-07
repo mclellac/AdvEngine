@@ -862,93 +862,113 @@ class ProjectManager:
         print(
             f"DEBUG: ProjectManager.create_project: Creating new project at {project_path} with template {template}"
         )
-        if template:
-            template_dir = os.path.join(
-                os.path.dirname(__file__), "..", "..", "templates", template
-            )
-            if os.path.exists(template_dir):
-                import shutil
-
-                shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
-
         try:
-            # Create base directories
-            data_dir = os.path.join(project_path, "Data")
-            logic_dir = os.path.join(project_path, "Logic")
-            ui_dir = os.path.join(project_path, "UI")
-            os.makedirs(data_dir, exist_ok=True)
-            os.makedirs(logic_dir, exist_ok=True)
-            os.makedirs(ui_dir, exist_ok=True)
+            if template and template != "Blank":
+                # This path is for running from the source directory
+                local_path = os.path.join(
+                    os.path.dirname(__file__), "..", "..", "templates", template
+                )
+                # This path is for running from the installed location
+                installed_path = os.path.join(
+                    sys.prefix, "share", "advengine", "templates", template
+                )
 
-            # Create CSV files with headers
-            csv_files = {
-                "ItemData.csv": [
-                    "id",
-                    "name",
-                    "description",
-                    "type",
-                    "buy_price",
-                    "sell_price",
-                ],
-                "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                "CharacterData.csv": [
-                    "id",
-                    "display_name",
-                    "dialogue_start_id",
-                    "is_merchant",
-                    "shop_id",
-                    "portrait_asset_id",
-                    "sprite_sheet_asset_id",
-                    "animations",
-                ],
-            }
-            for filename, headers in csv_files.items():
-                file_path = os.path.join(data_dir, filename)
-                if not os.path.exists(file_path):
+                template_dir = None
+                if os.path.exists(installed_path):
+                    template_dir = installed_path
+                elif os.path.exists(local_path):
+                    template_dir = local_path
+
+                if template_dir:
+                    import shutil
+
+                    shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
+                else:
+                    return None, f"Template '{template}' not found."
+            else:
+                # Create a blank project if no template is specified or if "Blank" is chosen
+                data_dir = os.path.join(project_path, "Data")
+                logic_dir = os.path.join(project_path, "Logic")
+                ui_dir = os.path.join(project_path, "UI")
+                os.makedirs(data_dir, exist_ok=True)
+                os.makedirs(logic_dir, exist_ok=True)
+                os.makedirs(ui_dir, exist_ok=True)
+
+                # Create CSV files with headers
+                csv_files = {
+                    "ItemData.csv": [
+                        "id",
+                        "name",
+                        "description",
+                        "type",
+                        "buy_price",
+                        "sell_price",
+                    ],
+                    "Attributes.csv": ["id", "name", "initial_value", "max_value"],
+                    "CharacterData.csv": [
+                        "id",
+                        "display_name",
+                        "dialogue_start_id",
+                        "is_merchant",
+                        "shop_id",
+                        "portrait_asset_id",
+                        "sprite_sheet_asset_id",
+                        "animations",
+                    ],
+                }
+                for filename, headers in csv_files.items():
+                    file_path = os.path.join(data_dir, filename)
                     with open(file_path, "w", newline="") as f:
                         writer = csv.writer(f)
                         writer.writerow(headers)
 
-            # Add a default player character
-            character_file_path = os.path.join(data_dir, "CharacterData.csv")
-            if os.path.exists(character_file_path):
+                # Add a default player character
+                character_file_path = os.path.join(data_dir, "CharacterData.csv")
                 with open(character_file_path, "a", newline="") as f:
                     writer = csv.writer(f)
-                    writer.writerow(["player", "Player", "", "False", "", "", "", "{}"])
+                    writer.writerow(
+                        ["player", "Player", "", "False", "", "", "", "{}"]
+                    )
 
-            # Create empty JSON files
-            # Create default verbs
-            default_verbs = [
-                {"id": "walk_to", "name": "Walk To"},
-                {"id": "look_at", "name": "Look At"},
-                {"id": "take", "name": "Take"},
-                {"id": "use", "name": "Use"},
-                {"id": "talk_to", "name": "Talk To"},
-                {"id": "open", "name": "Open"},
-                {"id": "close", "name": "Close"},
-                {"id": "push", "name": "Push"},
-                {"id": "pull", "name": "Pull"}
-            ]
+                # Create default verbs
+                default_verbs = [
+                    {"id": "walk_to", "name": "Walk To"},
+                    {"id": "look_at", "name": "Look At"},
+                    {"id": "take", "name": "Take"},
+                    {"id": "use", "name": "Use"},
+                    {"id": "talk_to", "name": "Talk To"},
+                    {"id": "open", "name": "Open"},
+                    {"id": "close", "name": "Close"},
+                    {"id": "push", "name": "Push"},
+                    {"id": "pull", "name": "Pull"},
+                ]
+                default_global_variables = [
+                    {
+                        "id": "score",
+                        "name": "Score",
+                        "type": "int",
+                        "initial_value": 0,
+                        "category": "Default",
+                    }
+                ]
 
-            default_global_variables = [
-                {"id": "score", "name": "Score", "type": "int", "initial_value": 0, "category": "Default"}
-            ]
-
-            json_files = {
-                os.path.join(data_dir, "Assets.json"): [],
-                os.path.join(data_dir, "Audio.json"): [],
-                os.path.join(data_dir, "GlobalState.json"): default_global_variables,
-                os.path.join(data_dir, "Verbs.json"): default_verbs,
-                os.path.join(data_dir, "Fonts.json"): [],
-                os.path.join(logic_dir, "Scenes.json"): [],
-                os.path.join(logic_dir, "LogicGraphs.json"): [],
-                os.path.join(logic_dir, "DialogueGraphs.json"): [],
-                os.path.join(logic_dir, "Interactions.json"): [],
-                os.path.join(logic_dir, "Quests.json"): [],
-                os.path.join(ui_dir, "WindowLayout.json"): [],
-            }
-            for file_path, default_content in json_files.items():
-                if not os.path.exists(file_path):
+                # Create JSON files with default content
+                json_files = {
+                    os.path.join(data_dir, "Assets.json"): [],
+                    os.path.join(data_dir, "Audio.json"): [],
+                    os.path.join(
+                        data_dir, "GlobalState.json"
+                    ): default_global_variables,
+                    os.path.join(data_dir, "Verbs.json"): default_verbs,
+                    os.path.join(data_dir, "Fonts.json"): [],
+                    os.path.join(logic_dir, "Scenes.json"): [],
+                    os.path.join(logic_dir, "LogicGraphs.json"): [],
+                    os.path.join(logic_dir, "DialogueGraphs.json"): [],
+                    os.path.join(logic_dir, "Interactions.json"): [],
+                    os.path.join(logic_dir, "Quests.json"): [],
+                    os.path.join(ui_dir, "WindowLayout.json"): [],
+                }
+                for file_path, default_content in json_files.items():
                     with open(file_path, "w") as f:
                         json.dump(default_content, f, indent=2)
 
