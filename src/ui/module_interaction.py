@@ -1,87 +1,58 @@
 """The interaction editor for the AdvEngine application."""
 
 import gi
+import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
 from ..core.data_schemas import Interaction, InteractionGObject, Item, Verb, Hotspot, LogicGraph, StringGObject
 
 
-class InteractionEditor(Adw.Bin):
-    """A widget for editing interactions.
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_interaction.ui"))
+class InteractionEditor(Gtk.Box):
+    """A widget for editing interactions."""
+    __gtype_name__ = 'InteractionEditor'
 
-    This editor provides a table-like interface for creating, editing, and
-    deleting interactions.
-    """
     EDITOR_NAME = "Interactions"
     VIEW_NAME = "interaction_editor"
     ORDER = 2
 
-    def __init__(self, project_manager, **kwargs):
-        """Initializes a new InteractionEditor instance.
+    add_button = Gtk.Template.Child()
+    delete_button = Gtk.Template.Child()
+    column_view = Gtk.Template.Child()
+    status_page = Gtk.Template.Child()
+    scrolled_window = Gtk.Template.Child()
 
-        Args:
-            project_manager: The project manager instance.
-        """
+    def __init__(self, project_manager, **kwargs):
+        """Initializes a new InteractionEditor instance."""
         print("DEBUG: InteractionEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        self.main_box = self._build_ui()
-        self.set_child(self.main_box)
+        self._setup_model()
+        self._create_columns()
+        self._connect_signals()
 
         self._refresh_model()
         self._update_visibility()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: InteractionEditor._build_ui")
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        clamp = Adw.Clamp()
-        main_box.append(clamp)
-
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        content_box.set_margin_top(12)
-        content_box.set_margin_bottom(12)
-        clamp.set_child(content_box)
-
-        header = Adw.HeaderBar()
-        content_box.append(header)
-
-        self.add_button = Gtk.Button(icon_name="list-add-symbolic")
-        self.add_button.set_tooltip_text("Add New Interaction")
-        self.add_button.connect("clicked", self._on_add_clicked)
-        header.pack_start(self.add_button)
-
-        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
-        self.delete_button.set_tooltip_text("Delete Selected Interaction")
-        self.delete_button.connect("clicked", self._on_delete_clicked)
-        self.delete_button.set_sensitive(False)
-        header.pack_end(self.delete_button)
-
+    def _setup_model(self):
+        """Sets up the data model and selection."""
         self.model = Gio.ListStore(item_type=InteractionGObject)
         self.selection = Gtk.SingleSelection(model=self.model)
+        self.column_view.set_model(self.selection)
+
+    def _connect_signals(self):
+        """Connects widget signals to handlers."""
+        self.add_button.connect("clicked", self._on_add_clicked)
+        self.delete_button.connect("clicked", self._on_delete_clicked)
         self.selection.connect("selection-changed", self._on_selection_changed)
-
-        self.column_view = Gtk.ColumnView(model=self.selection)
-        self.column_view.set_vexpand(True)
-        self._create_columns()
-
-        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
-        content_box.append(scrolled_window)
-
-        self.status_page = Adw.StatusPage(
-            title="No Interactions", icon_name="emblem-synchronizing-symbolic")
-        main_box.append(self.status_page)
-
-        return main_box
 
     def _update_visibility(self):
         """Updates the visibility of the column view and status page."""
         has_interactions = self.model.get_n_items() > 0
         print(f"DEBUG: InteractionEditor._update_visibility: has_interactions={has_interactions}")
-        self.column_view.get_parent().set_visible(has_interactions)
+        self.scrolled_window.set_visible(has_interactions)
         self.status_page.set_visible(not has_interactions)
 
     def _refresh_model(self):

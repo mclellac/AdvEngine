@@ -1,127 +1,70 @@
 """The asset editor for the AdvEngine application."""
 
 import gi
+import os
+import shutil
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Adw, Gdk
-import os
-import shutil
 from ..core.data_schemas import Asset, Animation, StringGObject, AssetGObject
 
 
-class AssetEditor(Adw.Bin):
-    """A widget for managing game assets.
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_assets.ui"))
+class AssetEditor(Gtk.Box):
+    """A widget for managing game assets."""
+    __gtype_name__ = 'AssetEditor'
 
-    This editor provides a grid view of all assets in the project, a preview
-    of the selected asset, and an editor for animations.
-    """
     EDITOR_NAME = "Assets"
     VIEW_NAME = "assets_editor"
     ORDER = 5
 
-    def __init__(self, project_manager, **kwargs):
-        """Initializes a new AssetEditor instance.
+    asset_grid_view = Gtk.Template.Child()
+    main_stack = Gtk.Template.Child()
+    import_button = Gtk.Template.Child()
+    preview_image = Gtk.Template.Child()
+    animation_editor = Gtk.Template.Child()
+    frame_list_view = Gtk.Template.Child()
 
-        Args:
-            project_manager: The project manager instance.
-        """
+    def __init__(self, project_manager, **kwargs):
+        """Initializes a new AssetEditor instance."""
         print("DEBUG: AssetEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.selected_asset = None
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
-
-        self.model = self._setup_model()
-        self.selection_model = Gtk.SingleSelection(model=self.model)
-        self.selection_model.connect("selection-changed", self._on_asset_selected)
-        self.asset_grid_view.set_model(self.selection_model)
+        self._setup_models()
+        self._setup_grid_view()
+        self._setup_animation_editor()
+        self._connect_signals()
 
         self.refresh_asset_list()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: AssetEditor._build_ui")
-        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        main_box.set_margin_top(10)
-        main_box.set_margin_bottom(10)
-        main_box.set_margin_start(10)
-        main_box.set_margin_end(10)
-        root_box.append(main_box)
+    def _setup_models(self):
+        """Sets up the data models."""
+        self.model = Gio.ListStore(item_type=AssetGObject)
+        self.selection_model = Gtk.SingleSelection(model=self.model)
+        self.animation_frames_model = Gio.ListStore(item_type=StringGObject)
 
-        left_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        left_panel.set_size_request(350, -1)
-        main_box.append(left_panel)
-
+    def _setup_grid_view(self):
+        """Sets up the asset grid view."""
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._setup_grid_item)
         factory.connect("bind", self._bind_grid_item)
+        self.asset_grid_view.set_model(self.selection_model)
+        self.asset_grid_view.set_factory(factory)
 
-        self.asset_grid_view = Gtk.GridView(factory=factory)
-        self.asset_grid_view.set_max_columns(3)
-        self.asset_grid_view.set_min_columns(2)
-
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(
-            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_window.set_vexpand(True)
-        scrolled_window.set_child(self.asset_grid_view)
-
-        self.status_page = Adw.StatusPage(
-            title="No Assets", icon_name="image-x-generic-symbolic")
-
-        self.main_stack = Gtk.Stack()
-        self.main_stack.add_named(scrolled_window, "grid")
-        self.main_stack.add_named(self.status_page, "status")
-        left_panel.append(self.main_stack)
-
-        import_button = Gtk.Button(label="Import Asset")
-        import_button.set_tooltip_text(
-            "Import a new image asset into the project")
-        import_button.connect("clicked", self._on_import_asset)
-        left_panel.append(import_button)
-
-        right_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        right_panel.set_hexpand(True)
-        main_box.append(right_panel)
-
-        self.preview_image = Gtk.Picture()
-        self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
-        right_panel.append(self.preview_image)
-
-        self.animation_editor = self._build_animation_editor()
-        right_panel.append(self.animation_editor)
-
-        return main_box
-
-    def _build_animation_editor(self):
-        """Builds the UI for the animation editor."""
-        print("DEBUG: AssetEditor._build_animation_editor")
-        animation_editor = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=10, visible=False)
-        animation_editor.append(Gtk.Label(label="Animation Frames"))
-
-        self.animation_frames_model = Gio.ListStore(item_type=StringGObject)
-
+    def _setup_animation_editor(self):
+        """Sets up the animation editor."""
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._setup_frame_row)
         factory.connect("bind", self._bind_frame_row)
+        self.frame_list_view.set_model(Gtk.SingleSelection(model=self.animation_frames_model))
+        self.frame_list_view.set_factory(factory)
 
-        self.frame_list_view = Gtk.ListView(
-            model=Gtk.SingleSelection(model=self.animation_frames_model), factory=factory)
-
-        scrolled_frames = Gtk.ScrolledWindow()
-        scrolled_frames.set_child(self.frame_list_view)
-        animation_editor.append(scrolled_frames)
-
-        return animation_editor
-
-    def _setup_model(self):
-        """Sets up the data model for the editor."""
-        print("DEBUG: AssetEditor._setup_model")
-        return Gio.ListStore(item_type=AssetGObject)
+    def _connect_signals(self):
+        """Connects widget signals to handlers."""
+        self.selection_model.connect("selection-changed", self._on_asset_selected)
+        self.import_button.connect("clicked", self._on_import_asset)
 
     def _setup_grid_item(self, factory, list_item):
         """Sets up a grid item in the asset grid view."""
@@ -215,10 +158,7 @@ class AssetEditor(Adw.Bin):
         """Updates the visibility of the main stack."""
         has_assets = self.model.get_n_items() > 0
         print(f"DEBUG: AssetEditor._update_visibility: has_assets={has_assets}")
-        if has_assets:
-            self.main_stack.set_visible_child_name("grid")
-        else:
-            self.main_stack.set_visible_child_name("status")
+        self.main_stack.set_visible_child_name("grid" if has_assets else "status")
 
     def _on_import_asset(self, button):
         """Handles the clicked signal from the import button."""

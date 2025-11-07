@@ -1,96 +1,34 @@
-# AGENTS.md: AdvEngine
+# AdvEngine Agent Protocol
 
----
+This document outlines the guidelines and standards for AI agents working on the AdvEngine project. Adherence to these protocols is crucial for maintaining code quality, consistency, and alignment with the project's goals.
 
-## 1. Project Overview & Context
+## 1. Core Principles
 
-*   **Project Name (Tool):** AdvEngine
-*   **Purpose:** A modern adventure game editor for the rapid creation and iteration of 2.5D point-and-click adventure games, inspired by classic Sierra On-Line titles.
-*   **Function:** AdvEngine is a **Data and Configuration Manager**. It provides a cross-platform UI for designing game logic, managing data, and exporting structured files for the target game engine.
-*   **Target Game Engine:** Unreal Engine 5.6
-*   **Core Principle:** Abstraction—hide Unreal Engine's complexity behind a clean, data-driven Python interface.
+- **User-Centric Design**: The primary goal is to create a powerful, intuitive, and stable tool for game developers. All technical decisions should ultimately serve this goal. The user's frustration with bugs and inconsistent UI is a top priority to resolve.
+- **GNOME HIG Adherence**: The application MUST follow the GNOME Human Interface Guidelines. The UI should be clean, modern, and consistent. Use Adwaita widgets and layouts wherever possible. **Custom CSS is forbidden.**
+- **UI-First Development**: The user interface will be defined declaratively using GtkBuilder `.ui` files, not programmatically in Python. This enforces a separation of concerns and is the standard for this project going forward.
+- **Data-Driven Architecture**: The core of the engine is the separation of data (`.dataclasses` in `data_schemas.py`) from the UI (`GObject` wrappers and GTK widgets). The UI should be a reflection of the data, and all data manipulation should happen through the `ProjectManager`.
+- **Atomic Commits**: Each submission should represent a single, complete, and logical change. Do not bundle unrelated features or bug fixes.
 
----
+## 2. Technical Standards
 
-## 2. Technology Stack & Dependencies
+- **Code Style**: All Python code MUST adhere strictly to PEP8. Docstrings MUST be in the Google style and be comprehensive.
+- **Error Handling**: All file I/O and other potentially failing operations must be wrapped in `try...except` blocks with robust error handling and user-facing feedback.
+- **Dependencies**: The project is built on Python 3.10+, GTK4, and Libadwaita. All dependencies required to build and run the project are documented in memory.
+- **Testing**: While there is no formal test suite yet, manual "smoke testing" is required. After any significant change, run the application in a headless environment to ensure it starts without critical errors.
 
-### A. Core Tool Stack (AdvEngine Application)
+## 3. Workflow
 
-| Component | Role | Required Version | Notes |
-| :--- | :--- | :--- | :--- |
-| **Language** | Front-end logic, data management. | **Python 3.10+** | |
-| **GUI Framework** | Cross-platform UI toolkit. | **GTK4 (via PyGObject)** | Provides the core application structure. |
-| **Design Library** | Modern, responsive UI components. | **Libadwaita** | Ensures a clean, HIG-compliant aesthetic. |
-| **Build System** | Project compilation and installation. | **Meson & Ninja** | Replaces previous direct script execution. |
-| **Graphing** | Node drawing and rendering. | **Custom GTK Widget** | Uses **cairo** for canvas rendering. |
-| **Serialization**| Data processing for project files. | **json**, **csv** | Standard libraries for all I/O. |
+1.  **Understand the Goal**: Before writing code, fully understand the user's request and the existing codebase. Consult this file and the `docs/design` directory.
+2.  **Plan the Work**: Create a detailed, step-by-step plan using the `set_plan` tool. The plan must be approved before implementation begins.
+3.  **Implement Declaratively**: For all UI work, start by creating or modifying the `.ui` file. Then, load this file in the corresponding Python module and connect signals and logic.
+4.  **Verify Changes**: After each modification, use tools like `read_file` to confirm the change was written correctly. After a set of changes, run the application to visually or functionally verify the results.
+5.  **Pre-Commit Checks**: Before submitting, run all required pre-commit checks. This includes linting, formatting, and any other verification steps.
 
----
+## 4. Key Architectural Patterns
 
-## 3. AdvEngine Internal Tool Architecture
-
-### A. Directory Structure
-
-The project has a split source structure. Python modules are in `adv_engine/src/`, while GTK UI definition files, resources, and Meson build scripts are in a separate top-level `src/`.
-
-```text
-/
-|-- src/                      # Top-level source for build system and resources
-|   |-- core/
-|   |   |-- project_manager.py     # Handles project loading, saving, and data access.
-|   |   |-- data_schemas.py        # Python dataclass definitions for all game data.
-|   |   |-- settings_manager.py    # Manages application and project settings.
-|   |   |-- ue_exporter.py         # Defines node commands and parameters.
-|   |-- ui/
-|   |   |-- main.py                # Application entry point and main window class.
-|   |   |-- module_scene.py        # Scene Editor
-|   |   |-- module_logic.py        # Logic Graph Editor
-|   |   |-- module_dialogue.py     # Dialogue Tree Editor
-|   |   |-- module_interaction.py  # Interaction Editor
-|   |   |-- module_character.py    # Character Manager
-|   |   |-- module_quest.py        # Quest Editor
-|   |   |-- item_editor.py         # Item Database Editor
-|   |   |-- ... (other editors)
-|   |-- advengine.gresource.xml # GResource bundle definition.
-|   |-- main.py                 # Application entry point.
-|-- TestGame/                 # Example project data.
-|-- docs/                     # User guide and tutorial.
-|-- meson.build               # Main Meson build script.
-```
-
-### B. Module Responsibilities
-
-*   **`src/core/project_manager.py`**: The central data hub. Manages loading all project files (`.json`, `.csv`) into memory, provides data access to UI modules, tracks unsaved changes (`is_dirty` state), and handles saving operations.
-*   **`src/core/data_schemas.py`**: Defines the application's entire data model using Python `dataclasses`. This includes structures for `Item`, `Character`, `Scene`, `LogicGraph`, `Quest`, etc.
-*   **`src/ui/main.py`**: The application entry point. Initializes the `Adw.Application`, builds the main `AdvEngineWindow`, instantiates all editor modules, and wires them into the `Adw.ViewStack`.
-*   **`src/ui/module_logic.py`**: Implements the generic node-based editor for creating and visualizing `LogicGraph` data structures. It handles canvas drawing, user input (selection, dragging, connecting), and context menus.
-*   **`src/ui/module_dialogue.py`**: A specialized editor that uses a tree view to manage `DialogueGraph` data, which is a specific type of `LogicGraph`.
-*   **Database Editors (`item_editor.py`, etc.)**: These modules implement a consistent, spreadsheet-like UI using `Gtk.ColumnView` for all database-style data (Items, Verbs, Attributes, etc.), providing full inline CRUD functionality.
-
----
-
-## 4. Design and Architectural Documentation
-
-For a complete understanding of the application's architecture, coding standards, and the design of its core components, consult the comprehensive design documentation located in the `docs/design/` directory.
-
--   **`01_application_architecture.md`**: Provides a high-level overview of the application's architecture, data flow, and the role of core components.
--   **`02_coding_standards.md`**: Defines the project's coding conventions, including PEP8, docstring format, and UI guidelines.
--   **`03_logic_editor_design.md`**: Provides a detailed breakdown of the Logic Editor's internal architecture, its interaction with data schemas, and the complete data persistence workflow.
-
-## 5. Feature and Data Model Documentation
-
-For a complete and exhaustive understanding of the application's features, editor workflows, and data schemas, consult the comprehensive user documentation located in the `/docs` directory.
-
--   The **`/docs/reference/`** directory contains detailed, up-to-date guides for every editor and data model. This should be considered the primary source of truth.
--   The Python dataclasses in **`src/core/data_schemas.py`** are the definitive source for the structure of all data models.
-
----
-
-## 7. Coding Style and Conventions
-
-*   **PEP8 Compliance**: All Python code must adhere to the PEP8 style guide.
-*   **Docstrings**: All modules, classes, and functions must have Google-style docstrings.
-*   **Error Handling**: Use `try...except` blocks for all file I/O operations. Provide clear user feedback for errors.
-*   **GNOME HIG**: The UI must follow the GNOME Human Interface Guidelines, using Libadwaita widgets and patterns wherever possible.
-*   **No Custom CSS**: Do not add custom CSS styling. The application should rely entirely on the default Libadwaita theme to ensure a consistent user experience, including support for light and dark modes.
-*   **Atomic Commits**: Submit work as focused, atomic changes. Avoid bundling unrelated features or bug fixes.
+- **`Gtk.Builder`**: This is the **only** approved method for creating UI layouts. The `ui_loader.py` module will provide a helper function to load these files.
+- **`Adw.OverlaySplitView`**: This is the standard top-level layout for main editor views, providing a sidebar and a content area.
+- **`Gtk.ListView` / `Gtk.ColumnView`**: These are the preferred widgets for displaying lists of data. Inline editing is the required pattern, replacing the old "select then click edit" modal dialogs.
+- **`ProjectManager`**: This is the single source of truth for all project data. The UI must not store its own state but should instead reflect the state of the `ProjectManager`.
+- **`GObject` Wrappers**: To display dataclasses in GTK views, they must be wrapped in a `GObject.Object` subclass. This is a critical pattern for connecting the data model to the UI.

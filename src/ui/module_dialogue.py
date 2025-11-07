@@ -30,101 +30,59 @@ class DialogueNodeGObject(GObject.Object):
             self.display_text = f"-> ACTION: {node.action_command}"
 
 
-class DialogueEditor(Adw.Bin):
-    """A widget for editing dialogue trees.
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_dialogue.ui"))
+class DialogueEditor(Adw.OverlaySplitView):
+    """A widget for editing dialogue trees."""
+    __gtype_name__ = 'DialogueEditor'
 
-    This editor provides a tree view of the dialogue graph, a properties
-    panel for editing the selected node, and buttons for adding and deleting
-    nodes.
-    """
     EDITOR_NAME = "Dialogue"
     VIEW_NAME = "dialogue_editor"
     ORDER = 3
 
-    def __init__(self, project_manager, **kwargs):
-        """Initializes a new DialogueEditor instance.
+    add_dialogue_button = Gtk.Template.Child()
+    add_action_button = Gtk.Template.Child()
+    delete_button = Gtk.Template.Child()
+    dialogue_tree_view = Gtk.Template.Child()
+    properties_stack = Gtk.Template.Child()
+    dialogue_node_editor_placeholder = Gtk.Template.Child()
 
-        Args:
-            project_manager: The project manager instance.
-        """
+    def __init__(self, project_manager, **kwargs):
+        """Initializes a new DialogueEditor instance."""
         print("DEBUG: DialogueEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.active_graph = None
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
+        self.dialogue_node_editor = DynamicNodeEditor(
+            project_manager=self.project_manager, on_update_callback=self._on_node_updated)
+        self.dialogue_node_editor_placeholder.set_child(self.dialogue_node_editor)
 
+        self._setup_tree_view()
+        self._connect_signals()
         self._load_dialogue_graphs()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: DialogueEditor._build_ui")
-        root_box = Gtk.Box()
-        paned = Adw.OverlaySplitView()
-        paned.set_sidebar(self._create_tree_panel())
-        paned.set_content(self._create_properties_panel())
-        root_box.append(paned)
-        return root_box
-
-    def _create_tree_panel(self):
-        """Creates the panel with the dialogue tree."""
-        print("DEBUG: DialogueEditor._create_tree_panel")
-        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-
-        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        left_box.append(toolbar)
-
-        self.add_dialogue_button = Gtk.Button(label="Add Dialogue")
-        self.add_dialogue_button.connect("clicked", self._on_add_dialogue_node)
-        toolbar.append(self.add_dialogue_button)
-
-        self.add_action_button = Gtk.Button(label="Add Action")
-        self.add_action_button.connect("clicked", self._on_add_action_node)
-        toolbar.append(self.add_action_button)
-
-        self.delete_button = Gtk.Button(label="Delete")
-        self.delete_button.set_sensitive(False)
-        self.delete_button.connect("clicked", self._on_delete_node)
-        toolbar.append(self.delete_button)
-
+    def _setup_tree_view(self):
+        """Sets up the tree view and its model."""
         self.model = Gio.ListStore(item_type=DialogueNodeGObject)
         self.tree_model = Gtk.TreeListModel.new(
             self.model, passthrough=False, autoexpand=True, create_func=self._get_children)
 
         self.selection = Gtk.SingleSelection(model=self.tree_model)
-        self.selection.connect("selection-changed", self._on_selection_changed)
 
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._setup_list_item)
         factory.connect("bind", self._bind_list_item)
         factory.connect("unbind", self._unbind_list_item)
 
-        list_view = Gtk.ListView(model=self.selection, factory=factory)
-        list_view_scrolled = Gtk.ScrolledWindow()
-        list_view_scrolled.set_child(list_view)
-        left_box.append(list_view_scrolled)
+        self.dialogue_tree_view.set_model(self.selection)
+        self.dialogue_tree_view.set_factory(factory)
 
-        return left_box
-
-    def _create_properties_panel(self):
-        """Creates the panel for editing the properties of the selected node."""
-        print("DEBUG: DialogueEditor._create_properties_panel")
-        self.properties_stack = Gtk.Stack()
-        self.properties_stack.set_transition_type(
-            Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-
-        self.placeholder = Adw.StatusPage(
-            title="Select a node to edit its properties.")
-        self.properties_stack.add_named(self.placeholder, "placeholder")
-
-        self.dialogue_node_editor = DynamicNodeEditor(
-            project_manager=self.project_manager, on_update_callback=self._on_node_updated)
-        self.properties_stack.add_named(
-            self.dialogue_node_editor, "editor")
-
-        self.properties_stack.set_visible_child_name("placeholder")
-        return self.properties_stack
+    def _connect_signals(self):
+        """Connects the widget signals to the handler functions."""
+        self.add_dialogue_button.connect("clicked", self._on_add_dialogue_node)
+        self.add_action_button.connect("clicked", self._on_add_action_node)
+        self.delete_button.connect("clicked", self._on_delete_node)
+        self.selection.connect("selection-changed", self._on_selection_changed)
 
     def _get_children(self, item, *args):
         """Gets the children of a node in the dialogue tree."""

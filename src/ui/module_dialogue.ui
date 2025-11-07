@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1"/>
+  <object class="AdwOverlaySplitView" id="dialogue_editor_split_view">
+    <property name="sidebar">
+      <object class="GtkBox" id="tree_panel">
+        <property name="orientation">vertical</property>
+        <property name="spacing">5</property>
+        <child>
+          <object class="GtkBox" id="toolbar">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">5</property>
+            <child>
+              <object class="GtkButton" id="add_dialogue_button">
+                <property name="label">Add Dialogue</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="add_action_button">
+                <property name="label">Add Action</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="delete_button">
+                <property name="label">Delete</property>
+                <property name="sensitive">false</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+             <property name="hexpand">true</property>
+             <property name="vexpand">true</property>
+            <property name="child">
+              <object class="GtkListView" id="dialogue_tree_view"/>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+    <property name="content">
+      <object class="GtkStack" id="properties_stack">
+        <property name="transition-type">slide-left-right</property>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">placeholder</property>
+            <property name="child">
+              <object class="AdwStatusPage">
+                <property name="title">Select a node to edit its properties.</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">editor</property>
+            <property name="child">
+              <object class="GtkBox" id="dialogue_node_editor_placeholder"/>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </object>
+</interface>

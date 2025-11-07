@@ -10,99 +10,43 @@ from ..core.data_schemas import Character, CharacterGObject
 from ..core.project_manager import ProjectManager
 
 
-class CharacterManager(Adw.Bin):
-    """A widget for editing characters in a project.
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_character.ui"))
+class CharacterManager(Gtk.Box):
+    """A widget for editing characters in a project."""
+    __gtype_name__ = 'CharacterManager'
 
-    This editor provides a table-like interface for creating, editing, and
-    deleting characters, and includes a preview of the character's portrait.
-    """
     EDITOR_NAME = "Characters"
     VIEW_NAME = "character_manager"
     ORDER = 8
 
-    def __init__(self, project_manager: ProjectManager, **kwargs):
-        """Initializes a new CharacterManager instance.
+    add_button = Gtk.Template.Child()
+    delete_button = Gtk.Template.Child()
+    search_entry = Gtk.Template.Child()
+    column_view = Gtk.Template.Child()
+    portrait_preview = Gtk.Template.Child()
+    empty_state = Gtk.Template.Child()
+    content_box = Gtk.Template.Child()
 
-        Args:
-            project_manager: The project manager instance.
-        """
+    def __init__(self, project_manager: ProjectManager, **kwargs):
+        """Initializes a new CharacterManager instance."""
         print("DEBUG: CharacterManager.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
-
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
         self.selection = self._setup_selection_model()
+        self._setup_column_view()
         self.column_view.set_model(self.selection)
 
+        self._connect_signals()
         self._update_visibility()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: CharacterManager._build_ui")
-        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        self.content_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        self.content_box.set_margin_top(12)
-        self.content_box.set_margin_bottom(12)
-        self.content_box.set_margin_start(12)
-        self.content_box.set_margin_end(12)
-        root_box.append(self.content_box)
-
-        list_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=12, hexpand=True)
-        self.content_box.append(list_box)
-
-        header = Adw.HeaderBar()
-        list_box.append(header)
-
-        self.add_button = Gtk.Button(icon_name="list-add-symbolic")
-        self.add_button.set_tooltip_text("Add New Character")
+    def _connect_signals(self):
+        """Connects widget signals to handlers."""
         self.add_button.connect("clicked", self._on_add_clicked)
-        header.pack_start(self.add_button)
-
-        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
-        self.delete_button.set_tooltip_text("Delete Selected Character")
         self.delete_button.connect("clicked", self._on_delete_clicked)
-        self.delete_button.set_sensitive(False)
-        header.pack_end(self.delete_button)
-
-        self.search_entry = Gtk.SearchEntry()
-        self.search_entry.set_placeholder_text("Search Characters")
         self.search_entry.connect("search-changed", self._on_search_changed)
-        list_box.append(self.search_entry)
-
-        self.column_view = self._setup_column_view()
-        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
-        scrolled_window.set_policy(
-            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        list_box.append(scrolled_window)
-
-        preview_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=6, vexpand=False, hexpand=False)
-        preview_box.set_size_request(256, -1)
-        self.content_box.append(preview_box)
-
-        preview_label = Gtk.Label(
-            label="<b>Portrait Preview</b>", use_markup=True)
-        preview_box.append(preview_label)
-
-        self.portrait_preview = Gtk.Picture(content_fit=Gtk.ContentFit.CONTAIN)
-        self.portrait_preview.set_size_request(-1, 256)
-        preview_box.append(self.portrait_preview)
-
-        self.empty_state = Adw.StatusPage(
-            title="No Characters",
-            description="Create a new character to get started.",
-            icon_name="user-info-symbolic"
-        )
-        root_box.append(self.empty_state)
-
-        return root_box
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
@@ -132,9 +76,7 @@ class CharacterManager(Adw.Bin):
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
         print("DEBUG: CharacterManager._setup_column_view")
-        column_view = Gtk.ColumnView()
-        self._create_columns(column_view)
-        return column_view
+        self._create_columns(self.column_view)
 
     def _create_columns(self, column_view):
         """Creates and appends all columns to the ColumnView."""

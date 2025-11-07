@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1"/>
+  <object class="GtkBox" id="root_box">
+    <property name="orientation">horizontal</property>
+    <child>
+      <object class="GtkBox" id="scene_list_panel">
+        <property name="orientation">vertical</property>
+        <property name="spacing">6</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        <child>
+          <object class="AdwHeaderBar" id="scene_list_header">
+            <child type="start">
+              <object class="GtkButton" id="add_scene_button">
+                <property name="icon-name">list-add-symbolic</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="delete_scene_button">
+                <property name="icon-name">edit-delete-symbolic</property>
+                <property name="sensitive">false</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="vexpand">true</property>
+            <property name="child">
+              <object class="GtkListView" id="scene_list_view"/>
+            </property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwOverlaySplitView" id="split_view">
+        <property name="hexpand">true</property>
+        <property name="sidebar-position">end</property>
+        <property name="content">
+          <object class="GtkStack" id="content_stack">
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">canvas</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="AdwHeaderBar">
+                        <child type="start">
+                          <object class="GtkToggleButton" id="hotspot_toggle">
+                            <property name="icon-name">object-select-symbolic</property>
+                            <property name="tooltip-text">Add Hotspot</property>
+                          </object>
+                        </child>
+                        <child type="start">
+                          <object class="GtkToggleButton" id="grid_toggle">
+                            <property name="icon-name">view-grid-symbolic</property>
+                            <property name="tooltip-text">Show Grid</property>
+                            <property name="active">true</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDrawingArea" id="canvas">
+                        <property name="hexpand">true</property>
+                        <property name="vexpand">true</property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">status</property>
+                <property name="child">
+                  <object class="AdwStatusPage">
+                    <property name="title">No Scenes</property>
+                    <property name="icon-name">video-display-symbolic</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </property>
+        <property name="sidebar">
+          <object class="AdwClamp" id="props_panel">
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <child>
+                  <object class="AdwPreferencesGroup" id="background_group">
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">Background Image</property>
+                        <child type="suffix">
+                          <object class="GtkPicture" id="background_preview">
+                            <property name="content-fit">contain</property>
+                            <property name="height-request">150</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="set_bg_button">
+                        <property name="label">Choose Image...</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="props_group">
+                    <property name="title">Hotspot Properties</property>
+                    <property name="visible">false</property>
+                    <child>
+                      <object class="AdwEntryRow" id="prop_name">
+                        <property name="title">Name</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSpinRow" id="prop_x">
+                        <property name="title">X</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">8192</property>
+                            <property name="step-increment">1</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSpinRow" id="prop_y">
+                        <property name="title">Y</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">8192</property>
+                            <property name="step-increment">1</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSpinRow" id="prop_w">
+                        <property name="title">Width</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">1</property>
+                            <property name="upper">8192</property>
+                            <property name="step-increment">1</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSpinRow" id="prop_h">
+                        <property name="title">Height</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">1</property>
+                            <property name="upper">8192</property>
+                            <property name="step-increment">1</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup" id="layer_group">
+                    <property name="title">Layers</property>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="vexpand">true</property>
+                        <property name="child">
+                          <object class="GtkListView" id="layer_list"/>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

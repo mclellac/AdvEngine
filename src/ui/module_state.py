@@ -1,6 +1,7 @@
 """The global state editor for the AdvEngine application."""
 
 import gi
+import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
@@ -9,83 +10,42 @@ from ..core.data_schemas import GlobalVariable, GlobalVariableGObject
 from ..core.project_manager import ProjectManager
 
 
-class GlobalStateEditor(Adw.Bin):
-    """A widget for editing global variables.
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_state.ui"))
+class GlobalStateEditor(Gtk.Box):
+    """A widget for editing global variables."""
+    __gtype_name__ = "GlobalStateEditor"
 
-    This editor provides a table-like interface for creating, editing, and
-    deleting global variables. It includes features for searching and
-    sorting.
-    """
     EDITOR_NAME = "Global State"
     VIEW_NAME = "global_state_editor"
     ORDER = 7
 
-    def __init__(self, project_manager: ProjectManager, **kwargs):
-        """Initializes a new GlobalStateEditor instance.
+    add_button = Gtk.Template.Child()
+    delete_button = Gtk.Template.Child()
+    search_entry = Gtk.Template.Child()
+    column_view = Gtk.Template.Child()
+    empty_state = Gtk.Template.Child()
+    content_clamp = Gtk.Template.Child()
 
-        Args:
-            project_manager: The project manager instance.
-        """
+    def __init__(self, project_manager: ProjectManager, **kwargs):
+        """Initializes a new GlobalStateEditor instance."""
         print("DEBUG: GlobalStateEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
-
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
         self.selection = self._setup_selection_model()
+        self._setup_column_view()
         self.column_view.set_model(self.selection)
 
+        self._connect_signals()
         self._update_visibility()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: GlobalStateEditor._build_ui")
-        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        self.content_clamp = Adw.Clamp()
-        root_box.append(self.content_clamp)
-
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        main_box.set_margin_top(12)
-        main_box.set_margin_bottom(12)
-        self.content_clamp.set_child(main_box)
-
-        header = Adw.HeaderBar()
-        main_box.append(header)
-
-        self.add_button = Gtk.Button(icon_name="list-add-symbolic")
-        self.add_button.set_tooltip_text("Add New Variable")
+    def _connect_signals(self):
+        """Connects widget signals to handlers."""
         self.add_button.connect("clicked", self._on_add_clicked)
-        header.pack_start(self.add_button)
-
-        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
-        self.delete_button.set_tooltip_text("Delete Selected Variable")
         self.delete_button.connect("clicked", self._on_delete_clicked)
-        self.delete_button.set_sensitive(False)
-        header.pack_end(self.delete_button)
-
-        self.search_entry = Gtk.SearchEntry()
-        self.search_entry.set_placeholder_text("Search Variables")
         self.search_entry.connect("search-changed", self._on_search_changed)
-        main_box.append(self.search_entry)
-
-        self.column_view = self._setup_column_view()
-        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
-        scrolled_window.set_policy(
-            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        main_box.append(scrolled_window)
-
-        self.empty_state = Adw.StatusPage(
-            title="No Global Variables",
-            description="Create a new variable to manage game state.",
-            icon_name="preferences-system-symbolic"
-        )
-        root_box.append(self.empty_state)
-
-        return root_box
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
@@ -114,9 +74,7 @@ class GlobalStateEditor(Adw.Bin):
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
         print("DEBUG: GlobalStateEditor._setup_column_view")
-        column_view = Gtk.ColumnView()
-        self._create_columns(column_view)
-        return column_view
+        self._create_columns(self.column_view)
 
     def _create_columns(self, column_view):
         """Creates and appends all columns to the ColumnView."""

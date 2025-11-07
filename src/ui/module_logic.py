@@ -259,16 +259,22 @@ class DynamicNodeEditor(Adw.Bin):
         return values
 
 
-class LogicEditor(Adw.Bin):
-    """The main logic editor widget.
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_logic.ui"))
+class LogicEditor(Adw.OverlaySplitView):
+    """The main logic editor widget."""
+    __gtype_name__ = "LogicEditor"
 
-    This editor provides a canvas for creating and editing logic graphs, a
-    tool palette for adding new nodes, and a properties panel for editing
-    the selected node.
-    """
     EDITOR_NAME = "Logic"
     VIEW_NAME = "logic_editor"
     ORDER = 1
+
+    canvas_container = Gtk.Template.Child()
+    canvas = Gtk.Template.Child()
+    sidebar_container = Gtk.Template.Child()
+    add_dialogue_node_button = Gtk.Template.Child()
+    add_condition_node_button = Gtk.Template.Child()
+    add_action_node_button = Gtk.Template.Child()
+    props_panel_placeholder = Gtk.Template.Child()
 
     def __init__(self, project_manager, **kwargs):
         """Initializes a new LogicEditor instance."""
@@ -285,11 +291,16 @@ class LogicEditor(Adw.Bin):
         self.initial_node_width = 0
         self.initial_node_height = 0
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
+        self.minimap = MiniMap(self)
+        self.canvas_container.append(self.minimap)
+
+        self.props_panel = DynamicNodeEditor(
+            project_manager=self.project_manager, on_update_callback=self.update_node_and_redraw)
+        self.props_panel_placeholder.set_child(self.props_panel)
 
         self._setup_canvas_controllers()
         self._create_context_menus()
+        self._connect_signals()
 
         if self.project_manager.data.logic_graphs:
             self.active_graph = self.project_manager.data.logic_graphs[0]
@@ -299,56 +310,15 @@ class LogicEditor(Adw.Bin):
 
         self.canvas.queue_draw()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: LogicEditor._build_ui")
-        split_view = Adw.OverlaySplitView()
-        split_view.set_sidebar_position(Gtk.PackType.START)
-        split_view.set_content(self._create_canvas_area())
-        split_view.set_sidebar(self._create_sidebar())
-        return split_view
-
-    def _create_canvas_area(self):
-        """Creates the canvas area."""
-        print("DEBUG: LogicEditor._create_canvas_area")
-        canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)
+    def _connect_signals(self):
+        """Connects the signals for the widgets."""
+        self.add_dialogue_node_button.connect(
+            "clicked", lambda w: self.on_add_node(DialogueNode, "Dialogue"))
+        self.add_condition_node_button.connect(
+            "clicked", lambda w: self.on_add_node(ConditionNode, "Condition"))
+        self.add_action_node_button.connect(
+            "clicked", lambda w: self.on_add_node(ActionNode, "Action"))
         self.canvas.set_draw_func(self.on_canvas_draw, None)
-        canvas_container.append(self.canvas)
-        self.minimap = MiniMap(self)
-        canvas_container.append(self.minimap)
-        return canvas_container
-
-    def _create_sidebar(self):
-        """Creates the sidebar."""
-        print("DEBUG: LogicEditor._create_sidebar")
-        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        sidebar.set_margin_top(12)
-        sidebar.set_margin_bottom(12)
-        sidebar.set_margin_start(12)
-        sidebar.set_margin_end(12)
-
-        palette = Adw.PreferencesGroup(title="Tool Palette")
-        sidebar.append(palette)
-
-        node_types = [
-            ("Add Dialogue Node", "Add Dialogue", DialogueNode, "Dialogue"),
-            ("Add Condition Node", "Add Condition", ConditionNode, "Condition"),
-            ("Add Action Node", "Add Action", ActionNode, "Action")
-        ]
-        for title, label, node_class, node_type in node_types:
-            button = Gtk.Button(label=label)
-            button.connect(
-                "clicked", lambda _, nc=node_class, nt=node_type: self.on_add_node(nc, nt))
-            row = Adw.ActionRow(title=title, activatable_widget=button)
-            row.add_suffix(button)
-            palette.add(row)
-
-        self.props_panel = DynamicNodeEditor(
-            project_manager=self.project_manager, on_update_callback=self.update_node_and_redraw)
-        sidebar.append(self.props_panel)
-
-        return sidebar
 
     def _setup_canvas_controllers(self):
         """Sets up the event controllers for the canvas."""

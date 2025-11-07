@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1"/>
+  <object class="GtkBox" id="root_box">
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="AdwClamp" id="content_clamp">
+        <child>
+          <object class="GtkBox" id="main_box">
+            <property name="orientation">vertical</property>
+            <property name="spacing">12</property>
+            <property name="margin-top">12</property>
+            <property name="margin-bottom">12</property>
+            <child>
+              <object class="AdwHeaderBar" id="header_bar">
+                <child type="start">
+                  <object class="GtkButton" id="add_button">
+                    <property name="icon-name">list-add-symbolic</property>
+                    <property name="tooltip-text">Add New Variable</property>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkButton" id="delete_button">
+                    <property name="icon-name">edit-delete-symbolic</property>
+                    <property name="tooltip-text">Delete Selected Variable</property>
+                    <property name="sensitive">false</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSearchEntry" id="search_entry">
+                <property name="placeholder-text">Search Variables</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolled_window">
+                <property name="hscrollbar-policy">never</property>
+                <property name="vscrollbar-policy">automatic</property>
+                <property name="child">
+                  <object class="GtkColumnView" id="column_view"/>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwStatusPage" id="empty_state">
+        <property name="title">No Global Variables</property>
+        <property name="description">Create a new variable to manage game state.</property>
+        <property name="icon-name">preferences-system-symbolic</property>
+      </object>
+    </child>
+  </object>
+</interface>
