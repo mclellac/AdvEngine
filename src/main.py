@@ -147,9 +147,11 @@ class EditorWindow(Adw.ApplicationWindow):
         This method scans the `ui` directory for modules that contain editor
         classes, and then adds them to the sidebar and content stack.
         """
+        print("DEBUG: Discovering editors...")
         editors = []
+        discovered_view_names = set()
         ui_dir = os.path.join(os.path.dirname(__file__), "ui")
-        for filename in os.listdir(ui_dir):
+        for filename in sorted(os.listdir(ui_dir)):
             if filename.endswith(".py") and not filename.startswith("__"):
                 module_name = f".ui.{filename[:-3]}"
                 try:
@@ -157,14 +159,19 @@ class EditorWindow(Adw.ApplicationWindow):
                         module_name, package="advengine")
                     for name, obj in inspect.getmembers(module):
                         if inspect.isclass(obj) and hasattr(obj, "EDITOR_NAME"):
-                            editors.append(obj)
+                            if obj.VIEW_NAME not in discovered_view_names:
+                                editors.append(obj)
+                                discovered_view_names.add(obj.VIEW_NAME)
+                                print(f"  - Found editor: {obj.EDITOR_NAME} in {module_name}")
                 except Exception as e:
                     print(f"Error discovering editor in {module_name}: {e}")
 
         # Sort editors based on an 'ORDER' attribute
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
+        print("DEBUG: Adding editors to the UI...")
         for editor_class in editors:
+            print(f"  - Adding editor: {editor_class.EDITOR_NAME}")
             editor_instance = editor_class(project_manager=self.project_manager)
             self.add_editor(editor_class.EDITOR_NAME,
                             editor_class.VIEW_NAME, editor_instance)
