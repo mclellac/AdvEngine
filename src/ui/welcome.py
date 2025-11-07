@@ -1,72 +1,31 @@
 """The welcome window for the AdvEngine application."""
 
 import gi
+import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
 
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "welcome.ui"))
 class WelcomeWindow(Adw.ApplicationWindow):
-    """The main welcome window for the application.
+    """The main welcome window for the application."""
+    __gtype_name__ = "WelcomeWindow"
 
-    This window is displayed on startup and provides options to create a new
-    project, open an existing project, or open a recent project.
-    """
+    new_project_button = Gtk.Template.Child()
+    open_project_button = Gtk.Template.Child()
+    recent_projects_list = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         """Initializes a new WelcomeWindow instance."""
         super().__init__(**kwargs)
-        self.set_default_size(600, 400)
-        self.set_title("AdvEngine - Welcome")
 
-        self.content = WelcomeWidget()
-        self.set_content(self.content)
+        self.new_project_button.connect("clicked", self.on_new_project)
+        self.open_project_button.connect("clicked", self.on_open_project)
 
         settings = self.get_application().settings_manager
         recent_projects = settings.get_app_setting("recent_projects")
-        self.content.populate_recent_projects(recent_projects)
-
-
-class WelcomeWidget(Adw.Bin):
-    """The main widget for the WelcomeWindow."""
-
-    def __init__(self, **kwargs):
-        """Initializes a new WelcomeWidget instance."""
-        super().__init__(**kwargs)
-
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-        main_box.set_valign(Gtk.Align.CENTER)
-        main_box.set_halign(Gtk.Align.CENTER)
-        self.set_child(main_box)
-
-        status_page = Adw.StatusPage.new()
-        status_page.set_title("AdvEngine")
-        status_page.set_icon_name("dialog-information-symbolic")
-        status_page.set_description("Welcome to the Adventure Game Engine.")
-        main_box.append(status_page)
-
-        # --- Main Action Buttons ---
-        button_box = Gtk.Box(spacing=10, orientation=Gtk.Orientation.HORIZONTAL)
-        button_box.set_halign(Gtk.Align.CENTER)
-        main_box.append(button_box)
-
-        new_project_button = Gtk.Button(label="New Project")
-        new_project_button.connect("clicked", self.on_new_project)
-        button_box.append(new_project_button)
-
-        open_project_button = Gtk.Button(label="Open Project")
-        open_project_button.connect("clicked", self.on_open_project)
-        button_box.append(open_project_button)
-
-        # --- Recent Projects List ---
-        recent_projects_group = Adw.PreferencesGroup()
-        recent_projects_group.set_title("Recent Projects")
-        recent_projects_group.set_margin_top(20)
-        main_box.append(recent_projects_group)
-
-        self.recent_projects_list = Gtk.ListBox()
-        self.recent_projects_list.set_selection_mode(Gtk.SelectionMode.NONE)
-        recent_projects_group.add(self.recent_projects_list)
+        self.populate_recent_projects(recent_projects)
 
     def populate_recent_projects(self, recent_projects: list[str]):
         """Populates the recent projects list.
@@ -89,13 +48,11 @@ class WelcomeWidget(Adw.Bin):
 
     def on_new_project(self, button: Gtk.Button):
         """Handles the clicked signal from the new project button."""
-        self.get_ancestor(
-            Adw.ApplicationWindow).get_application().lookup_action("new-project").activate(None)
+        self.get_application().lookup_action("new-project").activate(None)
 
     def on_open_project(self, button: Gtk.Button):
         """Handles the clicked signal from the open project button."""
-        self.get_ancestor(
-            Adw.ApplicationWindow).get_application().lookup_action("open-project").activate(None)
+        self.get_application().lookup_action("open-project").activate(None)
 
     def on_open_recent(self, button: Gtk.Button, project_path: str):
         """Handles the clicked signal from a recent project's open button.
@@ -104,5 +61,4 @@ class WelcomeWidget(Adw.Bin):
             button: The button that was clicked.
             project_path: The path of the project to open.
         """
-        self.get_ancestor(
-            Adw.ApplicationWindow).get_application().load_project(project_path)
+        self.get_application().load_project(project_path)

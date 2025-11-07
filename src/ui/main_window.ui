@@ -37,24 +37,6 @@
             <child type="end">
               <object class="GtkMenuButton" id="menu_button">
                 <property name="icon-name">open-menu-symbolic</property>
-                <property name="menu-model">
-                  <object class="GioMenu" id="main_menu">
-                    <section>
-                      <item>
-                        <attribute name="label" translatable="yes">Preferences</attribute>
-                        <attribute name="action">app.preferences</attribute>
-                      </item>
-                      <item>
-                        <attribute name="label" translatable="yes">Keyboard Shortcuts</attribute>
-                        <attribute name="action">app.shortcuts</attribute>
-                      </item>
-                      <item>
-                        <attribute name="label" translatable="yes">About</attribute>
-                        <attribute name="action">app.about</attribute>
-                      </item>
-                    </section>
-                  </object>
-                </property>
               </object>
             </child>
             <child type="end">

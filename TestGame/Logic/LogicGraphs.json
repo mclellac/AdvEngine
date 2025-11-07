@@ -49,9 +49,9 @@
         "outputs": [],
         "action_command": "SHOW_ENTITY",
         "parameters": {
-          "EntityID": "11",
-          "X": "45",
-          "Y": "800"
+          "entity_id": "11",
+          "x": "45",
+          "y": "800"
         }
       }
     ]
