@@ -2,8 +2,15 @@
 
 AdvEngine is a data and configuration manager for creating 2.5D point-and-click adventure games, in the style of classic Sierra On-Line titles, that target Unreal Engine 5.6. It provides a modern, cross-platform UI for designing game logic, managing assets, and exporting structured data files for the target game engine to consume at runtime.
 
+## Getting Started
+
+When you first launch AdvEngine, you'll be greeted with the Welcome screen. To start creating your game, click the "New Project" button. You will be prompted to give your project a name and choose a **Project Template**. These templates provide a complete, pre-configured starting point with characters, items, and logic to help you get started quickly.
+
+For a detailed walkthrough, see the **[Tutorial](./docs/tutorials/01_locked_room.md)**.
+
 ## Features
 
+*   **Project Templates:** Start your project from a pre-configured template based on classic Sierra On-Line adventure games, including *Space Quest*, *Police Quest*, *Hero's Quest*, and more. Each template includes a starting character, items, scenes, and dialogue.
 *   **Scene Editor:** A canvas-based editor to design game worlds by creating scenes, setting background images, placing interactive hotspots, and managing their Z-order.
 *   **Logic Editor:** A powerful node-graph editor for creating puzzle logic and branching flows using conditions and actions.
 *   **Interaction Editor:** A dedicated editor to define complex `Verb + Item` and `Item + Item` interactions that trigger logic graphs.

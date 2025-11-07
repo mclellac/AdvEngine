@@ -10,12 +10,20 @@ The core philosophy of AdvEngine is to separate the creative design process from
 
 ## 2. Getting Started: Your First Project
 
-When you first launch AdvEngine, it automatically loads the `TestGame` project included in the repository. This sample project demonstrates the expected file structure and provides examples of various data types.
+When you first launch AdvEngine, you will be presented with a Welcome screen. To begin, click the "New Project" button. This will open a dialog where you must provide two key pieces of information:
+
+1.  **Project Name**: A unique name for your game.
+2.  **Template**: The starting point for your project.
+
+AdvEngine includes a variety of templates based on classic Sierra On-Line adventure games, as well as a "Blank" template for experienced users who want to start from scratch. Each template comes pre-populated with a thematic set of characters, items, verbs, and even some starting dialogue and scenes, giving you a fully functional project to explore and build upon from the moment you start.
+
+Once you've chosen a name and template, you'll be asked to select a location on your computer to save the project. AdvEngine will then copy the template files and open your new project in the main editor window, ready for you to begin creating.
 
 A project directory contains the following subdirectories:
 
 - **`Data/`**: Contains `.csv` and `.json` files for database-style data like items, characters, attributes, verbs, and global state.
 - **`Logic/`**: Contains `.json` files for all logic-based assets, including scenes, logic graphs, dialogues, interactions, and quests.
+- **`Assets/`**: Intended to store your game's media files, though these are not directly managed by AdvEngine.
 
 To build and run the application, please follow the instructions in the main `README.md` file.
 

@@ -1,0 +1,3 @@
+id,name,description,type,buy_price,sell_price
+money,"Money","Just enough to get into trouble.",currency,1,1
+breath_spray,"Breath Spray","For those close encounters.",item,5,2
