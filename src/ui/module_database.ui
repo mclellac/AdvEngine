@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <object class="GtkBox" id="main_box">
+  <template class="DatabaseEditor" parent="GtkBox">
     <property name="orientation">vertical</property>
     <child>
       <object class="AdwHeaderBar" id="header_bar">
@@ -14,5 +14,5 @@
     <child>
       <object class="AdwViewStack" id="view_stack"/>
     </child>
-  </object>
+  </template>
 </interface>

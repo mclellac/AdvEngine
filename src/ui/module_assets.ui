@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <object class="GtkBox" id="root_box">
+  <template class="AssetEditor" parent="GtkBox">
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkBox" id="main_box">
@@ -91,5 +91,5 @@
         </child>
       </object>
     </child>
-  </object>
+  </template>
 </interface>

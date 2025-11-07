@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <object class="GtkBox" id="root_box">
+  <template class="SceneEditor" parent="GtkBox">
     <property name="orientation">horizontal</property>
     <child>
       <object class="GtkBox" id="scene_list_panel">
@@ -197,5 +197,5 @@
         </property>
       </object>
     </child>
-  </object>
+  </template>
 </interface>
