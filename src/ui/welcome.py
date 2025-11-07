@@ -20,8 +20,8 @@ class WelcomeWindow(Adw.ApplicationWindow):
         """Initializes a new WelcomeWindow instance."""
         super().__init__(**kwargs)
 
-        self.new_project_button.connect("clicked", self.on_new_project)
-        self.open_project_button.connect("clicked", self.on_open_project)
+        self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
+        self.open_project_button.connect("clicked", lambda w: self.get_application().lookup_action("open-project").activate(None))
 
         settings = self.get_application().settings_manager
         recent_projects = settings.get_app_setting("recent_projects")
@@ -45,14 +45,6 @@ class WelcomeWindow(Adw.ApplicationWindow):
             row.add_suffix(button)
             row.set_activatable_widget(button)
             self.recent_projects_list.append(row)
-
-    def on_new_project(self, button: Gtk.Button):
-        """Handles the clicked signal from the new project button."""
-        self.get_application().lookup_action("new-project").activate(None)
-
-    def on_open_project(self, button: Gtk.Button):
-        """Handles the clicked signal from the open project button."""
-        self.get_application().lookup_action("open-project").activate(None)
 
     def on_open_recent(self, button: Gtk.Button, project_path: str):
         """Handles the clicked signal from a recent project's open button.

@@ -35,12 +35,10 @@ class EditorWindow(Adw.ApplicationWindow):
         """Initializes a new EditorWindow instance."""
         from .ui import search_results
 
-        print("DEBUG: EditorWindow.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.base_title = "AdvEngine"
         self.set_title(self.base_title)
-        print(f"DEBUG: Project Manager assigned: {self.project_manager.project_path}")
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
@@ -98,7 +96,6 @@ class EditorWindow(Adw.ApplicationWindow):
 
     def discover_and_add_editors(self):
         """Discovers and adds all available editors to the UI."""
-        print("DEBUG: Discovering editors...")
         editors = []
         discovered_view_names = set()
         ui_dir = os.path.join(os.path.dirname(__file__), "ui")
@@ -112,16 +109,12 @@ class EditorWindow(Adw.ApplicationWindow):
                             if obj.VIEW_NAME not in discovered_view_names:
                                 editors.append(obj)
                                 discovered_view_names.add(obj.VIEW_NAME)
-                                print(f"  - Found editor: {obj.EDITOR_NAME} in {module_name}")
                 except Exception as e:
                     print(f"Error discovering editor in {module_name}: {e}")
 
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
-        print("DEBUG: Adding editors to the UI...")
         for editor_class in editors:
-            print(f"  - Adding editor: {editor_class.EDITOR_NAME}")
-            # Pass project_manager as a keyword argument
             editor_instance = editor_class(project_manager=self.project_manager)
             self.add_editor(editor_class.EDITOR_NAME, editor_class.VIEW_NAME, editor_instance)
             if editor_class.VIEW_NAME == 'logic_editor':
@@ -133,12 +126,10 @@ class EditorWindow(Adw.ApplicationWindow):
 
     def on_save_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the save button."""
-        print("DEBUG: Save button clicked.")
         self.get_application().save_project()
 
     def _on_play_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the play button."""
-        print("DEBUG: Play button clicked.")
         self.get_application().save_project()
         ue_path = self.get_application().settings_manager.get("ue_path")
         if not ue_path:
@@ -179,7 +170,6 @@ class AdvEngine(Adw.Application):
 
     def __init__(self, **kwargs):
         """Initializes a new AdvEngine instance."""
-        print("DEBUG: AdvEngine.__init__")
         super().__init__(**kwargs)
         self.project_manager = None
         self.settings_manager = SettingsManager()
@@ -188,7 +178,6 @@ class AdvEngine(Adw.Application):
 
     def on_activate(self, app: Adw.Application):
         """Handles the activate signal of the application."""
-        print("DEBUG: AdvEngine.on_activate")
         from .ui import welcome
         self.win = welcome.WelcomeWindow(application=app)
         self.win.present()
@@ -196,7 +185,6 @@ class AdvEngine(Adw.Application):
 
     def _setup_actions(self):
         """Creates and sets up all application-level actions."""
-        print("DEBUG: AdvEngine._setup_actions")
         save_action = Gio.SimpleAction.new("save", None)
         save_action.connect("activate", lambda a, p: self.save_project())
         self.add_action(save_action)
@@ -329,30 +317,21 @@ class AdvEngine(Adw.Application):
 
     def save_project(self):
         """Saves the currently open project."""
-        print("DEBUG: AdvEngine.save_project")
         if self.project_manager and self.project_manager.is_dirty:
-            print("DEBUG: Project is dirty, saving...")
             self.project_manager.save_project()
-        else:
-            print("DEBUG: Project is not dirty, skipping save.")
 
     def load_project(self, project_path: str, project_manager: ProjectManager = None):
         """Loads a project and displays it in a new EditorWindow."""
-        print(f"DEBUG: AdvEngine.load_project: {project_path}")
         if project_manager:
             self.project_manager = project_manager
-            print("DEBUG: Using existing ProjectManager.")
         else:
-            print("DEBUG: Creating new ProjectManager.")
             self.project_manager = ProjectManager(project_path)
             self.project_manager.load_project()
         self.settings_manager.add_recent_project(project_path)
-        print("DEBUG: Creating new EditorWindow.")
         new_win = EditorWindow(
             application=self, project_manager=self.project_manager)
         new_win.present()
         if self.win:
-            print("DEBUG: Closing old window.")
             self.win.close()
         self.win = new_win
 
@@ -420,7 +399,6 @@ class AdvEngine(Adw.Application):
 
 def main(version="0.1.0"):
     """The main entry point of the application."""
-    print("DEBUG: main()")
     app = AdvEngine(application_id="com.github.mclellac.AdvEngine",
                     flags=Gio.ApplicationFlags.FLAGS_NONE)
     return app.run(sys.argv)
