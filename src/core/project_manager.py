@@ -6,6 +6,7 @@ to all project data, as well as managing the "dirty" state of the project.
 """
 
 import os
+import sys
 import csv
 import json
 from dataclasses import asdict
@@ -812,8 +813,18 @@ class ProjectManager:
     @staticmethod
     def get_templates():
         """Returns a list of available project templates."""
-        template_dir = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
-        if os.path.exists(template_dir):
+        # This path is for running from the source directory
+        local_path = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
+        # This path is for running from the installed location
+        installed_path = os.path.join(sys.prefix, 'share', 'advengine', 'templates')
+
+        template_dir = None
+        if os.path.exists(installed_path):
+            template_dir = installed_path
+        elif os.path.exists(local_path):
+            template_dir = local_path
+
+        if template_dir and os.path.exists(template_dir):
             return [
                 d
                 for d in os.listdir(template_dir)

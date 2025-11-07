@@ -19,6 +19,11 @@ install_subdir(
     install_dir: join_paths(get_option('datadir'), meson.project_name())
 )
 
+install_subdir(
+    'templates',
+    install_dir: join_paths(get_option('datadir'), meson.project_name())
+)
+
 gnome.post_install(
      glib_compile_schemas: true,
     gtk_update_icon_cache: true,
