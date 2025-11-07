@@ -13,18 +13,16 @@ from ..core.project_manager import ProjectManager
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "verb_editor.ui"))
 class VerbEditor(Gtk.Box):
     """A widget for editing verbs in a project."""
-    __gtype_name__ = "VerbEditor"
+    __gtype_name__ = 'VerbEditor'
 
     add_button = Gtk.Template.Child()
     delete_button = Gtk.Template.Child()
     search_entry = Gtk.Template.Child()
     column_view = Gtk.Template.Child()
-    empty_state = Gtk.Template.Child()
-    content_clamp = Gtk.Template.Child()
+    stack = Gtk.Template.Child()
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
         """Initializes a new VerbEditor instance."""
-        print("DEBUG: VerbEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
@@ -45,7 +43,6 @@ class VerbEditor(Gtk.Box):
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
-        print("DEBUG: VerbEditor._setup_model")
         model = Gio.ListStore(item_type=VerbGObject)
         for verb in self.project_manager.data.verbs:
             model.append(VerbGObject(verb))
@@ -54,7 +51,6 @@ class VerbEditor(Gtk.Box):
 
     def _setup_filter_model(self):
         """Sets up the filter model for the editor."""
-        print("DEBUG: VerbEditor._setup_filter_model")
         filter_model = Gtk.FilterListModel(model=self.model)
         self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         filter_model.set_filter(self.filter)
@@ -62,14 +58,16 @@ class VerbEditor(Gtk.Box):
 
     def _setup_selection_model(self):
         """Sets up the selection model for the editor."""
-        print("DEBUG: VerbEditor._setup_selection_model")
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
 
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
-        print("DEBUG: VerbEditor._setup_column_view")
+        self._create_columns(self.column_view)
+
+    def _create_columns(self, column_view):
+        """Creates and appends all columns to the ColumnView."""
         columns_def = {
             "id": {"title": "ID", "expand": True},
             "name": {"title": "Name", "expand": True}
@@ -83,11 +81,10 @@ class VerbEditor(Gtk.Box):
             column = Gtk.ColumnViewColumn(
                 title=col_info["title"], factory=factory)
             column.set_expand(col_info["expand"])
-            self.column_view.append_column(column)
+            column_view.append_column(column)
 
     def _setup_cell(self, factory, list_item):
         """Sets up a cell in the column view."""
-        print("DEBUG: VerbEditor._setup_cell")
         widget = Gtk.Entry()
         list_item.set_child(widget)
 
@@ -95,32 +92,22 @@ class VerbEditor(Gtk.Box):
         """Binds a cell to the data model."""
         verb_gobject = list_item.get_item()
         widget = list_item.get_child()
-        print(f"DEBUG: VerbEditor._bind_cell: column_id={column_id}, verb_id={verb_gobject.id}")
-
-        list_item.bindings = []
-        binding = widget.bind_property(
+        list_item.binding = widget.bind_property(
             "text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-        list_item.bindings.append(binding)
-
-        handler_id = widget.connect(
+        list_item.handler_id = widget.connect(
             "changed", lambda w: self.project_manager.set_dirty(True))
-        list_item.handler_id = handler_id
 
     def _unbind_cell(self, factory, list_item):
         """Unbinds a cell from the data model."""
-        verb_gobject = list_item.get_item()
-        print(f"DEBUG: VerbEditor._unbind_cell: verb_id={verb_gobject.id if verb_gobject else 'N/A'}")
-        if hasattr(list_item, "bindings"):
-            for binding in list_item.bindings:
-                binding.unbind()
-            list_item.bindings = []
+        if hasattr(list_item, "binding"):
+            list_item.binding.unbind()
+            del list_item.binding
         if hasattr(list_item, "handler_id"):
             list_item.get_child().disconnect(list_item.handler_id)
             del list_item.handler_id
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
-        print(f"DEBUG: VerbEditor._on_search_changed: {search_entry.get_text()}")
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
@@ -132,15 +119,14 @@ class VerbEditor(Gtk.Box):
                 search_text in item.name.lower())
 
     def _update_visibility(self, *args):
-        """Updates the visibility of the main content and empty state."""
-        has_items = self.model.get_n_items() > 0
-        print(f"DEBUG: VerbEditor._update_visibility: has_items={has_items}")
-        self.content_clamp.set_visible(has_items)
-        self.empty_state.set_visible(not has_items)
+        """Switches the view based on whether there are items."""
+        if self.model.get_n_items() > 0:
+            self.stack.set_visible_child_name("content")
+        else:
+            self.stack.set_visible_child_name("empty")
 
     def _on_add_clicked(self, button):
         """Handles the clicked signal from the add button."""
-        print("DEBUG: VerbEditor._on_add_clicked")
         new_id_base = "new_verb"
         new_id = new_id_base
         count = 1
@@ -149,18 +135,19 @@ class VerbEditor(Gtk.Box):
             new_id = f"{new_id_base}_{count}"
             count += 1
 
-        new_verb = self.project_manager.add_verb(id=new_id, name="New Verb")
-        if new_verb:
-            gobject = VerbGObject(new_verb)
-            self.model.append(gobject)
+        new_verb_data = Verb(id=new_id, name="New Verb")
+        self.project_manager.add_verb(new_verb_data)
+        gobject = VerbGObject(new_verb_data)
+        self.model.append(gobject)
 
-            is_found, pos = self.filter_model.get_model().find(gobject)
-            if is_found:
-                self.selection.set_selected(pos)
+        for i in range(self.filter_model.get_n_items()):
+            if self.filter_model.get_item(i) == gobject:
+                self.selection.set_selected(i)
+                self.column_view.scroll_to(i, Gtk.ListScrollFlags.NONE, None, None)
+                break
 
     def _on_delete_clicked(self, button):
         """Handles the clicked signal from the delete button."""
-        print("DEBUG: VerbEditor._on_delete_clicked")
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -175,23 +162,19 @@ class VerbEditor(Gtk.Box):
         dialog.add_response("delete", "_Delete")
         dialog.set_response_appearance(
             "delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.connect("response", self._on_delete_dialog_response,
-                       selected_item)
+        dialog.connect("response", self._on_delete_dialog_response, selected_item)
         dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, verb_gobject):
         """Handles the response from the delete confirmation dialog."""
-        print(f"DEBUG: VerbEditor._on_delete_dialog_response: response={response}")
         if response == "delete":
-            self.project_manager.data.verbs.remove(verb_gobject.verb)
-            self.project_manager.set_dirty()
-            is_found, pos = self.model.find(verb_gobject)
-            if is_found:
-                self.model.remove(pos)
+            if self.project_manager.remove_verb(verb_gobject.verb):
+                is_found, pos = self.model.find(verb_gobject)
+                if is_found:
+                    self.model.remove(pos)
         dialog.destroy()
 
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
-        print(f"DEBUG: VerbEditor._on_selection_changed: is_selected={is_selected}")
         self.delete_button.set_sensitive(is_selected)

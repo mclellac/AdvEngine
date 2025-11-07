@@ -23,12 +23,10 @@ class GlobalStateEditor(Gtk.Box):
     delete_button = Gtk.Template.Child()
     search_entry = Gtk.Template.Child()
     column_view = Gtk.Template.Child()
-    empty_state = Gtk.Template.Child()
-    content_clamp = Gtk.Template.Child()
+    stack = Gtk.Template.Child()
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
         """Initializes a new GlobalStateEditor instance."""
-        print("DEBUG: GlobalStateEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
@@ -49,7 +47,6 @@ class GlobalStateEditor(Gtk.Box):
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
-        print("DEBUG: GlobalStateEditor._setup_model")
         model = Gio.ListStore(item_type=GlobalVariableGObject)
         for var in self.project_manager.data.global_variables:
             model.append(GlobalVariableGObject(var))
@@ -58,7 +55,6 @@ class GlobalStateEditor(Gtk.Box):
 
     def _setup_filter_model(self):
         """Sets up the filter model for the editor."""
-        print("DEBUG: GlobalStateEditor._setup_filter_model")
         filter_model = Gtk.FilterListModel(model=self.model)
         self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         filter_model.set_filter(self.filter)
@@ -66,14 +62,12 @@ class GlobalStateEditor(Gtk.Box):
 
     def _setup_selection_model(self):
         """Sets up the selection model for the editor."""
-        print("DEBUG: GlobalStateEditor._setup_selection_model")
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
 
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
-        print("DEBUG: GlobalStateEditor._setup_column_view")
         self._create_columns(self.column_view)
 
     def _create_columns(self, column_view):
@@ -164,7 +158,6 @@ class GlobalStateEditor(Gtk.Box):
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
-        print(f"DEBUG: GlobalStateEditor._on_search_changed: {search_entry.get_text()}")
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
@@ -177,15 +170,14 @@ class GlobalStateEditor(Gtk.Box):
                 search_text in item.category.lower())
 
     def _update_visibility(self, *args):
-        """Updates the visibility of the main content and empty state."""
-        has_items = self.model.get_n_items() > 0
-        print(f"DEBUG: GlobalStateEditor._update_visibility: has_items={has_items}")
-        self.content_clamp.set_visible(has_items)
-        self.empty_state.set_visible(not has_items)
+        """Switches the view based on whether there are items."""
+        if self.model.get_n_items() > 0:
+            self.stack.set_visible_child_name("content")
+        else:
+            self.stack.set_visible_child_name("empty")
 
     def _on_add_clicked(self, button):
         """Handles the clicked signal from the add button."""
-        print("DEBUG: GlobalStateEditor._on_add_clicked")
         new_id_base = "new_variable"
         new_id = new_id_base
         count = 1
@@ -201,13 +193,14 @@ class GlobalStateEditor(Gtk.Box):
         gobject = GlobalVariableGObject(new_var_data)
         self.model.append(gobject)
 
-        is_found, pos = self.filter_model.get_model().find(gobject)
-        if is_found:
-            self.selection.set_selected(pos)
+        for i in range(self.filter_model.get_n_items()):
+            if self.filter_model.get_item(i) == gobject:
+                self.selection.set_selected(i)
+                self.column_view.scroll_to(i, Gtk.ListScrollFlags.NONE, None, None)
+                break
 
     def _on_delete_clicked(self, button):
         """Handles the clicked signal from the delete button."""
-        print("DEBUG: GlobalStateEditor._on_delete_clicked")
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -228,7 +221,6 @@ class GlobalStateEditor(Gtk.Box):
 
     def _on_delete_dialog_response(self, dialog, response, var_gobject):
         """Handles the response from the delete confirmation dialog."""
-        print(f"DEBUG: GlobalStateEditor._on_delete_dialog_response: response={response}")
         if response == "delete":
             if self.project_manager.remove_global_variable(var_gobject.variable):
                 is_found, pos = self.model.find(var_gobject)
@@ -239,5 +231,4 @@ class GlobalStateEditor(Gtk.Box):
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
-        print(f"DEBUG: GlobalStateEditor._on_selection_changed: is_selected={is_selected}")
         self.delete_button.set_sensitive(is_selected)
