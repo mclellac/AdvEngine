@@ -339,7 +339,7 @@ class AdvEngine(Adw.Application):
         """Handles the new-project action."""
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog(parent=self.win)
+        dialog = NewProjectDialog()
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -366,7 +366,7 @@ class AdvEngine(Adw.Application):
             dialog.destroy()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(self.win)
 
     def on_new_project_folder_selected(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType, name: str, template: str):
         """Handles the response from the new project folder chooser."""

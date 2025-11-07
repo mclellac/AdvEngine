@@ -73,3 +73,10 @@ class SettingsManager:
         recent.insert(0, project_path)
         # Keep the list at a reasonable size, e.g., 10 projects
         self.set_app_setting("recent_projects", recent[:10])
+
+    def remove_recent_project(self, project_path):
+        """Removes a project from the list of recent projects."""
+        recent = self.get_app_setting("recent_projects")
+        if project_path in recent:
+            recent.remove(project_path)
+            self.set_app_setting("recent_projects", recent)

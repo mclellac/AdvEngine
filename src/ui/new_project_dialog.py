@@ -14,8 +14,8 @@ class NewProjectDialog(Adw.AlertDialog):
     project_name_entry = Gtk.Template.Child()
     template_combo = Gtk.Template.Child()
 
-    def __init__(self, parent, **kwargs):
-        super().__init__(transient_for=parent, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.connect("response", self.on_response)
         self._populate_templates()
 
