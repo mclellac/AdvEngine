@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <object class="AdwApplicationWindow" id="welcome_window">
+    <property name="default-width">800</property>
+    <property name="default-height">600</property>
+    <property name="title">AdvEngine - Welcome</property>
+    <property name="content">
+        <object class="AdwBin" id="welcome_widget">
+            <child>
+                <object class="GtkBox" id="main_box">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">20</property>
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <child>
+                        <object class="AdwStatusPage" id="status_page">
+                            <property name="title">AdvEngine</property>
+                            <property name="icon-name">dialog-information-symbolic</property>
+                            <property name="description">Welcome to the Adventure Game Engine.</property>
+                        </object>
+                    </child>
+                    <child>
+                        <object class="GtkBox" id="button_box">
+                            <property name="spacing">10</property>
+                            <property name="orientation">horizontal</property>
+                            <property name="halign">center</property>
+                            <child>
+                                <object class="GtkButton" id="new_project_button">
+                                    <property name="label">New Project</property>
+                                </object>
+                            </child>
+                            <child>
+                                <object class="GtkButton" id="open_project_button">
+                                    <property name="label">Open Project</property>
+                                </object>
+                            </child>
+                        </object>
+                    </child>
+                    <child>
+                        <object class="AdwPreferencesGroup" id="recent_projects_group">
+                            <property name="title">Recent Projects</property>
+                            <property name="margin-top">20</property>
+                            <child>
+                                <object class="GtkListBox" id="recent_projects_list">
+                                    <property name="selection-mode">none</property>
+                                </object>
+                            </child>
+                        </object>
+                    </child>
+                </object>
+            </child>
+        </object>
+    </property>
+  </object>
+</interface>

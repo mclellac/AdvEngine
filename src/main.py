@@ -28,6 +28,7 @@ class EditorWindow(Adw.ApplicationWindow):
     split_view = Gtk.Template.Child()
     content_stack = Gtk.Template.Child()
     sidebar_list = Gtk.Template.Child()
+    menu_button = Gtk.Template.Child()
 
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
@@ -49,6 +50,12 @@ class EditorWindow(Adw.ApplicationWindow):
         self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
+
+        menu = Gio.Menu.new()
+        menu.append("Preferences", "app.preferences")
+        menu.append("Keyboard Shortcuts", "app.shortcuts")
+        menu.append("About", "app.about")
+        self.menu_button.set_menu_model(menu)
 
         self.toggle_button.bind_property("active", self.split_view, "show-sidebar", GObject.BindingFlags.BIDIRECTIONAL)
 
