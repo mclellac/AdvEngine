@@ -1,1 +1,46 @@
-[]
+[
+  {
+    "id": "door_puzzle",
+    "name": "Door Puzzle",
+    "nodes": [
+      {
+        "id": "start",
+        "node_type": "Condition",
+        "condition_type": "HAS_ITEM",
+        "item_id": "keycard",
+        "amount": 1,
+        "x": 50,
+        "y": 50,
+        "width": 240,
+        "height": 160,
+        "inputs": [],
+        "outputs": ["open_door", "fail_message"]
+      },
+      {
+        "id": "open_door",
+        "node_type": "Action",
+        "action_command": "SET_VARIABLE",
+        "var_name": "door_open",
+        "value": "True",
+        "x": 350,
+        "y": 50,
+        "width": 240,
+        "height": 160,
+        "inputs": ["start"],
+        "outputs": []
+      },
+      {
+        "id": "fail_message",
+        "node_type": "Dialogue",
+        "character_id": "narrator",
+        "dialogue_text": "The door is locked. You need a keycard to open it.",
+        "x": 350,
+        "y": 250,
+        "width": 240,
+        "height": 160,
+        "inputs": ["start"],
+        "outputs": []
+      }
+    ]
+  }
+]
