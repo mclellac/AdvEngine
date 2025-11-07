@@ -4,6 +4,7 @@
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwAlertDialog">
     <property name="heading">Create a New Project</property>
+    <property name="default_response">create</property>
     <property name="extra-child">
         <object class="GtkBox">
             <property name="orientation">vertical</property>
@@ -29,7 +30,7 @@
     </property>
     <responses>
       <response id="cancel" appearance="destructive">_Cancel</response>
-      <response id="create" appearance="suggested" default="true">_Create</response>
+      <response id="create" appearance="suggested">_Create</response>
     </responses>
   </template>
 </interface>
