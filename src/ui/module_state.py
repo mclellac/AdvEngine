@@ -25,10 +25,11 @@ class GlobalStateEditor(Gtk.Box):
     column_view = Gtk.Template.Child()
     stack = Gtk.Template.Child()
 
-    def __init__(self, project_manager: ProjectManager, **kwargs):
+    def __init__(self, project_manager: ProjectManager, settings_manager, **kwargs):
         """Initializes a new GlobalStateEditor instance."""
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
 
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()

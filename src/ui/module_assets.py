@@ -25,11 +25,12 @@ class AssetEditor(Gtk.Box):
     animation_editor = Gtk.Template.Child()
     frame_list_view = Gtk.Template.Child()
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         """Initializes a new AssetEditor instance."""
         print("DEBUG: AssetEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
         self.selected_asset = None
 
         self._setup_models()

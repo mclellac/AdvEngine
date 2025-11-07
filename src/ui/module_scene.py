@@ -34,11 +34,12 @@ class SceneEditor(Gtk.Box):
     prop_h = Gtk.Template.Child()
     layer_list = Gtk.Template.Child()
 
-    def __init__(self, project_manager: ProjectManager, **kwargs):
+    def __init__(self, project_manager: ProjectManager, settings_manager, **kwargs):
         """Initializes a new SceneEditor instance."""
         print("DEBUG: SceneEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
         self.selected_scene_gobject = None
         self.selected_hotspot = None
         self.hotspot_mode = False

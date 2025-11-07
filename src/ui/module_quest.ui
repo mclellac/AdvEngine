@@ -2,10 +2,12 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <template class="QuestEditor" parent="AdwOverlaySplitView">
-    <property name="sidebar">
-      <object class="GtkBox" id="quest_list_panel">
-        <property name="orientation">vertical</property>
+  <template class="QuestEditor" parent="AdwBin">
+    <child>
+      <object class="AdwOverlaySplitView">
+        <property name="sidebar">
+          <object class="GtkBox" id="quest_list_panel">
+            <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child>
           <object class="AdwHeaderBar" id="quest_list_header">
@@ -48,5 +50,7 @@
         </child>
       </object>
     </property>
+      </object>
+    </child>
   </template>
 </interface>

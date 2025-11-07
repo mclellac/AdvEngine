@@ -363,8 +363,6 @@ class AdvEngine(Adw.Application):
                     "response", lambda fd, resp: self.on_new_project_folder_selected(fd, resp, name, template))
                 file_dialog.show()
 
-            dialog.destroy()
-
         dialog.connect("response", on_response)
         dialog.present(self.win)
 
