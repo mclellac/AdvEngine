@@ -6,7 +6,6 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
-
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "welcome.ui"))
 class WelcomeWindow(Adw.ApplicationWindow):
     """The main welcome window for the application."""
@@ -15,6 +14,8 @@ class WelcomeWindow(Adw.ApplicationWindow):
     new_project_button = Gtk.Template.Child()
     open_project_button = Gtk.Template.Child()
     recent_projects_list = Gtk.Template.Child()
+    recent_projects_group = Gtk.Template.Child()
+    quit_button = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         """Initializes a new WelcomeWindow instance."""
@@ -22,35 +23,41 @@ class WelcomeWindow(Adw.ApplicationWindow):
 
         self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
         self.open_project_button.connect("clicked", lambda w: self.get_application().lookup_action("open-project").activate(None))
+        self.quit_button.connect("clicked", lambda w: self.close())
 
-        settings = self.get_application().settings_manager
-        recent_projects = settings.get_app_setting("recent_projects")
-        self.populate_recent_projects(recent_projects)
+        self.settings = self.get_application().settings_manager
+        self.populate_recent_projects()
 
-    def populate_recent_projects(self, recent_projects: list[str]):
-        """Populates the recent projects list.
-
-        Args:
-            recent_projects: A list of paths to recent projects.
-        """
+    def populate_recent_projects(self):
+        """Populates the recent projects list."""
         # Clear existing
-        while self.recent_projects_list.get_first_child():
-            self.recent_projects_list.remove(
-                self.recent_projects_list.get_first_child())
+        while child := self.recent_projects_list.get_first_child():
+            self.recent_projects_list.remove(child)
 
+        recent_projects = self.settings.get_app_setting("recent_projects")
         for project_path in recent_projects:
-            row = Adw.ActionRow(title=project_path)
-            button = Gtk.Button(label="Open")
-            button.connect("clicked", self.on_open_recent, project_path)
-            row.add_suffix(button)
-            row.set_activatable_widget(button)
+            row = Adw.ActionRow()
+            row.set_title(os.path.basename(project_path))
+            row.set_subtitle(project_path)
+
+            open_button = Gtk.Button(label="Open")
+            open_button.connect("clicked", self.on_open_recent, project_path)
+            row.add_suffix(open_button)
+
+            remove_button = Gtk.Button.new_from_icon_name("user-trash-symbolic")
+            remove_button.connect("clicked", self.on_remove_recent, project_path)
+            row.add_suffix(remove_button)
+
+            row.set_activatable_widget(open_button)
             self.recent_projects_list.append(row)
 
-    def on_open_recent(self, button: Gtk.Button, project_path: str):
-        """Handles the clicked signal from a recent project's open button.
+        self.recent_projects_group.set_visible(bool(recent_projects))
 
-        Args:
-            button: The button that was clicked.
-            project_path: The path of the project to open.
-        """
+    def on_open_recent(self, button: Gtk.Button, project_path: str):
+        """Handles the clicked signal from a recent project's open button."""
         self.get_application().load_project(project_path)
+
+    def on_remove_recent(self, button: Gtk.Button, project_path: str):
+        """Handles the clicked signal from a recent project's remove button."""
+        self.settings.remove_recent_project(project_path)
+        self.populate_recent_projects()
