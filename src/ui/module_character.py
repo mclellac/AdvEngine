@@ -24,12 +24,10 @@ class CharacterManager(Gtk.Box):
     search_entry = Gtk.Template.Child()
     column_view = Gtk.Template.Child()
     portrait_preview = Gtk.Template.Child()
-    empty_state = Gtk.Template.Child()
-    content_box = Gtk.Template.Child()
+    stack = Gtk.Template.Child()
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
         """Initializes a new CharacterManager instance."""
-        print("DEBUG: CharacterManager.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
@@ -50,7 +48,6 @@ class CharacterManager(Gtk.Box):
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
-        print("DEBUG: CharacterManager._setup_model")
         model = Gio.ListStore(item_type=CharacterGObject)
         for character in self.project_manager.data.characters:
             model.append(CharacterGObject(character))
@@ -59,7 +56,6 @@ class CharacterManager(Gtk.Box):
 
     def _setup_filter_model(self):
         """Sets up the filter model for the editor."""
-        print("DEBUG: CharacterManager._setup_filter_model")
         filter_model = Gtk.FilterListModel(model=self.model)
         self.filter = Gtk.CustomFilter.new(
             self._filter_func, self.search_entry)
@@ -68,14 +64,12 @@ class CharacterManager(Gtk.Box):
 
     def _setup_selection_model(self):
         """Sets up the selection model for the editor."""
-        print("DEBUG: CharacterManager._setup_selection_model")
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
 
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
-        print("DEBUG: CharacterManager._setup_column_view")
         self._create_columns(self.column_view)
 
     def _create_columns(self, column_view):
@@ -128,14 +122,14 @@ class CharacterManager(Gtk.Box):
                     break
             handler_id = widget.connect(
                 "notify::selected-item", self._on_combo_changed, char_gobject, column_id)
-        else:
+        else: # "text"
             binding = widget.bind_property("text", char_gobject, column_id,
                                  GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
             handler_id = widget.connect(
                 "changed", lambda w: self.project_manager.set_dirty(True))
-
         list_item.bindings.append(binding)
         list_item.handler_id = handler_id
+
 
     def _unbind_cell(self, factory, list_item):
         """Unbinds a cell from the data model."""
@@ -156,7 +150,6 @@ class CharacterManager(Gtk.Box):
 
     def _update_preview(self):
         """Updates the portrait preview."""
-        print("DEBUG: CharacterManager._update_preview")
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             self.portrait_preview.set_filename(None)
@@ -167,19 +160,15 @@ class CharacterManager(Gtk.Box):
             asset = next(
                 (a for a in self.project_manager.data.assets if a.id == asset_id), None)
             if asset and self.project_manager.project_path and os.path.exists(os.path.join(self.project_manager.project_path, asset.file_path)):
-                print(f"DEBUG: Setting preview image to {asset.file_path}")
                 self.portrait_preview.set_filename(os.path.join(
                     self.project_manager.project_path, asset.file_path))
             else:
-                print("DEBUG: Asset not found or file path does not exist, clearing preview.")
                 self.portrait_preview.set_filename(None)
         else:
-            print("DEBUG: No asset ID, clearing preview.")
             self.portrait_preview.set_filename(None)
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
-        print(f"DEBUG: CharacterManager._on_search_changed: {search_entry.get_text()}")
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
@@ -191,15 +180,14 @@ class CharacterManager(Gtk.Box):
                 search_text in item.display_name.lower())
 
     def _update_visibility(self, *args):
-        """Updates the visibility of the main content and empty state."""
-        has_items = self.model.get_n_items() > 0
-        print(f"DEBUG: CharacterManager._update_visibility: has_items={has_items}")
-        self.content_box.set_visible(has_items)
-        self.empty_state.set_visible(not has_items)
+        """Switches the view based on whether there are items."""
+        if self.model.get_n_items() > 0:
+            self.stack.set_visible_child_name("content")
+        else:
+            self.stack.set_visible_child_name("empty")
 
     def _on_add_clicked(self, button):
         """Handles the clicked signal from the add button."""
-        print("DEBUG: CharacterManager._on_add_clicked")
         new_id_base = "new_char"
         new_id = new_id_base
         count = 1
@@ -214,13 +202,14 @@ class CharacterManager(Gtk.Box):
         gobject = CharacterGObject(new_char_data)
         self.model.append(gobject)
 
-        is_found, pos = self.filter_model.get_model().find(gobject)
-        if is_found:
-            self.selection.set_selected(pos)
+        for i in range(self.filter_model.get_n_items()):
+            if self.filter_model.get_item(i) == gobject:
+                self.selection.set_selected(i)
+                self.column_view.scroll_to(i, Gtk.ListScrollFlags.NONE, None, None)
+                break
 
     def _on_delete_clicked(self, button):
         """Handles the clicked signal from the delete button."""
-        print("DEBUG: CharacterManager._on_delete_clicked")
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -241,7 +230,6 @@ class CharacterManager(Gtk.Box):
 
     def _on_delete_dialog_response(self, dialog, response, char_gobject):
         """Handles the response from the delete confirmation dialog."""
-        print(f"DEBUG: CharacterManager._on_delete_dialog_response: response={response}")
         if response == "delete":
             if self.project_manager.remove_character(char_gobject.character):
                 is_found, pos = self.model.find(char_gobject)
@@ -252,6 +240,5 @@ class CharacterManager(Gtk.Box):
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
-        print(f"DEBUG: CharacterManager._on_selection_changed: is_selected={is_selected}")
         self.delete_button.set_sensitive(is_selected)
         self._update_preview()

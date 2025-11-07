@@ -12,9 +12,7 @@
       </object>
     </child>
     <child>
-      <object class="AdwViewStack" id="view_stack">
-        <property name="vexpand">true</property>
-      </object>
+      <object class="AdwViewStack" id="view_stack"/>
     </child>
   </template>
 </interface>
