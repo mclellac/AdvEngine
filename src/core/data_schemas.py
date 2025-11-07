@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Any, Dict
 from gi.repository import GObject
 
+import json
+
 
 # Schema for ItemData.csv
 @dataclass
@@ -181,11 +183,11 @@ class CharacterGObject(GObject.Object):
             "notify::portrait_asset_id", self._on_property_changed, "portrait_asset_id"
         )
         self.connect(
-            "notify::sprite_sheet_asset_id", self._on_property_changed, "sprite_sheet_asset_id"
+            "notify::sprite_sheet_asset_id",
+            self._on_property_changed,
+            "sprite_sheet_asset_id",
         )
-        self.connect(
-            "notify::animations", self._on_property_changed, "animations"
-        )
+        self.connect("notify::animations", self._on_property_changed, "animations")
 
     def _on_property_changed(self, obj, pspec, data_key):
         """Handles the notify signal for a property."""
