@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1"/>
+  <object class="GtkBox" id="main_box">
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="AdwClamp" id="clamp">
+        <child>
+          <object class="GtkBox" id="content_box">
+            <property name="orientation">vertical</property>
+            <property name="spacing">12</property>
+            <property name="margin-top">12</property>
+            <property name="margin-bottom">12</property>
+            <child>
+              <object class="AdwHeaderBar" id="header_bar">
+                <child type="start">
+                  <object class="GtkButton" id="add_button">
+                    <property name="icon-name">list-add-symbolic</property>
+                    <property name="tooltip-text">Add New Interaction</property>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkButton" id="delete_button">
+                    <property name="icon-name">edit-delete-symbolic</property>
+                    <property name="tooltip-text">Delete Selected Interaction</property>
+                    <property name="sensitive">false</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolled_window">
+                <property name="child">
+                  <object class="GtkColumnView" id="column_view">
+                    <property name="vexpand">true</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwStatusPage" id="status_page">
+        <property name="title">No Interactions</property>
+        <property name="icon-name">emblem-synchronizing-symbolic</property>
+      </object>
+    </child>
+  </object>
+</interface>

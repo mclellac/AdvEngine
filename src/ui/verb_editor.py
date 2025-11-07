@@ -1,6 +1,7 @@
 """The verb editor for the AdvEngine application."""
 
 import gi
+import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
@@ -9,83 +10,38 @@ from ..core.data_schemas import Verb, VerbGObject
 from ..core.project_manager import ProjectManager
 
 
-class VerbEditor(Adw.Bin):
-    """A widget for editing verbs in a project.
-
-    This editor provides a table-like interface for creating, editing, and
-    deleting in-game verbs. It includes features for searching and sorting.
-    """
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "verb_editor.ui"))
+class VerbEditor(Gtk.Box):
+    """A widget for editing verbs in a project."""
     __gtype_name__ = "VerbEditor"
-    EDITOR_NAME = "Verbs"
-    VIEW_NAME = "verb_editor"
-    ORDER = 3
+
+    add_button = Gtk.Template.Child()
+    delete_button = Gtk.Template.Child()
+    search_entry = Gtk.Template.Child()
+    column_view = Gtk.Template.Child()
+    empty_state = Gtk.Template.Child()
+    content_clamp = Gtk.Template.Child()
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
-        """Initializes a new VerbEditor instance.
-
-        Args:
-            project_manager: The project manager instance.
-        """
+        """Initializes a new VerbEditor instance."""
         print("DEBUG: VerbEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
-
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
         self.selection = self._setup_selection_model()
+        self._setup_column_view()
         self.column_view.set_model(self.selection)
 
+        self._connect_signals()
         self._update_visibility()
 
-    def _build_ui(self):
-        """Builds the user interface for the editor."""
-        print("DEBUG: VerbEditor._build_ui")
-        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        self.content_clamp = Adw.Clamp()
-        root_box.append(self.content_clamp)
-
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        main_box.set_margin_top(12)
-        main_box.set_margin_bottom(12)
-        self.content_clamp.set_child(main_box)
-
-        header = Adw.HeaderBar()
-        main_box.append(header)
-
-        self.add_button = Gtk.Button(icon_name="list-add-symbolic")
-        self.add_button.set_tooltip_text("Add New Verb")
+    def _connect_signals(self):
+        """Connects widget signals to handlers."""
         self.add_button.connect("clicked", self._on_add_clicked)
-        header.pack_start(self.add_button)
-
-        self.delete_button = Gtk.Button(icon_name="edit-delete-symbolic")
-        self.delete_button.set_tooltip_text("Delete Selected Verb")
         self.delete_button.connect("clicked", self._on_delete_clicked)
-        self.delete_button.set_sensitive(False)
-        header.pack_end(self.delete_button)
-
-        self.search_entry = Gtk.SearchEntry()
-        self.search_entry.set_placeholder_text("Search Verbs")
         self.search_entry.connect("search-changed", self._on_search_changed)
-        main_box.append(self.search_entry)
-
-        self.column_view = self._setup_column_view()
-        scrolled_window = Gtk.ScrolledWindow(child=self.column_view)
-        scrolled_window.set_policy(
-            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        main_box.append(scrolled_window)
-
-        self.empty_state = Adw.StatusPage(
-            title="No Verbs",
-            description="Create a new verb to get started.",
-            icon_name="input-gaming-symbolic"
-        )
-        root_box.append(self.empty_state)
-
-        return root_box
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
@@ -114,7 +70,6 @@ class VerbEditor(Adw.Bin):
     def _setup_column_view(self):
         """Sets up the column view for the editor."""
         print("DEBUG: VerbEditor._setup_column_view")
-        column_view = Gtk.ColumnView()
         columns_def = {
             "id": {"title": "ID", "expand": True},
             "name": {"title": "Name", "expand": True}
@@ -128,9 +83,7 @@ class VerbEditor(Adw.Bin):
             column = Gtk.ColumnViewColumn(
                 title=col_info["title"], factory=factory)
             column.set_expand(col_info["expand"])
-            column_view.append_column(column)
-
-        return column_view
+            self.column_view.append_column(column)
 
     def _setup_cell(self, factory, list_item):
         """Sets up a cell in the column view."""

@@ -13,86 +13,46 @@ from .core.project_manager import ProjectManager
 from .core.data_schemas import DialogueNode
 import importlib
 import inspect
-from .ui import search_results
 
-
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "ui/main_window.ui"))
 class EditorWindow(Adw.ApplicationWindow):
-    """The main window of the AdvEngine editor.
+    """The main window of the AdvEngine editor."""
 
-    This window contains the main user interface of the editor, including the
-    sidebar for navigation, the content area for displaying the editors, and
-    the header bar for application-level actions.
+    __gtype_name__ = "EditorWindow"
 
-    Attributes:
-        project_manager (ProjectManager): The project manager instance for the
-            currently open project.
-    """
+    toggle_button = Gtk.Template.Child()
+    save_button = Gtk.Template.Child()
+    play_button = Gtk.Template.Child()
+    new_project_button = Gtk.Template.Child()
+    search_entry = Gtk.Template.Child()
+    split_view = Gtk.Template.Child()
+    content_stack = Gtk.Template.Child()
+    sidebar_list = Gtk.Template.Child()
+
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
-        """Initializes a new EditorWindow instance.
+        """Initializes a new EditorWindow instance."""
+        from .ui import search_results
 
-        Args:
-            project_manager: The project manager for the current project.
-        """
         print("DEBUG: EditorWindow.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.base_title = "AdvEngine"
         self.set_title(self.base_title)
-        self.set_default_size(1280, 800)
         print(f"DEBUG: Project Manager assigned: {self.project_manager.project_path}")
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
 
-        main_container = Adw.ToolbarView()
-        self.set_content(main_container)
-
-        print("DEBUG: Creating HeaderBar and adding widgets.")
-        header = Adw.HeaderBar()
-        main_container.add_top_bar(header)
-
-        self.toggle_button = Gtk.ToggleButton(icon_name="sidebar-show-symbolic", tooltip_text="Toggle Sidebar")
-        header.pack_start(self.toggle_button)
-
-        save_button = Gtk.Button(label="Save", tooltip_text="Save project (Ctrl+S)")
-        save_button.connect("clicked", self.on_save_clicked)
-        header.pack_start(save_button)
-
-        play_button = Gtk.Button(label="Play", tooltip_text="Launch game (Ctrl+P)")
-        play_button.connect("clicked", self._on_play_clicked)
-        header.pack_start(play_button)
-
-        new_project_button = Gtk.Button(
-            label="New Project", tooltip_text="Create a new project")
-        new_project_button.connect(
-            "clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
-        header.pack_start(new_project_button)
-
-        menu = Gio.Menu.new()
-        menu.append("Preferences", "app.preferences")
-        menu.append("Keyboard Shortcuts", "app.shortcuts")
-        menu.append("About", "app.about")
-        menu_button = Gtk.MenuButton(menu_model=menu, icon_name="open-menu-symbolic")
-        header.pack_end(menu_button)
-
-        search_entry = Gtk.SearchEntry(placeholder_text="Search Project")
-        search_entry.connect("search-changed", self.on_search_changed)
-        header.pack_end(search_entry)
-
-        self.split_view = Adw.OverlaySplitView()
-        main_container.set_content(self.split_view)
+        # Connect signals
+        self.save_button.connect("clicked", self.on_save_clicked)
+        self.play_button.connect("clicked", self._on_play_clicked)
+        self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
 
         self.toggle_button.bind_property("active", self.split_view, "show-sidebar", GObject.BindingFlags.BIDIRECTIONAL)
 
-        self.content_stack = Adw.ViewStack()
-        self.split_view.set_content(self.content_stack)
-
-        self.sidebar_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE)
-        self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
-        sidebar_scroll = Gtk.ScrolledWindow(child=self.sidebar_list)
-        self.split_view.set_sidebar(sidebar_scroll)
-
-        self.logic_editor = None # This will be assigned in discover_and_add_editors
+        self.logic_editor = None
         self.discover_and_add_editors()
 
         self.search_results_view = search_results.SearchResultsView()
@@ -103,50 +63,34 @@ class EditorWindow(Adw.ApplicationWindow):
         self.split_view.set_show_sidebar(True)
 
     def on_search_changed(self, search_entry: Gtk.SearchEntry):
-        """Handles the search-changed signal from the search entry.
-
-        Args:
-            search_entry: The search entry that emitted the signal.
-        """
+        """Handles the search-changed signal from the search entry."""
         query = search_entry.get_text()
         if not query:
             if self.content_stack.get_visible_child_name() == "search_results":
-                self.content_stack.set_visible_child_name("scenes_editor")
+                # Fallback to the first editor if search is cleared
+                first_row = self.sidebar_list.get_row_at_index(0)
+                if first_row:
+                    self.content_stack.set_visible_child_name(first_row.get_name())
             return
         results = self.project_manager.search(query)
         self.search_results_view.update_results(results)
         self.content_stack.set_visible_child_name("search_results")
 
     def add_editor(self, name: str, view_name: str, widget: Gtk.Widget):
-        """Adds an editor to the sidebar and content stack.
-
-        Args:
-            name: The display name of the editor.
-            view_name: The unique name of the editor's view.
-            widget: The editor's main widget.
-        """
+        """Adds an editor to the sidebar and content stack."""
         row = Adw.ActionRow(title=name)
         list_box_row = Gtk.ListBoxRow(name=view_name, child=row)
         self.sidebar_list.append(list_box_row)
         self.content_stack.add_named(widget, view_name)
 
     def on_sidebar_activated(self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow):
-        """Handles the row-activated signal from the sidebar list.
-
-        Args:
-            listbox: The listbox that emitted the signal.
-            row: The activated row.
-        """
+        """Handles the row-activated signal from the sidebar list."""
         if row:
             view_name = row.get_name()
             self.content_stack.set_visible_child_name(view_name)
 
     def discover_and_add_editors(self):
-        """Discovers and adds all available editors to the UI.
-
-        This method scans the `ui` directory for modules that contain editor
-        classes, and then adds them to the sidebar and content stack.
-        """
+        """Discovers and adds all available editors to the UI."""
         print("DEBUG: Discovering editors...")
         editors = []
         discovered_view_names = set()
@@ -155,8 +99,7 @@ class EditorWindow(Adw.ApplicationWindow):
             if filename.endswith(".py") and not filename.startswith("__"):
                 module_name = f".ui.{filename[:-3]}"
                 try:
-                    module = importlib.import_module(
-                        module_name, package="advengine")
+                    module = importlib.import_module(module_name, package="advengine")
                     for name, obj in inspect.getmembers(module):
                         if inspect.isclass(obj) and hasattr(obj, "EDITOR_NAME"):
                             if obj.VIEW_NAME not in discovered_view_names:
@@ -166,41 +109,28 @@ class EditorWindow(Adw.ApplicationWindow):
                 except Exception as e:
                     print(f"Error discovering editor in {module_name}: {e}")
 
-        # Sort editors based on an 'ORDER' attribute
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
         print("DEBUG: Adding editors to the UI...")
         for editor_class in editors:
             print(f"  - Adding editor: {editor_class.EDITOR_NAME}")
+            # Pass project_manager as a keyword argument
             editor_instance = editor_class(project_manager=self.project_manager)
-            self.add_editor(editor_class.EDITOR_NAME,
-                            editor_class.VIEW_NAME, editor_instance)
+            self.add_editor(editor_class.EDITOR_NAME, editor_class.VIEW_NAME, editor_instance)
             if editor_class.VIEW_NAME == 'logic_editor':
                 self.logic_editor = editor_instance
 
     def on_dirty_state_changed(self, is_dirty: bool):
-        """Handles the dirty-state-changed signal from the project manager.
-
-        Args:
-            is_dirty: The new dirty state.
-        """
+        """Handles the dirty-state-changed signal from the project manager."""
         self.set_title(f"{self.base_title}{'*' if is_dirty else ''}")
 
     def on_save_clicked(self, button: Gtk.Button):
-        """Handles the clicked signal from the save button.
-
-        Args:
-            button: The button that was clicked.
-        """
+        """Handles the clicked signal from the save button."""
         print("DEBUG: Save button clicked.")
         self.get_application().save_project()
 
     def _on_play_clicked(self, button: Gtk.Button):
-        """Handles the clicked signal from the play button.
-
-        Args:
-            button: The button that was clicked.
-        """
+        """Handles the clicked signal from the play button."""
         print("DEBUG: Play button clicked.")
         self.get_application().save_project()
         ue_path = self.get_application().settings_manager.get("ue_path")
@@ -238,19 +168,7 @@ from .core.settings_manager import SettingsManager
 
 
 class AdvEngine(Adw.Application):
-    """The main application class for AdvEngine.
-
-    This class is responsible for managing the application's lifecycle,
-    handling application-level actions, and coordinating the opening and
-    closing of windows.
-
-    Attributes:
-        project_manager (ProjectManager): The project manager for the
-            currently open project.
-        settings_manager (SettingsManager): The settings manager for the
-            application.
-        win (Gtk.ApplicationWindow): The currently active window.
-    """
+    """The main application class for AdvEngine."""
 
     def __init__(self, **kwargs):
         """Initializes a new AdvEngine instance."""
@@ -262,14 +180,7 @@ class AdvEngine(Adw.Application):
         self.connect("activate", self.on_activate)
 
     def on_activate(self, app: Adw.Application):
-        """Handles the activate signal of the application.
-
-        This method is called when the application is first launched. It
-        creates and presents the welcome window.
-
-        Args:
-            app: The application instance.
-        """
+        """Handles the activate signal of the application."""
         print("DEBUG: AdvEngine.on_activate")
         from .ui import welcome
         self.win = welcome.WelcomeWindow(application=app)
@@ -340,13 +251,7 @@ class AdvEngine(Adw.Application):
                 f"app.go-to-{view_name}", [f"<Primary>{key}"])
 
     def on_go_to(self, action: Gio.SimpleAction, param: None, view_name: str):
-        """Handles the go-to action for navigating between editors.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-            view_name: The name of the view to navigate to.
-        """
+        """Handles the go-to action for navigating between editors."""
         if self.win and isinstance(self.win, EditorWindow):
             self.win.content_stack.set_visible_child_name(view_name)
             for row in self.win.sidebar_list:
@@ -355,12 +260,7 @@ class AdvEngine(Adw.Application):
                     break
 
     def on_export_localization(self, action: Gio.SimpleAction, param: None):
-        """Handles the export-localization action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the export-localization action."""
         dialog = Gtk.FileChooserNative(
             title="Export Localization", transient_for=self.win, action=Gtk.FileChooserAction.SAVE)
         dialog.connect("response", lambda d,
@@ -368,23 +268,13 @@ class AdvEngine(Adw.Application):
         dialog.show()
 
     def on_export_localization_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
-        """Handles the response from the export localization file chooser.
-
-        Args:
-            dialog: The file chooser dialog.
-            response: The response from the dialog.
-        """
+        """Handles the response from the export localization file chooser."""
         if response == Gtk.ResponseType.ACCEPT:
             file = dialog.get_file()
             self.project_manager.export_localization(file.get_path())
 
     def on_import_localization(self, action: Gio.SimpleAction, param: None):
-        """Handles the import-localization action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the import-localization action."""
         dialog = Gtk.FileChooserNative(
             title="Import Localization", transient_for=self.win, action=Gtk.FileChooserAction.OPEN)
         dialog.connect("response", lambda d,
@@ -392,23 +282,13 @@ class AdvEngine(Adw.Application):
         dialog.show()
 
     def on_import_localization_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
-        """Handles the response from the import localization file chooser.
-
-        Args:
-            dialog: The file chooser dialog.
-            response: The response from the dialog.
-        """
+        """Handles the response from the import localization file chooser."""
         if response == Gtk.ResponseType.ACCEPT:
             file = dialog.get_file()
             self.project_manager.import_localization(file.get_path())
 
     def on_open_project_activate(self, action: Gio.SimpleAction, param: None):
-        """Handles the open-project action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the open-project action."""
         dialog = Gtk.FileChooserNative(
             title="Open Project", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
         dialog.connect("response", lambda d,
@@ -416,46 +296,26 @@ class AdvEngine(Adw.Application):
         dialog.show()
 
     def on_open_project_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
-        """Handles the response from the open project file chooser.
-
-        Args:
-            dialog: The file chooser dialog.
-            response: The response from the dialog.
-        """
+        """Handles the response from the open project file chooser."""
         if response == Gtk.ResponseType.ACCEPT:
             folder = dialog.get_file().get_path()
             self.load_project(folder)
 
     def on_preferences_activate(self, action: Gio.SimpleAction, param: None):
-        """Handles the preferences action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the preferences action."""
         from .ui import preferences
         dialog = preferences.PreferencesDialog(
             parent=self.win, project_manager=self.project_manager, settings_manager=self.settings_manager)
         dialog.present()
 
     def on_shortcuts_activate(self, action: Gio.SimpleAction, param: None):
-        """Handles the shortcuts action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the shortcuts action."""
         from .ui import shortcuts
         dialog = shortcuts.ShortcutsDialog(transient_for=self.win)
         dialog.present()
 
     def on_about_activate(self, action: Gio.SimpleAction, param: None):
-        """Handles the about action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the about action."""
         dialog = Adw.AboutWindow(
             transient_for=self.win, application_name="AdvEngine", developer_name="Carey McLelland", version="0.1.0")
         dialog.present()
@@ -470,16 +330,7 @@ class AdvEngine(Adw.Application):
             print("DEBUG: Project is not dirty, skipping save.")
 
     def load_project(self, project_path: str, project_manager: ProjectManager = None):
-        """Loads a project and displays it in a new EditorWindow.
-
-        This method is responsible for loading a project and transitioning
-        the application from the WelcomeWindow to the EditorWindow.
-
-        Args:
-            project_path: The absolute path to the project directory.
-            project_manager: An optional ProjectManager instance. If not
-                provided, a new one will be created.
-        """
+        """Loads a project and displays it in a new EditorWindow."""
         print(f"DEBUG: AdvEngine.load_project: {project_path}")
         if project_manager:
             self.project_manager = project_manager
@@ -499,12 +350,7 @@ class AdvEngine(Adw.Application):
         self.win = new_win
 
     def on_new_project_activate(self, action: Gio.SimpleAction, param: None):
-        """Handles the new-project action.
-
-        Args:
-            action: The action that was activated.
-            param: The parameter passed to the action.
-        """
+        """Handles the new-project action."""
         dialog = Adw.MessageDialog(
             transient_for=self.win, heading="Create New Project")
         entry = Adw.EntryRow(title="Project Name")
@@ -545,14 +391,7 @@ class AdvEngine(Adw.Application):
         dialog.present()
 
     def on_new_project_folder_selected(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType, name: str, template: str):
-        """Handles the response from the new project folder chooser.
-
-        Args:
-            dialog: The file chooser dialog.
-            response: The response from the dialog.
-            name: The name of the new project.
-            template: The template to use for the new project.
-        """
+        """Handles the response from the new project folder chooser."""
         if response == Gtk.ResponseType.ACCEPT:
             folder = dialog.get_file().get_path()
             project_path = os.path.join(folder, name)
