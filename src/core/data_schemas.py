@@ -141,6 +141,8 @@ class Character:
     is_merchant: bool
     shop_id: Optional[str]
     portrait_asset_id: Optional[str] = None
+    sprite_sheet_asset_id: Optional[str] = None
+    animations: Dict[str, Any] = field(default_factory=dict)
 
 
 class CharacterGObject(GObject.Object):
@@ -153,6 +155,8 @@ class CharacterGObject(GObject.Object):
     is_merchant = GObject.Property(type=bool, default=False)
     shop_id = GObject.Property(type=str)
     portrait_asset_id = GObject.Property(type=str)
+    sprite_sheet_asset_id = GObject.Property(type=str)
+    animations = GObject.Property(type=str)
 
     def __init__(self, character: Character):
         super().__init__()
@@ -163,6 +167,8 @@ class CharacterGObject(GObject.Object):
         self.is_merchant = character.is_merchant
         self.shop_id = character.shop_id
         self.portrait_asset_id = character.portrait_asset_id
+        self.sprite_sheet_asset_id = character.sprite_sheet_asset_id
+        self.animations = json.dumps(character.animations)
 
         self.connect("notify::id", self._on_property_changed, "id")
         self.connect("notify::display_name", self._on_property_changed, "display_name")
@@ -174,10 +180,19 @@ class CharacterGObject(GObject.Object):
         self.connect(
             "notify::portrait_asset_id", self._on_property_changed, "portrait_asset_id"
         )
+        self.connect(
+            "notify::sprite_sheet_asset_id", self._on_property_changed, "sprite_sheet_asset_id"
+        )
+        self.connect(
+            "notify::animations", self._on_property_changed, "animations"
+        )
 
     def _on_property_changed(self, obj, pspec, data_key):
         """Handles the notify signal for a property."""
-        setattr(self.character, data_key, getattr(self, data_key))
+        value = getattr(self, pspec.name)
+        if data_key == "animations":
+            value = json.loads(value)
+        setattr(self.character, data_key, value)
 
 
 # --- Scene Schemas ---
