@@ -56,12 +56,13 @@ class MiniMap(Gtk.DrawingArea):
 class DynamicNodeEditor(Adw.Bin):
     """A dynamic editor for logic nodes."""
 
-    def __init__(self, project_manager=None, on_update_callback=None, **kwargs):
+    def __init__(self, project_manager=None, settings_manager=None, on_update_callback=None, **kwargs):
         """Initializes a new DynamicNodeEditor instance."""
         print("DEBUG: DynamicNodeEditor.__init__")
         super().__init__(**kwargs)
         self.node = None
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
         self.on_update_callback = on_update_callback
         self.main_widgets = {}
         self.param_widgets = {}
@@ -270,11 +271,12 @@ class LogicEditor(Adw.Bin):
     VIEW_NAME = "logic_editor"
     ORDER = 1
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, project_manager, settings_manager, **kwargs):
         """Initializes a new LogicEditor instance."""
         print("DEBUG: LogicEditor.__init__")
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
         self.active_graph = None
         self.selected_nodes = []
         self.connecting_from_node = None
@@ -345,7 +347,7 @@ class LogicEditor(Adw.Bin):
             palette.add(row)
 
         self.props_panel = DynamicNodeEditor(
-            project_manager=self.project_manager, on_update_callback=self.update_node_and_redraw)
+            project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self.update_node_and_redraw)
         sidebar.append(self.props_panel)
 
         return sidebar
@@ -535,7 +537,9 @@ class LogicEditor(Adw.Bin):
                 new_id = f"node_{len(self.active_graph.nodes)}_{count}"
                 count += 1
 
-            new_node = node_class(id=new_id, node_type=node_type, x=50, y=50)
+            node_width = self.project_manager.settings_manager.get("default_node_width", 240)
+            node_height = self.project_manager.settings_manager.get("default_node_height", 160)
+            new_node = node_class(id=new_id, node_type=node_type, x=50, y=50, width=node_width, height=node_height)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
             self.minimap.queue_draw()
@@ -568,8 +572,16 @@ class LogicEditor(Adw.Bin):
             success, start_x, start_y = gesture.get_start_point()
             for node in self.selected_nodes:
                 offset_x, offset_y = self.drag_offsets[node.id]
-                node.x = start_x + x - offset_x
-                node.y = start_y + y - offset_y
+                new_x = start_x + x - offset_x
+                new_y = start_y + y - offset_y
+
+                if self.project_manager.settings_manager.get("grid_snap_enabled", True):
+                    grid_size = self.project_manager.settings_manager.get("grid_size", 20)
+                    new_x = round(new_x / grid_size) * grid_size
+                    new_y = round(new_y / grid_size) * grid_size
+
+                node.x = new_x
+                node.y = new_y
             self.canvas.queue_draw()
         elif self.drag_selection_rect:
             self.drag_selection_rect[2] = x

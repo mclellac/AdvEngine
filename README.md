@@ -27,6 +27,7 @@ For a detailed walkthrough, see the **[Tutorial](./docs/tutorials/01_locked_room
 *   **UI Builder & Font Manager:** Tools for designing the in-game UI and managing fonts.
 *   **Global Search:** A project-wide search feature to quickly find any asset, logic node, or database entry.
 *   **Modern UI:** A clean, GNOME HIG-compliant user interface built with Libadwaita for a polished and consistent cross-platform experience.
+*   **Customizable Preferences:** A robust preferences window to manage your theme, editor settings, and external tool paths.
 
 ## Building and Running
 
