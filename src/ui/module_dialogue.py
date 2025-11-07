@@ -56,7 +56,7 @@ class DialogueEditor(Adw.Bin):
 
         self.dialogue_node_editor = DynamicNodeEditor(
             project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self._on_node_updated)
-        self.dialogue_node_editor_placeholder.set_child(self.dialogue_node_editor)
+        self.dialogue_node_editor_placeholder.append(self.dialogue_node_editor)
 
         self._setup_tree_view()
         self._connect_signals()
