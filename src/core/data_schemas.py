@@ -64,8 +64,9 @@ class ItemGObject(GObject.Object):
         super().__init__()
         self.item = item
         for prop in self.list_properties():
-            if hasattr(item, prop.name):
-                setattr(self, prop.name, getattr(item, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(item, prop_name):
+                setattr(self, prop_name, getattr(item, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
@@ -75,8 +76,9 @@ class ItemGObject(GObject.Object):
             obj (GObject.Object): The object that emitted the signal.
             pspec (GObject.ParamSpec): The property specification.
         """
-        if hasattr(self.item, pspec.name):
-            setattr(self.item, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        if hasattr(self.item, py_attr_name):
+            setattr(self.item, py_attr_name, getattr(self, py_attr_name))
 
 @dataclass
 class Attribute:
@@ -105,12 +107,14 @@ class AttributeGObject(GObject.Object):
         super().__init__()
         self.attribute = attribute
         for prop in self.list_properties():
-            if hasattr(attribute, prop.name):
-                setattr(self, prop.name, getattr(attribute, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(attribute, prop_name):
+                setattr(self, prop_name, getattr(attribute, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.attribute, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.attribute, py_attr_name, getattr(self, py_attr_name))
 
 @dataclass
 class Character:
@@ -151,18 +155,20 @@ class CharacterGObject(GObject.Object):
         super().__init__()
         self.character = character
         for prop in self.list_properties():
-            if hasattr(character, prop.name):
-                value = getattr(character, prop.name)
-                if prop.name == "animations":
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(character, prop_name):
+                value = getattr(character, prop_name)
+                if prop_name == "animations":
                     value = json.dumps(value)
-                setattr(self, prop.name, value)
+                setattr(self, prop_name, value)
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        value = getattr(self, pspec.name)
-        if pspec.name == "animations":
+        py_attr_name = pspec.name.replace('-', '_')
+        value = getattr(self, py_attr_name)
+        if py_attr_name == "animations":
             value = json.loads(value)
-        setattr(self.character, pspec.name, value)
+        setattr(self.character, py_attr_name, value)
 
 # --- Scene Schemas ---
 
@@ -199,12 +205,14 @@ class HotspotGObject(GObject.Object):
         super().__init__()
         self.hotspot = hotspot
         for prop in self.list_properties():
-            if hasattr(hotspot, prop.name):
-                setattr(self, prop.name, getattr(hotspot, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(hotspot, prop_name):
+                setattr(self, prop_name, getattr(hotspot, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.hotspot, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.hotspot, py_attr_name, getattr(self, py_attr_name))
 
 @dataclass
 class Scene:
@@ -232,12 +240,14 @@ class SceneGObject(GObject.Object):
         super().__init__()
         self.scene = scene
         for prop in self.list_properties():
-            if hasattr(scene, prop.name):
-                setattr(self, prop.name, getattr(scene, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(scene, prop_name):
+                setattr(self, prop_name, getattr(scene, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.scene, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.scene, py_attr_name, getattr(self, py_attr_name))
 
 # --- Logic Editor Schemas (Node-Based) ---
 
@@ -336,12 +346,14 @@ class AssetGObject(GObject.Object):
         super().__init__()
         self.asset = asset
         for prop in self.list_properties():
-            if hasattr(asset, prop.name):
-                setattr(self, prop.name, getattr(asset, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(asset, prop_name):
+                setattr(self, prop_name, getattr(asset, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.asset, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.asset, py_attr_name, getattr(self, py_attr_name))
 
 @dataclass
 class Animation(Asset):
@@ -369,12 +381,14 @@ class AudioGObject(GObject.Object):
         super().__init__()
         self.audio = audio
         for prop in self.list_properties():
-            if hasattr(audio, prop.name):
-                setattr(self, prop.name, getattr(audio, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(audio, prop_name):
+                setattr(self, prop_name, getattr(audio, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.audio, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.audio, py_attr_name, getattr(self, py_attr_name))
 
 # --- Global State Schema ---
 
@@ -407,8 +421,11 @@ class GlobalVariableGObject(GObject.Object):
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        value = getattr(self, pspec.name)
-        if pspec.name == "initial_value_str":
+        py_attr_name = pspec.name.replace('-', '_')
+        value = getattr(self, py_attr_name)
+
+        if py_attr_name == "initial_value_str":
+            data_attr_name = "initial_value"
             if self.type == "int":
                 try:
                     value = int(value)
@@ -416,9 +433,9 @@ class GlobalVariableGObject(GObject.Object):
                     value = 0
             elif self.type == "bool":
                 value = value.lower() in ["true", "1"]
-            setattr(self.variable, "initial_value", value)
+            setattr(self.variable, data_attr_name, value)
         else:
-            setattr(self.variable, pspec.name, value)
+            setattr(self.variable, py_attr_name, value)
 
 # --- Verb Schema ---
 
@@ -442,7 +459,8 @@ class VerbGObject(GObject.Object):
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.verb, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.verb, py_attr_name, getattr(self, py_attr_name))
 
 # --- Interaction Schemas ---
 
@@ -470,12 +488,14 @@ class InteractionGObject(GObject.Object):
         super().__init__()
         self.interaction = interaction
         for prop in self.list_properties():
-            if hasattr(interaction, prop.name):
-                setattr(self, prop.name, getattr(interaction, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(interaction, prop_name):
+                setattr(self, prop_name, getattr(interaction, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.interaction, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.interaction, py_attr_name, getattr(self, py_attr_name))
 
 # --- UI and Font Schemas ---
 
@@ -497,12 +517,14 @@ class FontGObject(GObject.Object):
         super().__init__()
         self.font = font
         for prop in self.list_properties():
-            if hasattr(font, prop.name):
-                setattr(self, prop.name, getattr(font, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(font, prop_name):
+                setattr(self, prop_name, getattr(font, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.font, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.font, py_attr_name, getattr(self, py_attr_name))
 
 @dataclass
 class UIElement:
@@ -536,7 +558,8 @@ class UILayoutGObject(GObject.Object):
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.layout, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.layout, py_attr_name, getattr(self, py_attr_name))
 
 # --- Quest Schemas ---
 
@@ -558,12 +581,14 @@ class ObjectiveGObject(GObject.Object):
         super().__init__()
         self.objective = objective
         for prop in self.list_properties():
-            if hasattr(objective, prop.name):
-                setattr(self, prop.name, getattr(objective, prop.name))
+            prop_name = prop.name.replace('-', '_')
+            if hasattr(objective, prop_name):
+                setattr(self, prop_name, getattr(objective, prop_name))
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.objective, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.objective, py_attr_name, getattr(self, py_attr_name))
 
 @dataclass
 class Quest:
@@ -586,7 +611,8 @@ class QuestGObject(GObject.Object):
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        setattr(self.quest, pspec.name, getattr(self, pspec.name))
+        py_attr_name = pspec.name.replace('-', '_')
+        setattr(self.quest, py_attr_name, getattr(self, py_attr_name))
 
 # --- Search Result Schema ---
 
