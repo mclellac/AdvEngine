@@ -9,8 +9,10 @@ class UIBuilder(Adw.Bin):
     VIEW_NAME = "ui_builder"
     ORDER = 10
 
-    def __init__(self, project_manager, settings_manager, **kwargs):
+    def __init__(self, **kwargs):
         print("DEBUG: UIBuilder.__init__")
+        project_manager = kwargs.pop('project_manager')
+        settings_manager = kwargs.pop('settings_manager')
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -144,7 +146,8 @@ class UIBuilder(Adw.Bin):
 
     def _on_add_layout(self, button):
         print("DEBUG: UIBuilder._on_add_layout")
-        new_layout = self.project_manager.add_ui_layout(id=f"layout_{len(self.model) + 1}", name="New Layout")
+        new_layout = UILayout(id=f"layout_{self.model.get_n_items() + 1}", name="New Layout")
+        self.project_manager.add_ui_layout(new_layout)
         self.model.append(UILayoutGObject(new_layout))
         self._update_visibility()
 
