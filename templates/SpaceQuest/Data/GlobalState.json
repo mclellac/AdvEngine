@@ -26,5 +26,33 @@
     "type": "bool",
     "initial_value": false,
     "category": "Quest"
+  },
+  {
+    "id": "met_zorblat",
+    "name": "Met Zorblat",
+    "type": "bool",
+    "initial_value": false,
+    "category": "Quest"
+  },
+  {
+    "id": "met_sparky",
+    "name": "Met Sparky",
+    "type": "bool",
+    "initial_value": false,
+    "category": "Quest"
+  },
+  {
+    "id": "has_alien_artifact",
+    "name": "Has Alien Artifact",
+    "type": "bool",
+    "initial_value": false,
+    "category": "Quest"
+  },
+  {
+    "id": "repaired_droid",
+    "name": "Repaired Droid",
+    "type": "bool",
+    "initial_value": false,
+    "category": "Quest"
   }
 ]

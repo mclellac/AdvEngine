@@ -1,3 +1,6 @@
 id,name,description,type,buy_price,sell_price
 handcuffs,"Handcuffs","Standard issue police handcuffs.",item,20,10
 revolver,"Revolver","A .38 caliber police revolver.",item,150,100
+evidence_bag,"Evidence Bag","A bag for collecting evidence.",item,5,2
+forensics_kit,"Forensics Kit","A kit for collecting forensic evidence.",item,200,100
+warrant,"Warrant","A warrant for the arrest of Franky.",item,0,0

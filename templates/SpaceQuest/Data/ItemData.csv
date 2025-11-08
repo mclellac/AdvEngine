@@ -18,3 +18,6 @@ glow_stick,"Glow Stick","Emits a green glow.",item,5,2
 data_pad,"Data Pad","Stores important information.",item,100,50
 navi_computer,"Navi-Computer","Helps with navigation.",item,1000,500
 secret_plans,"Secret Plans","The secret plans to the Death Star.",item,10000,5000
+alien_artifact,"Alien Artifact","A strange, glowing orb.",quest_item,0,0
+broken_droid_part,"Broken Droid Part","Looks like a leg from a protocol droid.",item,0,5
+space_fuel,"Unstable Space Fuel","Handle with extreme care.",item,0,0

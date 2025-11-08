@@ -6,65 +6,90 @@
     <child>
       <object class="AdwOverlaySplitView">
         <property name="sidebar">
-          <object class="GtkBox" id="tree_panel">
+          <object class="GtkBox">
             <property name="orientation">vertical</property>
-        <property name="spacing">5</property>
         <child>
-          <object class="GtkBox" id="toolbar">
-            <property name="orientation">horizontal</property>
-            <property name="spacing">5</property>
-            <child>
-              <object class="GtkButton" id="add_dialogue_button">
-                <property name="label">Add Dialogue</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="add_action_button">
-                <property name="label">Add Action</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="delete_button">
-                <property name="label">Delete</property>
-                <property name="sensitive">false</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkScrolledWindow">
-             <property name="hexpand">true</property>
-             <property name="vexpand">true</property>
-            <property name="child">
-              <object class="GtkListView" id="dialogue_tree_view"/>
-            </property>
-          </object>
-        </child>
-      </object>
-    </property>
-    <property name="content">
-      <object class="GtkStack" id="properties_stack">
-        <property name="transition-type">slide-left-right</property>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">placeholder</property>
-            <property name="child">
-              <object class="AdwStatusPage">
-                <property name="title">Select a node to edit its properties.</property>
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Dialogue Editor</property>
+                <property name="subtitle">Tree-based conversation editor</property>
               </object>
             </property>
           </object>
         </child>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">editor</property>
-            <property name="child">
-              <object class="GtkBox" id="dialogue_node_editor_placeholder"/>
-            </property>
+            <child>
+              <object class="GtkBox" id="toolbar">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">5</property>
+                <child>
+                  <object class="GtkButton" id="add_dialogue_button">
+                    <property name="label">Add Dialogue</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="add_action_button">
+                    <property name="label">Add Action</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="delete_button">
+                    <property name="label">Delete</property>
+                    <property name="sensitive">false</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="child">
+                  <object class="GtkListView" id="dialogue_tree_view"/>
+                </property>
+              </object>
+            </child>
           </object>
-        </child>
-      </object>
-    </property>
+        </property>
+        <property name="content">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="AdwHeaderBar">
+                <property name="title-widget">
+                  <object class="AdwWindowTitle">
+                    <property name="title">Properties</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStack" id="properties_stack">
+                <property name="transition-type">slide-left-right</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">placeholder</property>
+                    <property name="child">
+                      <object class="AdwStatusPage">
+                        <property name="title">Select a node to edit its properties.</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">editor</property>
+                    <property name="child">
+                      <object class="GtkBox" id="dialogue_node_editor_placeholder"/>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
       </object>
     </child>
   </template>

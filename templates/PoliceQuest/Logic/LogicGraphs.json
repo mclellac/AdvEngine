@@ -1,1 +1,91 @@
-[]
+[
+    {
+        "id": "collect_evidence",
+        "name": "Collect Evidence",
+        "nodes": [
+            {
+                "id": "start",
+                "node_type": "Action",
+                "action_command": "SET_VARIABLE",
+                "var_name": "collected_evidence",
+                "value": "True",
+                "x": 50,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": ["complete_objective"]
+            },
+            {
+                "id": "complete_objective",
+                "node_type": "Action",
+                "action_command": "COMPLETE_OBJECTIVE",
+                "quest_id": "main_case",
+                "objective_id": "collect_evidence",
+                "x": 350,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": ["start"],
+                "outputs": []
+            }
+        ]
+    },
+    {
+        "id": "arrest_franky",
+        "name": "Arrest Franky",
+        "nodes": [
+            {
+                "id": "start",
+                "node_type": "Condition",
+                "condition_type": "HAS_ITEM",
+                "item_id": "warrant",
+                "amount": 1,
+                "x": 50,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": ["arrest", "fail_message"]
+            },
+            {
+                "id": "arrest",
+                "node_type": "Action",
+                "action_command": "SET_VARIABLE",
+                "var_name": "arrested_franky",
+                "value": "True",
+                "x": 350,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": ["start"],
+                "outputs": ["complete_objective"]
+            },
+            {
+                "id": "complete_objective",
+                "node_type": "Action",
+                "action_command": "COMPLETE_OBJECTIVE",
+                "quest_id": "main_case",
+                "objective_id": "arrest_suspect",
+                "x": 650,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": ["arrest"],
+                "outputs": []
+            },
+            {
+                "id": "fail_message",
+                "node_type": "Dialogue",
+                "character_id": "narrator",
+                "dialogue_text": "You can't arrest him without a warrant.",
+                "x": 350,
+                "y": 250,
+                "width": 240,
+                "height": 160,
+                "inputs": ["start"],
+                "outputs": []
+            }
+        ]
+    }
+]

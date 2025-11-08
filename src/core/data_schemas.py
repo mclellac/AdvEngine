@@ -384,6 +384,8 @@ class ActionNode(LogicNode):
     mode: str = ""
     mesh_id: str = ""
     dialogue_node_id: str = ""
+    quest_id: str = ""
+    objective_id: str = ""
 
 
 @dataclass

@@ -32,12 +32,18 @@ class AssetEditor(Gtk.Box):
         self.project_manager = project_manager
         self.settings_manager = settings_manager
         self.selected_asset = None
+        self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self._setup_models()
         self._setup_grid_view()
         self._setup_animation_editor()
         self._connect_signals()
 
+        self.refresh_asset_list()
+
+    def project_loaded(self):
+        """Callback for when the project is loaded."""
+        print("DEBUG: AssetEditor.project_loaded: Received project loaded signal.")
         self.refresh_asset_list()
 
     def _setup_models(self):

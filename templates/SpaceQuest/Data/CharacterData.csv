@@ -3,3 +3,6 @@ player,"Roger Wilco",,False,,,{}
 trooper1,"Stormtrooper",,False,,,{}
 trooper2,"Stormtrooper",,False,,,{}
 darth,"Dark Lord",,False,,,{}
+zorblat,"Zorblat the Collector",,True,zorblats_shop,,{}
+sparky,"Sparky the Mechanic",,False,,,{}
+holly,"Holly the Hologram",,False,,,{}
