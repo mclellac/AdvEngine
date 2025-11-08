@@ -37,12 +37,12 @@ from .data_schemas import (
 )
 from .settings_manager import SettingsManager
 
-
 class ProjectManager:
     """Manages all data for a single AdvEngine project.
 
     This class is responsible for all project-related data management,
     including loading data from files, saving data to files, and providing
+
     access to the data to the rest of the application. It also tracks the
     "dirty" state of the project, which is used to determine if there are
     unsaved changes.
@@ -59,9 +59,8 @@ class ProjectManager:
         """Initializes a new ProjectManager instance.
 
         Args:
-            project_path: The absolute path to the project directory.
+            project_path (str): The absolute path to the project directory.
         """
-        print(f"DEBUG: ProjectManager.__init__: {project_path}")
         self.project_path = project_path
         self.data = ProjectData()
         self.settings = SettingsManager(project_path)
@@ -77,7 +76,6 @@ class ProjectManager:
         and populates the `self.data` attribute with the loaded data. It is
         called once when a project is opened.
         """
-        print("DEBUG: ProjectManager.load_project: Starting project load.")
         self._load_csv("ItemData.csv", Item, self.data.items)
         self._load_csv("Attributes.csv", Attribute, self.data.attributes)
         self._load_csv("CharacterData.csv", Character, self.data.characters)
@@ -93,15 +91,14 @@ class ProjectManager:
         self._load_ui_layouts()
         self._load_fonts()
         self.is_new_project = False
-        self.set_dirty(False)  # Project is clean after loading
-        print("DEBUG: ProjectManager.load_project: Project load complete.")
+        self.set_dirty(False)
         self._notify_project_loaded()
 
     def register_project_loaded_callback(self, callback: callable):
         """Registers a callback to be called when the project is loaded.
 
         Args:
-            callback: A callable that takes no arguments.
+            callback (callable): A callable that takes no arguments.
         """
         self.project_loaded_callbacks.append(callback)
 
@@ -116,7 +113,6 @@ class ProjectManager:
         This method writes all data from the `self.data` attribute to the
         project's data files. It is called when the user saves the project.
         """
-        print("DEBUG: ProjectManager.save_project: Starting project save.")
         self._save_csv("ItemData.csv", self.data.items, Item)
         self._save_csv("Attributes.csv", self.data.attributes, Attribute)
         self._save_global_variables()
@@ -132,14 +128,13 @@ class ProjectManager:
         self._save_ui_layouts()
         self._save_fonts()
         self.set_dirty(False)
-        print("DEBUG: ProjectManager.save_project: Project save complete.")
 
     def register_dirty_state_callback(self, callback: callable):
         """Registers a callback to be called when the dirty state changes.
 
         Args:
-            callback: A callable that takes a single boolean argument, which
-                is the new dirty state.
+            callback (callable): A callable that takes a single boolean argument,
+                which is the new dirty state.
         """
         self.dirty_state_changed_callbacks.append(callback)
 
@@ -155,10 +150,9 @@ class ProjectManager:
         modified.
 
         Args:
-            state: The new dirty state. Defaults to True.
+            state (bool): The new dirty state. Defaults to True.
         """
         if self.is_dirty != state:
-            print(f"DEBUG: ProjectManager.set_dirty: Changing dirty state to {state}")
             self.is_dirty = state
             self._notify_dirty_state_changed()
 
@@ -166,17 +160,15 @@ class ProjectManager:
         """Saves a list of dataclass objects to a CSV file.
 
         Args:
-            filename: The name of the CSV file.
-            data_list: A list of dataclass objects to save.
-            dataclass_type: The type of the dataclass objects.
+            filename (str): The name of the CSV file.
+            data_list (list): A list of dataclass objects to save.
+            dataclass_type (type): The type of the dataclass objects.
         """
         file_path = os.path.join(self.project_path, "Data", filename)
-        print(f"DEBUG: ProjectManager._save_csv: Saving to {file_path}")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w", newline="") as f:
                 if not data_list:
-                    # Get field names from an empty instance of the dataclass
                     fieldnames = asdict(
                         dataclass_type(*[None] * len(dataclass_type.__annotations__))
                     ).keys()
@@ -194,17 +186,15 @@ class ProjectManager:
         """Loads data from a CSV file into a list of dataclass objects.
 
         Args:
-            filename: The name of the CSV file.
-            dataclass_type: The type of the dataclass objects to create.
-            target_list: The list to which the loaded objects will be appended.
+            filename (str): The name of the CSV file.
+            dataclass_type (type): The type of the dataclass objects to create.
+            target_list (list): The list to which the loaded objects will be appended.
         """
         file_path = os.path.join(self.project_path, "Data", filename)
-        print(f"DEBUG: ProjectManager._load_csv: Loading from {file_path}")
         try:
             with open(file_path, "r", newline="") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    # Coerce types for dataclass compatibility
                     for key, value in row.items():
                         field_type = dataclass_type.__annotations__.get(key)
                         if field_type == int:
@@ -218,23 +208,19 @@ class ProjectManager:
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
 
-    def _load_json(
-        self, filename: str, target_list: list, object_hook: callable = None
-    ):
+    def _load_json(self, filename: str, target_list: list, object_hook: callable = None):
         """Loads data from a JSON file.
 
         Args:
-            filename: The path to the JSON file, relative to the project root.
-            target_list: The list to which the loaded objects will be appended.
-            object_hook: An optional function to process each loaded object.
+            filename (str): The path to the JSON file, relative to the project root.
+            target_list (list): The list to which the loaded objects will be appended.
+            object_hook (callable): An optional function to process each loaded object.
         """
         file_path = os.path.join(self.project_path, filename)
-        print(f"DEBUG: ProjectManager._load_json: Loading from {file_path}")
         try:
             with open(file_path, "r") as f:
                 content = f.read()
                 if not content:
-                    print(f"Warning: {file_path} is empty.")
                     return
                 data = json.loads(content)
                 if object_hook:
@@ -254,13 +240,10 @@ class ProjectManager:
         """Saves a list of dataclass objects to a JSON file.
 
         Args:
-            filename: The path to the JSON file, relative to the project root.
-            data_list: A list of dataclass objects to save.
+            filename (str): The path to the JSON file, relative to the project root.
+            data_list (list): A list of dataclass objects to save.
         """
         file_path = os.path.join(self.project_path, filename)
-        print(
-            f"DEBUG: ProjectManager._save_json: Saving to {file_path} ({len(data_list)} items)"
-        )
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
@@ -269,34 +252,34 @@ class ProjectManager:
             print(f"Error saving {file_path}: {e}")
 
     def _load_scenes(self):
+        """Loads scenes from Logic/Scenes.json."""
         def scene_object_hook(data):
             hotspots = [Hotspot(**hs) for hs in data.get("hotspots", [])]
             data["hotspots"] = hotspots
             return Scene(**data)
-
-        self._load_json(
-            os.path.join("Logic", "Scenes.json"), self.data.scenes, scene_object_hook
-        )
+        self._load_json(os.path.join("Logic", "Scenes.json"), self.data.scenes, scene_object_hook)
 
     def _save_scenes(self):
+        """Saves scenes to Logic/Scenes.json."""
         self._save_json(os.path.join("Logic", "Scenes.json"), self.data.scenes)
 
     def _load_graph_data(self, file_path, target_list):
+        """Loads graph data from a JSON file.
+
+        Args:
+            file_path (str): The path to the JSON file.
+            target_list (list): The list to which the loaded objects will be appended.
+        """
         def pascal_to_snake(name):
             import re
-
             name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
-            if name == "varname":
-                return "var_name"
-            return name
+            return "var_name" if name == "varname" else name
 
         def graph_object_hook(data):
             nodes = []
             for node_data in data.get("nodes", []):
-                if "parent_id" in node_data:
-                    del node_data["parent_id"]
-                if "children_ids" in node_data:  # Handle legacy field
-                    del node_data["children_ids"]
+                node_data.pop("parent_id", None)
+                node_data.pop("children_ids", None)
                 node_type = node_data.get("node_type")
                 if "parameters" in node_data:
                     for key, value in node_data["parameters"].items():
@@ -305,160 +288,135 @@ class ProjectManager:
                             node_data[snake_key] = value
                     del node_data["parameters"]
 
-                if node_type == "Dialogue":
-                    nodes.append(DialogueNode(**node_data))
-                elif node_type == "Condition":
-                    nodes.append(ConditionNode(**node_data))
-                elif node_type == "Action":
-                    nodes.append(ActionNode(**node_data))
-                else:
-                    nodes.append(LogicNode(**node_data))
+                node_class = {
+                    "Dialogue": DialogueNode,
+                    "Condition": ConditionNode,
+                    "Action": ActionNode,
+                }.get(node_type, LogicNode)
+                nodes.append(node_class(**node_data))
             data["nodes"] = nodes
             return LogicGraph(**data)
 
         self._load_json(file_path, target_list, graph_object_hook)
 
-    def _load_logic_graphs(self):
-        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
-        self._load_graph_data(file_path, self.data.logic_graphs)
-
-    def _load_dialogue_graphs(self):
-        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        self._load_graph_data(file_path, self.data.dialogue_graphs)
-
     def _save_graph_data(self, file_path, graph_list):
+        """Saves graph data to a JSON file.
+
+        Args:
+            file_path (str): The path to the JSON file.
+            graph_list (list): A list of LogicGraph objects to save.
+        """
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w") as f:
-                json.dump([graph.to_dict() for graph in graph_list], f, indent=4)
+                json.dump([asdict(graph) for graph in graph_list], f, indent=4)
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
 
+    def _load_logic_graphs(self):
+        """Loads logic graphs from Logic/LogicGraphs.json."""
+        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
+        self._load_graph_data(file_path, self.data.logic_graphs)
+
     def _save_logic_graphs(self):
+        """Saves logic graphs to Logic/LogicGraphs.json."""
         file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
         self._save_graph_data(file_path, self.data.logic_graphs)
 
-    def _load_assets(self):
-        def asset_object_hook(data):
-            if data.get("asset_type") == "animation":
-                return Animation(**data)
-            return Asset(**data)
+    def _load_dialogue_graphs(self):
+        """Loads dialogue graphs from Logic/DialogueGraphs.json."""
+        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
+        self._load_graph_data(file_path, self.data.dialogue_graphs)
 
-        self._load_json(
-            os.path.join("Data", "Assets.json"), self.data.assets, asset_object_hook
-        )
+    def _save_dialogue_graphs(self):
+        """Saves dialogue graphs to Logic/DialogueGraphs.json."""
+        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
+        self._save_graph_data(file_path, self.data.dialogue_graphs)
+
+    def _load_assets(self):
+        """Loads assets from Data/Assets.json."""
+        def asset_object_hook(data):
+            return Animation(**data) if data.get("asset_type") == "animation" else Asset(**data)
+        self._load_json(os.path.join("Data", "Assets.json"), self.data.assets, asset_object_hook)
 
     def _save_assets(self):
+        """Saves assets to Data/Assets.json."""
         self._save_json(os.path.join("Data", "Assets.json"), self.data.assets)
 
     def _load_audio(self):
-        self._load_json(
-            os.path.join("Data", "Audio.json"),
-            self.data.audio_files,
-            lambda data: Audio(**data),
-        )
+        """Loads audio files from Data/Audio.json."""
+        self._load_json(os.path.join("Data", "Audio.json"), self.data.audio_files, lambda data: Audio(**data))
 
     def _save_audio(self):
+        """Saves audio files to Data/Audio.json."""
         self._save_json(os.path.join("Data", "Audio.json"), self.data.audio_files)
 
     def _load_global_variables(self):
-        self._load_json(
-            os.path.join("Data", "GlobalState.json"),
-            self.data.global_variables,
-            lambda data: GlobalVariable(**data),
-        )
+        """Loads global variables from Data/GlobalState.json."""
+        self._load_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables, lambda data: GlobalVariable(**data))
 
     def _save_global_variables(self):
-        self._save_json(
-            os.path.join("Data", "GlobalState.json"), self.data.global_variables
-        )
-
-    def add_global_variable(self, variable):
-        """Adds a new global variable to the project."""
-        self.data.global_variables.append(variable)
-        self.set_dirty()
-
-    def remove_global_variable(self, variable):
-        """Removes a global variable from the project."""
-        if variable in self.data.global_variables:
-            self.data.global_variables.remove(variable)
-            self.set_dirty()
-            return True
-        return False
-
-    def update_global_variable(self, variable, gobject):
-        """Updates a global variable."""
-        variable.name = gobject.name
-        variable.type = gobject.type
-        variable.category = gobject.category
-        # Handle type conversion for initial_value
-        if gobject.type == "int":
-            try:
-                variable.initial_value = int(gobject.initial_value_str)
-            except ValueError:
-                variable.initial_value = 0
-        elif gobject.type == "bool":
-            variable.initial_value = gobject.initial_value_str.lower() in ["true", "1"]
-        else:
-            variable.initial_value = gobject.initial_value_str
-        self.set_dirty()
+        """Saves global variables to Data/GlobalState.json."""
+        self._save_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables)
 
     def _load_verbs(self):
-        self._load_json(
-            os.path.join("Data", "Verbs.json"),
-            self.data.verbs,
-            lambda data: Verb(**data),
-        )
+        """Loads verbs from Data/Verbs.json."""
+        self._load_json(os.path.join("Data", "Verbs.json"), self.data.verbs, lambda data: Verb(**data))
 
     def _save_verbs(self):
+        """Saves verbs to Data/Verbs.json."""
         self._save_json(os.path.join("Data", "Verbs.json"), self.data.verbs)
 
     def _save_characters(self):
+        """Saves characters to Data/CharacterData.csv."""
         self._save_csv("CharacterData.csv", self.data.characters, Character)
 
-    def add_verb(self, id, name):
-        new_verb = Verb(id=id, name=name)
-        self.data.verbs.append(new_verb)
-        self.set_dirty()
-        return new_verb
+    def _load_interactions(self):
+        """Loads interactions from Logic/Interactions.json."""
+        self._load_json(os.path.join("Logic", "Interactions.json"), self.data.interactions, lambda data: Interaction(**data))
 
-    def remove_verb(self, verb):
-        """Removes a verb from the project."""
-        if verb in self.data.verbs:
-            self.data.verbs.remove(verb)
-            self.set_dirty()
-            return True
-        return False
+    def _save_interactions(self):
+        """Saves interactions to Logic/Interactions.json."""
+        self._save_json(os.path.join("Logic", "Interactions.json"), self.data.interactions)
 
-    def create_scene(self, name):
-        new_id = f"scene_{len(self.data.scenes) + 1}"
-        new_scene = Scene(id=new_id, name=name)
-        self.data.scenes.append(new_scene)
-        self.set_dirty()
-        return new_scene
+    def _load_quests(self):
+        """Loads quests from Logic/Quests.json."""
+        def quest_object_hook(data):
+            objectives = [Objective(**obj) for obj in data.get("objectives", [])]
+            data["objectives"] = objectives
+            return Quest(**data)
+        self._load_json(os.path.join("Logic", "Quests.json"), self.data.quests, quest_object_hook)
 
-    def delete_scene(self, scene_id):
-        self.data.scenes = [s for s in self.data.scenes if s.id != scene_id]
-        self.set_dirty()
+    def _save_quests(self):
+        """Saves quests to Logic/Quests.json."""
+        self._save_json(os.path.join("Logic", "Quests.json"), self.data.quests)
 
-    def add_hotspot_to_scene(self, scene_id, name, x, y, width, height):
-        for scene in self.data.scenes:
-            if scene.id == scene_id:
-                new_hotspot_id = f"hs_{len(scene.hotspots) + 1}"
-                new_hotspot = Hotspot(
-                    id=new_hotspot_id, name=name, x=x, y=y, width=width, height=height
-                )
-                scene.hotspots.append(new_hotspot)
-                self.set_dirty()
-                return new_hotspot
-        return None
+    def _load_ui_layouts(self):
+        """Loads UI layouts from UI/WindowLayout.json."""
+        def ui_layout_object_hook(data):
+            elements = [UIElement(**elem) for elem in data.get("elements", [])]
+            data["elements"] = elements
+            return UILayout(**data)
+        self._load_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts, ui_layout_object_hook)
 
-    def add_item(self, item):
+    def _save_ui_layouts(self):
+        """Saves UI layouts to UI/WindowLayout.json."""
+        self._save_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts)
+
+    def _load_fonts(self):
+        """Loads fonts from Data/Fonts.json."""
+        self._load_json(os.path.join("Data", "Fonts.json"), self.data.fonts, lambda data: Font(**data))
+
+    def _save_fonts(self):
+        """Saves fonts to Data/Fonts.json."""
+        self._save_json(os.path.join("Data", "Fonts.json"), self.data.fonts)
+
+    def add_item(self, item: Item):
         """Adds a new item to the project."""
         self.data.items.append(item)
         self.set_dirty()
 
-    def remove_item(self, item):
+    def remove_item(self, item: Item):
         """Removes an item from the project."""
         if item in self.data.items:
             self.data.items.remove(item)
@@ -466,35 +424,12 @@ class ProjectManager:
             return True
         return False
 
-    def add_character(self, character):
-        """Adds a new character to the project."""
-        self.data.characters.append(character)
-        self.set_dirty()
-
-    def remove_character(self, character):
-        """Removes a character from the project."""
-        if character in self.data.characters:
-            self.data.characters.remove(character)
-            self.set_dirty()
-            return True
-        return False
-
-    def update_character(self, character_id, new_data):
-        """Updates an existing character."""
-        for character in self.data.characters:
-            if character.id == character_id:
-                for key, value in new_data.items():
-                    setattr(character, key, value)
-                self.set_dirty()
-                return True
-        return False
-
-    def add_attribute(self, attribute):
+    def add_attribute(self, attribute: Attribute):
         """Adds a new attribute to the project."""
         self.data.attributes.append(attribute)
         self.set_dirty()
 
-    def remove_attribute(self, attribute):
+    def remove_attribute(self, attribute: Attribute):
         """Removes an attribute from the project."""
         if attribute in self.data.attributes:
             self.data.attributes.remove(attribute)
@@ -502,476 +437,172 @@ class ProjectManager:
             return True
         return False
 
-    def add_dialogue_graph(self, id, name):
-        new_graph = LogicGraph(id=id, name=name)
-        self.data.dialogue_graphs.append(new_graph)
-        self.set_dirty()
-        return new_graph
-
-    def remove_dialogue_graph(self, graph_id):
-        self.data.dialogue_graphs = [
-            g for g in self.data.dialogue_graphs if g.id != graph_id
-        ]
+    def add_character(self, character: Character):
+        """Adds a new character to the project."""
+        self.data.characters.append(character)
         self.set_dirty()
 
-    def _load_dialogue_graphs(self):
-        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        self._load_graph_data(file_path, self.data.dialogue_graphs)
+    def remove_character(self, character: Character):
+        """Removes a character from the project."""
+        if character in self.data.characters:
+            self.data.characters.remove(character)
+            self.set_dirty()
+            return True
+        return False
 
-    def _save_dialogue_graphs(self):
-        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        self._save_graph_data(file_path, self.data.dialogue_graphs)
+    def add_global_variable(self, variable: GlobalVariable):
+        """Adds a new global variable to the project."""
+        self.data.global_variables.append(variable)
+        self.set_dirty()
 
-    def _load_interactions(self):
-        self._load_json(
-            os.path.join("Logic", "Interactions.json"),
-            self.data.interactions,
-            lambda data: Interaction(**data),
-        )
+    def remove_global_variable(self, variable: GlobalVariable):
+        """Removes a global variable from the project."""
+        if variable in self.data.global_variables:
+            self.data.global_variables.remove(variable)
+            self.set_dirty()
+            return True
+        return False
 
-    def _save_interactions(self):
-        self._save_json(
-            os.path.join("Logic", "Interactions.json"), self.data.interactions
-        )
+    def add_verb(self, verb: Verb):
+        """Adds a new verb to the project."""
+        self.data.verbs.append(verb)
+        self.set_dirty()
 
-    def add_interaction(self, interaction):
+    def remove_verb(self, verb: Verb):
+        """Removes a verb from the project."""
+        if verb in self.data.verbs:
+            self.data.verbs.remove(verb)
+            self.set_dirty()
+            return True
+        return False
+
+    def add_interaction(self, interaction: Interaction):
+        """Adds a new interaction to the project."""
         self.data.interactions.append(interaction)
         self.set_dirty()
 
-    def remove_interaction(self, interaction):
+    def remove_interaction(self, interaction: Interaction):
+        """Removes an interaction from the project."""
         if interaction in self.data.interactions:
             self.data.interactions.remove(interaction)
             self.set_dirty()
 
-    def _load_quests(self):
-        def quest_object_hook(data):
-            objectives = [Objective(**obj) for obj in data.get("objectives", [])]
-            data["objectives"] = objectives
-            return Quest(**data)
-
-        self._load_json(
-            os.path.join("Logic", "Quests.json"), self.data.quests, quest_object_hook
-        )
-
-    def _save_quests(self):
-        self._save_json(os.path.join("Logic", "Quests.json"), self.data.quests)
-
-    def add_quest(self, id, name):
-        new_quest = Quest(id=id, name=name)
-        self.data.quests.append(new_quest)
-        self.set_dirty()
-        return new_quest
-
-    def remove_quest(self, quest_id):
-        self.data.quests = [q for q in self.data.quests if q.id != quest_id]
+    def add_quest(self, quest: Quest):
+        """Adds a new quest to the project."""
+        self.data.quests.append(quest)
         self.set_dirty()
 
-    def update_quest(self, quest_id, new_data):
-        for quest in self.data.quests:
-            if quest.id == quest_id:
-                for key, value in new_data.items():
-                    setattr(quest, key, value)
-                self.set_dirty()
-                return True
-        return False
+    def remove_quest(self, quest: Quest):
+        """Removes a quest from the project."""
+        if quest in self.data.quests:
+            self.data.quests.remove(quest)
+            self.set_dirty()
 
-    def add_objective_to_quest(self, quest_id, objective_id, objective_name):
-        for quest in self.data.quests:
-            if quest.id == quest_id:
-                new_objective = Objective(id=objective_id, name=objective_name)
-                quest.objectives.append(new_objective)
-                self.set_dirty()
-                return new_objective
-        return None
-
-    def remove_objective_from_quest(self, quest_id, objective_id):
-        for quest in self.data.quests:
-            if quest.id == quest_id:
-                quest.objectives = [
-                    obj for obj in quest.objectives if obj.id != objective_id
-                ]
-                self.set_dirty()
-                return True
-        return False
-
-    def update_objective(self, quest_id, objective_id, new_data):
-        for quest in self.data.quests:
-            if quest.id == quest_id:
-                for objective in quest.objectives:
-                    if objective.id == objective_id:
-                        for key, value in new_data.items():
-                            setattr(objective, key, value)
-                        self.set_dirty()
-                        return True
-        return False
-
-    def _load_ui_layouts(self):
-        def ui_layout_object_hook(data):
-            elements = [UIElement(**elem) for elem in data.get("elements", [])]
-            data["elements"] = elements
-            return UILayout(**data)
-
-        self._load_json(
-            os.path.join("UI", "WindowLayout.json"),
-            self.data.ui_layouts,
-            ui_layout_object_hook,
-        )
-
-    def _save_ui_layouts(self):
-        self._save_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts)
-
-    def add_ui_layout(self, id, name):
-        new_layout = UILayout(id=id, name=name)
-        self.data.ui_layouts.append(new_layout)
-        self.set_dirty()
-        return new_layout
-
-    def remove_ui_layout(self, layout_id):
-        self.data.ui_layouts = [
-            layout for layout in self.data.ui_layouts if layout.id != layout_id
-        ]
+    def add_dialogue_graph(self, graph: LogicGraph):
+        """Adds a new dialogue graph to the project."""
+        self.data.dialogue_graphs.append(graph)
         self.set_dirty()
 
-    def update_ui_layout(self, layout_id, new_data):
-        for layout in self.data.ui_layouts:
-            if layout.id == layout_id:
-                for key, value in new_data.items():
-                    setattr(layout, key, value)
-                self.set_dirty()
-                return True
-        return False
+    def remove_dialogue_graph(self, graph: LogicGraph):
+        """Removes a dialogue graph from the project."""
+        if graph in self.data.dialogue_graphs:
+            self.data.dialogue_graphs.remove(graph)
+            self.set_dirty()
 
-    def add_element_to_layout(
-        self, layout_id, element_id, element_type, x, y, width, height
-    ):
-        for layout in self.data.ui_layouts:
-            if layout.id == layout_id:
-                new_element = UIElement(
-                    id=element_id,
-                    type=element_type,
-                    x=x,
-                    y=y,
-                    width=width,
-                    height=height,
-                )
-                layout.elements.append(new_element)
-                self.set_dirty()
-                return new_element
-        return None
-
-    def remove_element_from_layout(self, layout_id, element_id):
-        for layout in self.data.ui_layouts:
-            if layout.id == layout_id:
-                layout.elements = [
-                    elem for elem in layout.elements if elem.id != element_id
-                ]
-                self.set_dirty()
-                return True
-        return False
-
-    def update_element(self, layout_id, element_id, new_data):
-        for layout in self.data.ui_layouts:
-            if layout.id == layout_id:
-                for element in layout.elements:
-                    if element.id == element_id:
-                        for key, value in new_data.items():
-                            setattr(element, key, value)
-                        self.set_dirty()
-                        return True
-        return False
-
-    def _load_fonts(self):
-        self._load_json(
-            os.path.join("Data", "Fonts.json"),
-            self.data.fonts,
-            lambda data: Font(**data),
-        )
-
-    def _save_fonts(self):
-        self._save_json(os.path.join("Data", "Fonts.json"), self.data.fonts)
-
-    def add_font(self, id, name, file_path):
-        new_font = Font(id=id, name=name, file_path=file_path)
-        self.data.fonts.append(new_font)
-        self.set_dirty()
-        return new_font
-
-    def remove_font(self, font_id):
-        self.data.fonts = [font for font in self.data.fonts if font.id != font_id]
+    def add_ui_layout(self, layout: UILayout):
+        """Adds a new UI layout to the project."""
+        self.data.ui_layouts.append(layout)
         self.set_dirty()
 
-    def update_font(self, font_id, new_data):
-        for font in self.data.fonts:
-            if font.id == font_id:
-                for key, value in new_data.items():
-                    setattr(font, key, value)
-                self.set_dirty()
-                return True
-        return False
+    def remove_ui_layout(self, layout: UILayout):
+        """Removes a UI layout from the project."""
+        if layout in self.data.ui_layouts:
+            self.data.ui_layouts.remove(layout)
+            self.set_dirty()
 
-    def export_localization(self, file_path):
-        """Exports all user-facing text to a CSV file."""
-        with open(file_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["ID", "Source Text", "Translated Text"])
-
-            for item in self.data.items:
-                writer.writerow([f"item_{item.id}_name", item.name, ""])
-                writer.writerow([f"item_{item.id}_description", item.description, ""])
-
-            for character in self.data.characters:
-                writer.writerow(
-                    [
-                        f"character_{character.id}_display_name",
-                        character.display_name,
-                        "",
-                    ]
-                )
-
-            for dialogue_node in [
-                node
-                for graph in self.data.dialogue_graphs
-                for node in graph.nodes
-                if isinstance(node, DialogueNode)
-            ]:
-                writer.writerow(
-                    [
-                        f"dialogue_{dialogue_node.id}_dialogue_text",
-                        dialogue_node.dialogue_text,
-                        "",
-                    ]
-                )
-
-            for quest in self.data.quests:
-                writer.writerow([f"quest_{quest.id}_name", quest.name, ""])
-                for objective in quest.objectives:
-                    writer.writerow(
-                        [f"objective_{objective.id}_name", objective.name, ""]
-                    )
-
-    def import_localization(self, file_path):
-        """Imports translated text from a CSV file."""
-        with open(file_path, "r", newline="") as f:
-            reader = csv.reader(f)
-            next(reader)  # Skip header
-            for row in reader:
-                id_parts = row[0].split("_")
-                text_type = id_parts[0]
-                item_id = id_parts[1]
-                property_name = id_parts[2]
-                translated_text = row[2]
-
-                if text_type == "item":
-                    for item in self.data.items:
-                        if item.id == item_id:
-                            setattr(item, property_name, translated_text)
-                elif text_type == "character":
-                    for character in self.data.characters:
-                        if character.id == item_id:
-                            setattr(character, property_name, translated_text)
-                elif text_type == "dialogue":
-                    for graph in self.data.dialogue_graphs:
-                        for node in graph.nodes:
-                            if node.id == item_id:
-                                setattr(node, property_name, translated_text)
-                elif text_type == "quest":
-                    for quest in self.data.quests:
-                        if quest.id == item_id:
-                            setattr(quest, property_name, translated_text)
-                elif text_type == "objective":
-                    for quest in self.data.quests:
-                        for objective in quest.objectives:
-                            if objective.id == item_id:
-                                setattr(objective, property_name, translated_text)
+    def add_font(self, font: Font):
+        """Adds a new font to the project."""
+        self.data.fonts.append(font)
         self.set_dirty()
 
-    def get_verb_index(self, verb_id):
-        for i, verb in enumerate(self.data.verbs):
-            if verb.id == verb_id:
-                return i
-        return -1
-
-    def get_item_index(self, item_id):
-        for i, item in enumerate(self.data.items):
-            if item.id == item_id:
-                return i
-        return -1
-
-    def get_logic_graph_index(self, graph_id):
-        for i, graph in enumerate(self.data.logic_graphs):
-            if graph.id == graph_id:
-                return i
-        return -1
-
-    def get_verb_name(self, verb_id):
-        for verb in self.data.verbs:
-            if verb.id == verb_id:
-                return verb.name
-        return ""
-
-    def get_item_name(self, item_id):
-        for item in self.data.items:
-            if item.id == item_id:
-                return item.name
-        return ""
-
-    def get_hotspot_index(self, hotspot_id):
-        for i, scene in enumerate(self.data.scenes):
-            for j, hotspot in enumerate(scene.hotspots):
-                if hotspot.id == hotspot_id:
-                    return i * 1000 + j  # A bit of a hack to get a unique index
-        return -1
+    def remove_font(self, font: Font):
+        """Removes a font from the project."""
+        if font in self.data.fonts:
+            self.data.fonts.remove(font)
+            self.set_dirty()
 
     @staticmethod
     def get_templates():
         """Returns a list of available project templates."""
-        # This path is for running from the source directory
         local_path = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
-        # This path is for running from the installed location
         installed_path = os.path.join(sys.prefix, 'share', 'advengine', 'templates')
-
-        template_dir = None
-        if os.path.exists(installed_path):
-            template_dir = installed_path
-        elif os.path.exists(local_path):
-            template_dir = local_path
+        template_dir = installed_path if os.path.exists(installed_path) else local_path
 
         if template_dir and os.path.exists(template_dir):
-            return [
-                d
-                for d in os.listdir(template_dir)
-                if os.path.isdir(os.path.join(template_dir, d))
-            ]
+            return [d for d in os.listdir(template_dir) if os.path.isdir(os.path.join(template_dir, d))]
         return []
 
     @staticmethod
     def create_project(project_path: str, template: str = None):
         """Creates the directory structure and data files for a new project.
 
-        This static method is used to initialize a new project on the
-        filesystem. It creates the necessary subdirectories and populates them
-        with empty or template-based data files.
-
         Args:
-            project_path: The absolute path where the project will be created.
-            template: The name of an optional project template to use.
+            project_path (str): The absolute path where the project will be created.
+            template (str): The name of an optional project template to use.
 
         Returns:
             A tuple containing a new ProjectManager instance and an error
             string. If the project is created successfully, the error string
             will be None.
         """
-        print(
-            f"DEBUG: ProjectManager.create_project: Creating new project at {project_path} with template {template}"
-        )
         try:
             if template and template != "Blank":
-                # This path is for running from the source directory
-                local_path = os.path.join(
-                    os.path.dirname(__file__), "..", "..", "templates", template
-                )
-                # This path is for running from the installed location
-                installed_path = os.path.join(
-                    sys.prefix, "share", "advengine", "templates", template
-                )
-
-                template_dir = None
-                if os.path.exists(installed_path):
-                    template_dir = installed_path
-                elif os.path.exists(local_path):
-                    template_dir = local_path
+                local_path = os.path.join(os.path.dirname(__file__), "..", "..", "templates", template)
+                installed_path = os.path.join(sys.prefix, "share", "advengine", "templates", template)
+                template_dir = installed_path if os.path.exists(installed_path) else local_path
 
                 if template_dir:
                     import shutil
-
                     shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
                 else:
                     return None, f"Template '{template}' not found."
             else:
-                # Create a blank project if no template is specified or if "Blank" is chosen
-                data_dir = os.path.join(project_path, "Data")
-                logic_dir = os.path.join(project_path, "Logic")
-                ui_dir = os.path.join(project_path, "UI")
-                os.makedirs(data_dir, exist_ok=True)
-                os.makedirs(logic_dir, exist_ok=True)
-                os.makedirs(ui_dir, exist_ok=True)
+                # Create a blank project
+                for subdir in ["Data", "Logic", "UI"]:
+                    os.makedirs(os.path.join(project_path, subdir), exist_ok=True)
 
-                # Create CSV files with headers
+                # Create CSV files
                 csv_files = {
-                    "ItemData.csv": [
-                        "id",
-                        "name",
-                        "description",
-                        "type",
-                        "buy_price",
-                        "sell_price",
-                    ],
+                    "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
                     "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                    "CharacterData.csv": [
-                        "id",
-                        "display_name",
-                        "dialogue_start_id",
-                        "is_merchant",
-                        "shop_id",
-                        "portrait_asset_id",
-                        "sprite_sheet_asset_id",
-                        "animations",
-                    ],
+                    "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id", "sprite_sheet_asset_id", "animations"],
                 }
                 for filename, headers in csv_files.items():
-                    file_path = os.path.join(data_dir, filename)
-                    with open(file_path, "w", newline="") as f:
-                        writer = csv.writer(f)
-                        writer.writerow(headers)
+                    with open(os.path.join(project_path, "Data", filename), "w", newline="") as f:
+                        csv.writer(f).writerow(headers)
 
                 # Add a default player character
-                character_file_path = os.path.join(data_dir, "CharacterData.csv")
-                with open(character_file_path, "a", newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(
-                        ["player", "Player", "", "False", "", "", "", "{}"]
-                    )
+                with open(os.path.join(project_path, "Data", "CharacterData.csv"), "a", newline="") as f:
+                    csv.writer(f).writerow(["player", "Player", "", "False", "", "", "", "{}"])
 
-                # Create default verbs
-                default_verbs = [
-                    {"id": "walk_to", "name": "Walk To"},
-                    {"id": "look_at", "name": "Look At"},
-                    {"id": "take", "name": "Take"},
-                    {"id": "use", "name": "Use"},
-                    {"id": "talk_to", "name": "Talk To"},
-                    {"id": "open", "name": "Open"},
-                    {"id": "close", "name": "Close"},
-                    {"id": "push", "name": "Push"},
-                    {"id": "pull", "name": "Pull"},
-                ]
-                default_global_variables = [
-                    {
-                        "id": "score",
-                        "name": "Score",
-                        "type": "int",
-                        "initial_value": 0,
-                        "category": "Default",
-                    }
-                ]
-
-                # Create JSON files with default content
+                # Create JSON files
+                default_verbs = [{"id": f, "name": f.replace("_", " ").title()} for f in ["walk_to", "look_at", "take", "use", "talk_to", "open", "close", "push", "pull"]]
+                default_global_vars = [{"id": "score", "name": "Score", "type": "int", "initial_value": 0, "category": "Default"}]
                 json_files = {
-                    os.path.join(data_dir, "Assets.json"): [],
-                    os.path.join(data_dir, "Audio.json"): [],
-                    os.path.join(
-                        data_dir, "GlobalState.json"
-                    ): default_global_variables,
-                    os.path.join(data_dir, "Verbs.json"): default_verbs,
-                    os.path.join(data_dir, "Fonts.json"): [],
-                    os.path.join(logic_dir, "Scenes.json"): [],
-                    os.path.join(logic_dir, "LogicGraphs.json"): [],
-                    os.path.join(logic_dir, "DialogueGraphs.json"): [],
-                    os.path.join(logic_dir, "Interactions.json"): [],
-                    os.path.join(logic_dir, "Quests.json"): [],
-                    os.path.join(ui_dir, "WindowLayout.json"): [],
+                    os.path.join("Data", "Assets.json"): [],
+                    os.path.join("Data", "Audio.json"): [],
+                    os.path.join("Data", "GlobalState.json"): default_global_vars,
+                    os.path.join("Data", "Verbs.json"): default_verbs,
+                    os.path.join("Data", "Fonts.json"): [],
+                    os.path.join("Logic", "Scenes.json"): [],
+                    os.path.join("Logic", "LogicGraphs.json"): [],
+                    os.path.join("Logic", "DialogueGraphs.json"): [],
+                    os.path.join("Logic", "Interactions.json"): [],
+                    os.path.join("Logic", "Quests.json"): [],
+                    os.path.join("UI", "WindowLayout.json"): [],
                 }
                 for file_path, default_content in json_files.items():
-                    with open(file_path, "w") as f:
+                    with open(os.path.join(project_path, file_path), "w") as f:
                         json.dump(default_content, f, indent=2)
 
             project_manager = ProjectManager(project_path)
@@ -983,12 +614,8 @@ class ProjectManager:
     def search(self, query: str) -> list[SearchResult]:
         """Searches all project data for a given query.
 
-        This method performs a case-insensitive search across various data
-        types in the project, including items, characters, scenes, quests,
-        and assets.
-
         Args:
-            query: The search term.
+            query (str): The search term.
 
         Returns:
             A list of SearchResult objects that match the query.
@@ -996,34 +623,16 @@ class ProjectManager:
         results = []
         query_lower = query.lower()
 
-        # Search Items
-        for item in self.data.items:
-            if query_lower in item.name.lower() or query_lower in item.id.lower():
-                results.append(SearchResult(id=item.id, name=item.name, type="Item"))
+        searchable_data = [
+            ("Item", self.data.items, "name"),
+            ("Character", self.data.characters, "display_name"),
+            ("Scene", self.data.scenes, "name"),
+            ("Quest", self.data.quests, "name"),
+            ("Asset", self.data.assets, "name"),
+        ]
 
-        # Search Characters
-        for char in self.data.characters:
-            if (
-                query_lower in char.display_name.lower()
-                or query_lower in char.id.lower()
-            ):
-                results.append(
-                    SearchResult(id=char.id, name=char.display_name, type="Character")
-                )
-
-        # Search Scenes
-        for scene in self.data.scenes:
-            if query_lower in scene.name.lower() or query_lower in scene.id.lower():
-                results.append(SearchResult(id=scene.id, name=scene.name, type="Scene"))
-
-        # Search Quests
-        for quest in self.data.quests:
-            if query_lower in quest.name.lower() or query_lower in quest.id.lower():
-                results.append(SearchResult(id=quest.id, name=quest.name, type="Quest"))
-
-        # Search Assets
-        for asset in self.data.assets:
-            if query_lower in asset.name.lower() or query_lower in asset.id.lower():
-                results.append(SearchResult(id=asset.id, name=asset.name, type="Asset"))
-
+        for data_type, data_list, name_field in searchable_data:
+            for item in data_list:
+                if query_lower in getattr(item, name_field).lower() or query_lower in item.id.lower():
+                    results.append(SearchResult(id=item.id, name=getattr(item, name_field), type=data_type))
         return results

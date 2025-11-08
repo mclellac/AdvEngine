@@ -2,17 +2,30 @@
 
 import gi
 import os
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
-
 from ..core.data_schemas import Attribute, AttributeGObject
 from ..core.project_manager import ProjectManager
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "attribute_editor.ui"))
 class AttributeEditor(Gtk.Box):
-    """A widget for editing attributes in a project."""
+    """A widget for editing attributes in a project.
+
+    This editor provides a user interface for creating, editing, and deleting
+    attributes within an AdvEngine project. It uses a Gtk.ColumnView to display
+    the attributes in a table format, with inline editing capabilities.
+
+    Attributes:
+        add_button (Gtk.Button): The button for adding a new attribute.
+        delete_button (Gtk.Button): The button for deleting the selected attribute.
+        search_entry (Gtk.SearchEntry): The entry for filtering attributes.
+        column_view (Gtk.ColumnView): The view for displaying the attributes.
+        stack (Gtk.Stack): The stack for switching between the content and empty view.
+    """
+
     __gtype_name__ = "AttributeEditor"
 
     add_button = Gtk.Template.Child()
@@ -21,11 +34,15 @@ class AttributeEditor(Gtk.Box):
     column_view = Gtk.Template.Child()
     stack = Gtk.Template.Child()
 
-    def __init__(self, project_manager: ProjectManager, settings_manager, **kwargs):
-        """Initializes a new AttributeEditor instance."""
+    def __init__(self, project_manager: ProjectManager, **kwargs):
+        """Initializes a new AttributeEditor instance.
+
+        Args:
+            project_manager (ProjectManager): The project manager instance.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.project_manager = project_manager
-        self.settings_manager = settings_manager
 
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
@@ -37,13 +54,17 @@ class AttributeEditor(Gtk.Box):
         self._update_visibility()
 
     def _connect_signals(self):
-        """Connects widget signals to handlers."""
+        """Connects widget signals to their respective handlers."""
         self.add_button.connect("clicked", self._on_add_clicked)
         self.delete_button.connect("clicked", self._on_delete_clicked)
         self.search_entry.connect("search-changed", self._on_search_changed)
 
     def _setup_model(self):
-        """Sets up the data model for the editor."""
+        """Sets up the data model for the editor.
+
+        Returns:
+            Gio.ListStore: The list store for the attributes.
+        """
         model = Gio.ListStore(item_type=AttributeGObject)
         for attribute in self.project_manager.data.attributes:
             model.append(AttributeGObject(attribute))
@@ -51,15 +72,22 @@ class AttributeEditor(Gtk.Box):
         return model
 
     def _setup_filter_model(self):
-        """Sets up the filter model for the editor."""
+        """Sets up the filter model for the editor.
+
+        Returns:
+            Gtk.FilterListModel: The filter list model for the attributes.
+        """
         filter_model = Gtk.FilterListModel(model=self.model)
-        self.filter = Gtk.CustomFilter.new(
-            self._filter_func, self.search_entry)
+        self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         filter_model.set_filter(self.filter)
         return filter_model
 
     def _setup_selection_model(self):
-        """Sets up the selection model for the editor."""
+        """Sets up the selection model for the editor.
+
+        Returns:
+            Gtk.SingleSelection: The single selection model for the attributes.
+        """
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
@@ -69,8 +97,12 @@ class AttributeEditor(Gtk.Box):
         columns_def = {
             "id": {"title": "ID", "expand": True, "type": "text"},
             "name": {"title": "Name", "expand": True, "type": "text"},
-            "initial_value": {"title": "Initial Value", "expand": False, "type": "spin"},
-            "max_value": {"title": "Max Value", "expand": False, "type": "spin"}
+            "initial_value": {
+                "title": "Initial Value",
+                "expand": False,
+                "type": "spin",
+            },
+            "max_value": {"title": "Max Value", "expand": False, "type": "spin"},
         }
 
         for col_id, col_info in columns_def.items():
@@ -79,39 +111,60 @@ class AttributeEditor(Gtk.Box):
             factory.connect("bind", self._bind_cell, col_id, col_info["type"])
             factory.connect("unbind", self._unbind_cell)
             column = Gtk.ColumnViewColumn(
-                title=col_info["title"], factory=factory)
-            column.set_expand(col_info["expand"])
+                title=col_info["title"], factory=factory, expand=col_info["expand"]
+            )
             self.column_view.append_column(column)
 
     def _setup_cell(self, factory, list_item, cell_type):
-        """Sets up a cell in the column view."""
+        """Sets up a cell in the column view.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the signal.
+            list_item (Gtk.ListItem): The list item to set up.
+            cell_type (str): The type of the cell to create.
+        """
         if cell_type == "spin":
-            widget = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=99999, step_increment=1))
+            widget = Gtk.SpinButton(
+                adjustment=Gtk.Adjustment(lower=0, upper=99999, step_increment=1)
+            )
         else:
             widget = Gtk.Entry()
         list_item.set_child(widget)
 
     def _bind_cell(self, factory, list_item, column_id, cell_type):
-        """Binds a cell to the data model."""
+        """Binds a cell to the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the signal.
+            list_item (Gtk.ListItem): The list item to bind.
+            column_id (str): The ID of the column to bind.
+            cell_type (str): The type of the cell to bind.
+        """
         attr_gobject = list_item.get_item()
         widget = list_item.get_child()
         list_item.bindings = []
-        if cell_type == "spin":
-            binding = widget.bind_property(
-                "value", attr_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-            handler_id = widget.connect(
-                "value-changed", lambda w: self.project_manager.set_dirty(True))
-        else:
-            binding = widget.bind_property(
-                "text", attr_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
-            handler_id = widget.connect(
-                "changed", lambda w: self.project_manager.set_dirty(True))
+        prop_map = {"spin": "value", "text": "text"}
+        prop_name = prop_map[cell_type]
+
+        binding = widget.bind_property(
+            prop_name,
+            attr_gobject,
+            column_id,
+            GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE,
+        )
+        handler_id = widget.connect(
+            f"{prop_name}-changed", lambda w: self.project_manager.set_dirty(True)
+        )
         list_item.bindings.append(binding)
         list_item.handler_id = handler_id
 
-
     def _unbind_cell(self, factory, list_item):
-        """Unbinds a cell from the data model."""
+        """Unbinds a cell from the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the signal.
+            list_item (Gtk.ListItem): The list item to unbind.
+        """
         if hasattr(list_item, "bindings"):
             for binding in list_item.bindings:
                 binding.unbind()
@@ -121,26 +174,42 @@ class AttributeEditor(Gtk.Box):
             del list_item.handler_id
 
     def _on_search_changed(self, search_entry):
-        """Handles the search-changed signal from the search entry."""
+        """Handles the search-changed signal from the search entry.
+
+        Args:
+            search_entry (Gtk.SearchEntry): The search entry that emitted the signal.
+        """
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
-        """Filters items based on the search query."""
+        """Filters items based on the search query.
+
+        Args:
+            item (AttributeGObject): The item to filter.
+            search_entry (Gtk.SearchEntry): The search entry.
+
+        Returns:
+            bool: True if the item should be visible, False otherwise.
+        """
         search_text = search_entry.get_text().lower()
         if not search_text:
             return True
-        return (search_text in item.id.lower() or
-                search_text in item.name.lower())
+        return (
+            search_text in item.id.lower() or search_text in item.name.lower()
+        )
 
     def _update_visibility(self, *args):
         """Switches the view based on whether there are items."""
-        if self.model.get_n_items() > 0:
-            self.stack.set_visible_child_name("content")
-        else:
-            self.stack.set_visible_child_name("empty")
+        self.stack.set_visible_child_name(
+            "content" if self.model.get_n_items() > 0 else "empty"
+        )
 
     def _on_add_clicked(self, button):
-        """Handles the clicked signal from the add button."""
+        """Handles the clicked signal from the add button.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         new_id_base = "new_attribute"
         new_id = new_id_base
         count = 1
@@ -149,7 +218,9 @@ class AttributeEditor(Gtk.Box):
             new_id = f"{new_id_base}_{count}"
             count += 1
 
-        new_attr_data = Attribute(id=new_id, name="New Attribute", initial_value=10, max_value=100)
+        new_attr_data = Attribute(
+            id=new_id, name="New Attribute", initial_value=10, max_value=100
+        )
         self.project_manager.add_attribute(new_attr_data)
         gobject = AttributeGObject(new_attr_data)
         self.model.append(gobject)
@@ -157,11 +228,15 @@ class AttributeEditor(Gtk.Box):
         for i in range(self.filter_model.get_n_items()):
             if self.filter_model.get_item(i) == gobject:
                 self.selection.set_selected(i)
-                self.column_view.scroll_to(i, Gtk.ListScrollFlags.NONE, None, None)
+                self.column_view.scroll_to(i, Gtk.ListScrollFlags.NONE, None)
                 break
 
     def _on_delete_clicked(self, button):
-        """Handles the clicked signal from the delete button."""
+        """Handles the clicked signal from the delete button.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -170,18 +245,22 @@ class AttributeEditor(Gtk.Box):
             transient_for=self.get_root(),
             modal=True,
             heading="Delete Attribute?",
-            body=f"Are you sure you want to delete '{selected_item.name}'?"
+            body=f"Are you sure you want to delete '{selected_item.name}'?",
         )
         dialog.add_response("cancel", "_Cancel")
         dialog.add_response("delete", "_Delete")
-        dialog.set_response_appearance(
-            "delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.connect("response", self._on_delete_dialog_response,
-                       selected_item)
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_delete_dialog_response, selected_item)
         dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, attr_gobject):
-        """Handles the response from the delete confirmation dialog."""
+        """Handles the response from the delete confirmation dialog.
+
+        Args:
+            dialog (Adw.MessageDialog): The dialog that emitted the signal.
+            response (str): The response from the dialog.
+            attr_gobject (AttributeGObject): The attribute to delete.
+        """
         if response == "delete":
             if self.project_manager.remove_attribute(attr_gobject.attribute):
                 is_found, pos = self.model.find(attr_gobject)
@@ -190,6 +269,12 @@ class AttributeEditor(Gtk.Box):
         dialog.destroy()
 
     def _on_selection_changed(self, selection_model, position, n_items):
-        """Handles the selection-changed signal from the selection model."""
+        """Handles the selection-changed signal from the selection model.
+
+        Args:
+            selection_model (Gtk.SingleSelection): The selection model.
+            position (int): The new selected position.
+            n_items (int): The number of items in the model.
+        """
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
         self.delete_button.set_sensitive(is_selected)
