@@ -46,9 +46,12 @@ class DialogueEditor(Adw.Bin):
     properties_stack = Gtk.Template.Child()
     dialogue_node_editor_placeholder = Gtk.Template.Child()
 
-    def __init__(self, project_manager, settings_manager, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes a new DialogueEditor instance."""
         print("DEBUG: DialogueEditor.__init__")
+        project_manager = kwargs.pop('project_manager')
+        settings_manager = kwargs.pop('settings_manager')
+
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -163,9 +166,7 @@ class DialogueEditor(Adw.Bin):
             self.model.append(DialogueNodeGObject(new_node))
 
         self.project_manager.set_dirty()
-        # A bit of a hack to force the tree to update
-        self.tree_model.set_model(Gio.ListStore(item_type=DialogueNodeGObject))
-        self.tree_model.set_model(self.model)
+        self.refresh_model()
 
     def _on_add_action_node(self, button):
         """Handles the clicked signal from the add action button."""
@@ -190,9 +191,7 @@ class DialogueEditor(Adw.Bin):
 
         self.active_graph.nodes.append(new_node)
         self.project_manager.set_dirty()
-        # A bit of a hack to force the tree to update
-        self.tree_model.set_model(Gio.ListStore(item_type=DialogueNodeGObject))
-        self.tree_model.set_model(self.model)
+        self.refresh_model()
 
     def _on_delete_node(self, button):
         """Handles the clicked signal from the delete button."""
@@ -209,7 +208,7 @@ class DialogueEditor(Adw.Bin):
             if node_to_delete.id in node.outputs:
                 node.outputs.remove(node_to_delete.id)
 
-        self._load_dialogue_graphs()
+        self.refresh_model()
         self.project_manager.set_dirty()
 
     def _on_selection_changed(self, selection, position, n_items):
@@ -236,7 +235,4 @@ class DialogueEditor(Adw.Bin):
                 node_gobject.display_text = f"{node.character_id}: {node.dialogue_text[:30]}..."
             elif isinstance(node, ActionNode):
                 node_gobject.display_text = f"-> ACTION: {node.action_command}"
-
-        # A bit of a hack to force the tree to update
-        self.tree_model.set_model(Gio.ListStore(item_type=DialogueNodeGObject))
-        self.tree_model.set_model(self.model)
+        self.refresh_model()

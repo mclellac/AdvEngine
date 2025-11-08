@@ -272,9 +272,12 @@ class LogicEditor(Adw.Bin):
     VIEW_NAME = "logic_editor"
     ORDER = 1
 
-    def __init__(self, project_manager, settings_manager, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes a new LogicEditor instance."""
         print("DEBUG: LogicEditor.__init__")
+        project_manager = kwargs.pop('project_manager')
+        settings_manager = kwargs.pop('settings_manager')
+
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -355,6 +358,9 @@ class LogicEditor(Adw.Bin):
             row = Adw.ActionRow(title=title, activatable_widget=button)
             row.add_suffix(button)
             palette.add(row)
+
+        self.minimap = MiniMap(self)
+        sidebar.append(self.minimap)
 
         self.props_panel = DynamicNodeEditor(
             project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self.update_node_and_redraw)
@@ -557,7 +563,8 @@ class LogicEditor(Adw.Bin):
             new_node = node_class(id=new_id, node_type=node_type, x=50, y=50, width=node_width, height=node_height)
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
-            self.minimap.queue_draw()
+            if hasattr(self, 'minimap'):
+                self.minimap.queue_draw()
             self.project_manager.set_dirty(True)
 
     def get_connector_pos(self, node, connector_type):

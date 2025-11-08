@@ -145,8 +145,13 @@ class AttributeEditor(Gtk.Box):
         attr_gobject = list_item.get_item()
         widget = list_item.get_child()
         list_item.bindings = []
-        prop_map = {"spin": "value", "text": "text"}
-        prop_name = prop_map[cell_type]
+
+        if cell_type == "spin":
+            prop_name = "value"
+            signal_name = "value-changed"
+        else:
+            prop_name = "text"
+            signal_name = "changed"
 
         binding = widget.bind_property(
             prop_name,
@@ -155,7 +160,7 @@ class AttributeEditor(Gtk.Box):
             GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE,
         )
         handler_id = widget.connect(
-            f"{prop_name}-changed", lambda w: self.project_manager.set_dirty(True)
+            signal_name, lambda w: self.project_manager.set_dirty(True)
         )
         list_item.bindings.append(binding)
         list_item.handler_id = handler_id
