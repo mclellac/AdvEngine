@@ -23,14 +23,17 @@ class DatabaseEditor(Gtk.Box):
     view_stack = Gtk.Template.Child()
     view_switcher = Gtk.Template.Child()
 
-    def __init__(self, project_manager, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes a new DatabaseEditor instance."""
+        project_manager = kwargs.pop('project_manager')
+        settings_manager = kwargs.pop('settings_manager')
         super().__init__(**kwargs)
+
         self.view_switcher.set_stack(self.view_stack)
 
         self.view_stack.add_titled_with_icon(
-            ItemEditor(project_manager=project_manager), "items", "Items", "edit-find-replace-symbolic")
+            ItemEditor(project_manager=project_manager, settings_manager=settings_manager), "items", "Items", "edit-find-replace-symbolic")
         self.view_stack.add_titled_with_icon(
-            AttributeEditor(project_manager=project_manager), "attributes", "Attributes", "document-properties-symbolic")
+            AttributeEditor(project_manager=project_manager, settings_manager=settings_manager), "attributes", "Attributes", "document-properties-symbolic")
         self.view_stack.add_titled_with_icon(
-            VerbEditor(project_manager=project_manager), "verbs", "Verbs", "input-gaming-symbolic")
+            VerbEditor(project_manager=project_manager, settings_manager=settings_manager), "verbs", "Verbs", "input-gaming-symbolic")

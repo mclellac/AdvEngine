@@ -34,15 +34,17 @@ class AttributeEditor(Gtk.Box):
     column_view = Gtk.Template.Child()
     stack = Gtk.Template.Child()
 
-    def __init__(self, project_manager: ProjectManager, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes a new AttributeEditor instance.
 
         Args:
-            project_manager (ProjectManager): The project manager instance.
             **kwargs: Additional keyword arguments.
         """
+        project_manager = kwargs.pop('project_manager')
+        settings_manager = kwargs.pop('settings_manager')
         super().__init__(**kwargs)
         self.project_manager = project_manager
+        self.settings_manager = settings_manager
 
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
