@@ -44,7 +44,8 @@
     </child>
     <child>
       <object class="AdwStatusPage" id="status_page">
-        <property name="title">No Interactions</property>
+        <property name="title">Interaction Editor</property>
+        <property name="description">This editor defines the player's actions (e.g., "Use Keycard on Door") and links them to a Logic Graph that scripts the consequences of that action.</property>
         <property name="icon-name">emblem-synchronizing-symbolic</property>
       </object>
     </child>

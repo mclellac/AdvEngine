@@ -314,13 +314,22 @@ class LogicEditor(Adw.Bin):
     def _create_canvas_area(self):
         """Creates the canvas area."""
         print("DEBUG: LogicEditor._create_canvas_area")
-        canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.canvas_stack = Gtk.Stack()
+
         self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.canvas.set_draw_func(self.on_canvas_draw, None)
-        canvas_container.append(self.canvas)
-        self.minimap = MiniMap(self)
-        canvas_container.append(self.minimap)
-        return canvas_container
+        self.canvas_stack.add_named(self.canvas, "canvas")
+
+        status_page = Adw.StatusPage(
+            title="Logic Editor",
+            description="This editor scripts the consequences of player actions. Use Action Nodes to perform commands, Condition Nodes to check game state, and Dialogue Nodes for simple character barks.",
+            icon_name="dialog-information-symbolic"
+        )
+        self.canvas_stack.add_named(status_page, "placeholder")
+
+        self.canvas_stack.set_visible_child_name("placeholder")
+
+        return self.canvas_stack
 
     def _create_sidebar(self):
         """Creates the sidebar."""
@@ -404,6 +413,11 @@ class LogicEditor(Adw.Bin):
 
     def on_canvas_draw(self, area, cr, w, h, _):
         """Draws the canvas."""
+        if self.active_graph and self.active_graph.nodes:
+            self.canvas_stack.set_visible_child_name("canvas")
+        else:
+            self.canvas_stack.set_visible_child_name("placeholder")
+
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
         if self.active_graph:

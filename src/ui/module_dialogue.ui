@@ -73,7 +73,8 @@
                     <property name="name">placeholder</property>
                     <property name="child">
                       <object class="AdwStatusPage">
-                        <property name="title">Select a node to edit its properties.</property>
+                        <property name="title">Dialogue Editor</property>
+                        <property name="description">This editor is for creating and managing complex, branching conversations using a tree-like structure. For simple, one-off lines of dialogue within a larger event script, use the Dialogue Node in the Logic Editor.</property>
                       </object>
                     </property>
                   </object>
