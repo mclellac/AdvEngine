@@ -295,6 +295,8 @@ class ProjectManager:
             for node_data in data.get("nodes", []):
                 if "parent_id" in node_data:
                     del node_data["parent_id"]
+                if "children_ids" in node_data:  # Handle legacy field
+                    del node_data["children_ids"]
                 node_type = node_data.get("node_type")
                 if "parameters" in node_data:
                     for key, value in node_data["parameters"].items():

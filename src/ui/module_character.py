@@ -123,12 +123,13 @@ class CharacterManager(Gtk.Box):
                     break
             handler_id = widget.connect(
                 "notify::selected-item", self._on_combo_changed, char_gobject, column_id)
-        else: # "text"
+        else:  # "text"
             binding = widget.bind_property("text", char_gobject, column_id,
-                                 GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+                                           GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            list_item.bindings.append(binding)
             handler_id = widget.connect(
                 "changed", lambda w: self.project_manager.set_dirty(True))
-        list_item.bindings.append(binding)
+
         list_item.handler_id = handler_id
 
 

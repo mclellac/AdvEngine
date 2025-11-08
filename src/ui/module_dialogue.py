@@ -144,7 +144,7 @@ class DialogueEditor(Adw.Bin):
 
         new_node_id = f"dnode_{len(self.active_graph.nodes)}"
         new_node = DialogueNode(
-            id=new_node_id, node_type="Dialogue", character_id="char_01", dialogue_text="New dialogue...")
+            id=new_node_id, node_type="Dialogue", x=50, y=50, character_id="char_01", dialogue_text="New dialogue...")
 
         selected_item = self.selection.get_selected_item()
         if selected_item:

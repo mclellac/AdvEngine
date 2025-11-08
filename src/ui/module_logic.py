@@ -6,8 +6,15 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf, GLib
 import json
 import os
+import re
 from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
 from ..core.ue_exporter import get_command_definitions
+
+
+def pascal_to_snake(name):
+    """Converts a PascalCase string to snake_case."""
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
 class MiniMap(Gtk.DrawingArea):
@@ -136,12 +143,6 @@ class DynamicNodeEditor(Adw.Bin):
         self.main_widgets[key] = combo
         group.add(combo)
 
-    def pascal_to_snake(self, name):
-        import re
-        # Handles cases like 'VarName' -> 'var_name' and 'ItemID' -> 'item_id'
-        name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
-
     def update_params_ui(self, *args):
         """Updates the parameters UI."""
         print("DEBUG: DynamicNodeEditor.update_params_ui")
@@ -169,11 +170,11 @@ class DynamicNodeEditor(Adw.Bin):
             self.params_group.set_title(f"Parameters for {selected_command}")
             for param, p_type in defs["params"].items():
                 self.add_param_widget(
-                    param, p_type, getattr(self.node, self.pascal_to_snake(param), ""))
+                    param, p_type, getattr(self.node, pascal_to_snake(param), ""))
 
     def add_param_widget(self, key, param_type, default_value):
         """Adds a parameter widget to the UI."""
-        snake_key = self.pascal_to_snake(key)
+        snake_key = pascal_to_snake(key)
         title = key.replace("_", " ").title()
 
         if isinstance(param_type, list):
@@ -491,7 +492,7 @@ class LogicEditor(Adw.Bin):
                 params = defs[node.action_command]['params']
                 param_strings = []
                 for param, p_type in params.items():
-                    param_snake_case = self.pascal_to_snake(param)
+                    param_snake_case = pascal_to_snake(param)
                     value = getattr(node, param_snake_case, "")
                     param_strings.append(f"{param}: {value}")
                 body_text += f"  ({', '.join(param_strings)})"
