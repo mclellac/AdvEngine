@@ -6,5 +6,37 @@
     "secondary_item_id": "",
     "target_hotspot_id": "keycard_reader",
     "logic_graph_id": "door_puzzle"
-  }
+  },
+  {
+    "id": "interaction_2",
+    "verb_id": "talk_to",
+    "primary_item_id": "",
+    "secondary_item_id": "",
+    "target_hotspot_id": "zorblat_hotspot",
+    "logic_graph_id": "zorblat_dialogue"
+  },
+  {
+    "id": "interaction_3",
+    "verb_id": "talk_to",
+    "primary_item_id": "",
+    "secondary_item_id": "",
+    "target_hotspot_id": "sparky_hotspot",
+    "logic_graph_id": "sparky_dialogue"
+  },
+  {
+    "id": "interaction_4",
+    "verb_id": "use",
+    "primary_item_id": "broken_droid_part",
+    "secondary_item_id": "",
+    "target_hotspot_id": "sparky_hotspot",
+    "logic_graph_id": "repair_droid_quest"
+  },
+    {
+    "id": "interaction_5",
+    "verb_id": "use",
+    "primary_item_id": "alien_artifact",
+    "secondary_item_id": "",
+    "target_hotspot_id": "zorblat_hotspot",
+    "logic_graph_id": "give_artifact_quest"
+    }
 ]

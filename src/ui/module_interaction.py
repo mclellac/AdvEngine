@@ -29,13 +29,19 @@ class InteractionEditor(Gtk.Box):
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
+        self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self._setup_model()
         self._create_columns()
         self._connect_signals()
 
-        self._refresh_model()
+        self.refresh_model()
         self._update_visibility()
+
+    def project_loaded(self):
+        """Callback for when the project is loaded."""
+        print("DEBUG: InteractionEditor.project_loaded: Received project loaded signal.")
+        self.refresh_model()
 
     def _setup_model(self):
         """Sets up the data model and selection."""
@@ -56,9 +62,9 @@ class InteractionEditor(Gtk.Box):
         self.scrolled_window.set_visible(has_interactions)
         self.status_page.set_visible(not has_interactions)
 
-    def _refresh_model(self):
+    def refresh_model(self):
         """Refreshes the data model."""
-        print("DEBUG: InteractionEditor._refresh_model")
+        print("DEBUG: InteractionEditor.refresh_model")
         self.model.remove_all()
         for interaction in self.project_manager.data.interactions:
             self.model.append(InteractionGObject(interaction))

@@ -31,6 +31,8 @@ class CharacterManager(Gtk.Box):
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
+        print(f"DEBUG: CharacterManager.__init__: {len(self.project_manager.data.characters)} characters in project data.")
+        self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self.model = self._setup_model()
         self.filter_model = self._setup_filter_model()
@@ -41,6 +43,20 @@ class CharacterManager(Gtk.Box):
         self._connect_signals()
         self._update_visibility()
 
+    def project_loaded(self):
+        """Callback for when the project is loaded."""
+        print("DEBUG: CharacterManager.project_loaded: Received project loaded signal.")
+        self.refresh_model()
+
+    def refresh_model(self):
+        """Clears and repopulates the model from the project manager."""
+        print("DEBUG: CharacterManager.refresh_model: Refreshing character data.")
+        self.model.remove_all()
+        for character in self.project_manager.data.characters:
+            self.model.append(CharacterGObject(character))
+        print(f"DEBUG: CharacterManager.refresh_model: Model now contains {self.model.get_n_items()} characters.")
+        self._update_visibility()
+
     def _connect_signals(self):
         """Connects widget signals to handlers."""
         self.add_button.connect("clicked", self._on_add_clicked)
@@ -49,6 +65,7 @@ class CharacterManager(Gtk.Box):
 
     def _setup_model(self):
         """Sets up the data model for the editor."""
+        print(f"DEBUG: CharacterManager._setup_model: Populating model with {len(self.project_manager.data.characters)} characters.")
         model = Gio.ListStore(item_type=CharacterGObject)
         for character in self.project_manager.data.characters:
             model.append(CharacterGObject(character))

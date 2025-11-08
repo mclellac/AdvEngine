@@ -1,2 +1,5 @@
 id,display_name,dialogue_start_id,is_merchant,shop_id,portrait_asset_id,sprite_sheet_asset_id,animations
 player,"Sonny Bonds",,False,,,{}
+witness,"Mary",,False,,,{}
+suspect,"Franky",,False,,,{}
+forensics,"Dr. Morales",,False,,,{}

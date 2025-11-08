@@ -53,6 +53,7 @@ class DialogueEditor(Adw.Bin):
         self.project_manager = project_manager
         self.settings_manager = settings_manager
         self.active_graph = None
+        self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self.dialogue_node_editor = DynamicNodeEditor(
             project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self._on_node_updated)
@@ -60,7 +61,12 @@ class DialogueEditor(Adw.Bin):
 
         self._setup_tree_view()
         self._connect_signals()
-        self._load_dialogue_graphs()
+        self.refresh_model()
+
+    def project_loaded(self):
+        """Callback for when the project is loaded."""
+        print("DEBUG: DialogueEditor.project_loaded: Received project loaded signal.")
+        self.refresh_model()
 
     def _setup_tree_view(self):
         """Sets up the tree view and its model."""
@@ -120,9 +126,9 @@ class DialogueEditor(Adw.Bin):
             list_item.binding.unbind()
             del list_item.binding
 
-    def _load_dialogue_graphs(self):
+    def refresh_model(self):
         """Loads the dialogue graphs from the project manager."""
-        print("DEBUG: DialogueEditor._load_dialogue_graphs")
+        print("DEBUG: DialogueEditor.refresh_model")
         self.model.remove_all()
         if self.project_manager.data.dialogue_graphs:
             self.active_graph = self.project_manager.data.dialogue_graphs[0]

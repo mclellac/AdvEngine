@@ -16,5 +16,89 @@
         "height": 160
       }
     ]
-  }
+  },
+    {
+        "id": "zorblat_dialogue",
+        "name": "Zorblat Dialogue",
+        "nodes": [
+            {
+                "id": "zorblat_1",
+                "node_type": "Dialogue",
+                "character_id": "zorblat",
+                "dialogue_text": "Greetings, traveler! I am Zorblat, the collector. I am always on the lookout for rare and interesting items. Perhaps you have something for me?",
+                "x": 100,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": ["player_response"]
+            },
+            {
+                "id": "player_response",
+                "node_type": "Dialogue",
+                "character_id": "player",
+                "dialogue_text": "I might. What are you looking for?",
+                "x": 400,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": ["zorblat_1"],
+                "outputs": ["zorblat_2"]
+            },
+            {
+                "id": "zorblat_2",
+                "node_type": "Dialogue",
+                "character_id": "zorblat",
+                "dialogue_text": "I'm looking for a rare alien artifact. It's a small, glowing orb. If you find it, I'll make it worth your while.",
+                "x": 100,
+                "y": 300,
+                "width": 240,
+                "height": 160,
+                "inputs": ["player_response"],
+                "outputs": []
+            }
+        ]
+    },
+    {
+        "id": "sparky_dialogue",
+        "name": "Sparky Dialogue",
+        "nodes": [
+            {
+                "id": "sparky_1",
+                "node_type": "Dialogue",
+                "character_id": "sparky",
+                "dialogue_text": "What do you want? I'm busy.",
+                "x": 100,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": ["player_response"]
+            },
+            {
+                "id": "player_response",
+                "node_type": "Dialogue",
+                "character_id": "player",
+                "dialogue_text": "I found this broken droid part. Can you fix it?",
+                "x": 400,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": ["sparky_1"],
+                "outputs": ["sparky_2"]
+            },
+            {
+                "id": "sparky_2",
+                "node_type": "Dialogue",
+                "character_id": "sparky",
+                "dialogue_text": "Maybe. If I have time. And if you have the parts. And the buckazoids.",
+                "x": 100,
+                "y": 300,
+                "width": 240,
+                "height": 160,
+                "inputs": ["player_response"],
+                "outputs": []
+            }
+        ]
+    }
 ]
