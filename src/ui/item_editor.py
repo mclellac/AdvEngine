@@ -233,7 +233,7 @@ class ItemEditor(Gtk.Box):
             buy_price=0,
             sell_price=0,
         )
-        self.project_manager.add_item(new_item_data)
+        self.project_manager.add_data_item("items", new_item_data)
         gobject = ItemGObject(new_item_data)
         self.model.append(gobject)
 
@@ -274,7 +274,7 @@ class ItemEditor(Gtk.Box):
             item_gobject (ItemGObject): The item to delete.
         """
         if response == "delete":
-            if self.project_manager.remove_item(item_gobject.item):
+            if self.project_manager.remove_data_item("items", item_gobject.item):
                 is_found, pos = self.model.find(item_gobject)
                 if is_found:
                     self.model.remove(pos)

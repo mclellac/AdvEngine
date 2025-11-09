@@ -190,7 +190,7 @@ class GlobalStateEditor(Gtk.Box):
 
         new_var_data = GlobalVariable(
             id=new_id, name="New Variable", type="bool", initial_value=False, category="Default")
-        self.project_manager.add_global_variable(new_var_data)
+        self.project_manager.add_data_item("global_variables", new_var_data)
         gobject = GlobalVariableGObject(new_var_data)
         self.model.append(gobject)
 
@@ -223,7 +223,7 @@ class GlobalStateEditor(Gtk.Box):
     def _on_delete_dialog_response(self, dialog, response, var_gobject):
         """Handles the response from the delete confirmation dialog."""
         if response == "delete":
-            if self.project_manager.remove_global_variable(var_gobject.variable):
+            if self.project_manager.remove_data_item("global_variables", var_gobject.variable):
                 is_found, pos = self.model.find(var_gobject)
                 if is_found:
                     self.model.remove(pos)

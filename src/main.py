@@ -10,7 +10,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
 
 from .core.project_manager import ProjectManager
-from .core.data_schemas import DialogueNode
+from .core.schemas import DialogueNode
 import importlib
 import inspect
 
@@ -41,6 +41,7 @@ class EditorWindow(Adw.ApplicationWindow):
         self.set_title(self.base_title)
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
+        self.project_manager.register_error_callback(self.on_error)
 
         # Connect signals
         self.save_button.connect("clicked", self.on_save_clicked)
@@ -110,7 +111,8 @@ class EditorWindow(Adw.ApplicationWindow):
                                 editors.append(obj)
                                 discovered_view_names.add(obj.VIEW_NAME)
                 except Exception as e:
-                    print(f"Error discovering editor in {module_name}: {e}")
+                    logging.error(f"Error discovering editor in {module_name}: {e}")
+                    self.on_error("Failed to Load Editor", f"An error occurred while loading the editor from {module_name}.\n\n{e}")
 
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
@@ -127,6 +129,17 @@ class EditorWindow(Adw.ApplicationWindow):
     def on_save_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the save button."""
         self.get_application().save_project()
+
+    def on_error(self, title: str, message: str):
+        """Displays an error dialog to the user."""
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=title,
+            body=message,
+        )
+        dialog.add_response("ok", "OK")
+        dialog.connect("response", lambda d, r: d.destroy())
+        dialog.present()
 
     def _on_play_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the play button."""

@@ -228,7 +228,7 @@ class AttributeEditor(Gtk.Box):
         new_attr_data = Attribute(
             id=new_id, name="New Attribute", initial_value=10, max_value=100
         )
-        self.project_manager.add_attribute(new_attr_data)
+        self.project_manager.add_data_item("attributes", new_attr_data)
         gobject = AttributeGObject(new_attr_data)
         self.model.append(gobject)
 
@@ -269,7 +269,7 @@ class AttributeEditor(Gtk.Box):
             attr_gobject (AttributeGObject): The attribute to delete.
         """
         if response == "delete":
-            if self.project_manager.remove_attribute(attr_gobject.attribute):
+            if self.project_manager.remove_data_item("attributes", attr_gobject.attribute):
                 is_found, pos = self.model.find(attr_gobject)
                 if is_found:
                     self.model.remove(pos)
