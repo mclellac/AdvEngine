@@ -137,7 +137,7 @@ class VerbEditor(Gtk.Box):
             count += 1
 
         new_verb_data = Verb(id=new_id, name="New Verb")
-        self.project_manager.add_verb(new_verb_data)
+        self.project_manager.add_data_item("verbs", new_verb_data)
         gobject = VerbGObject(new_verb_data)
         self.model.append(gobject)
 
@@ -169,7 +169,7 @@ class VerbEditor(Gtk.Box):
     def _on_delete_dialog_response(self, dialog, response, verb_gobject):
         """Handles the response from the delete confirmation dialog."""
         if response == "delete":
-            if self.project_manager.remove_verb(verb_gobject.verb):
+            if self.project_manager.remove_data_item("verbs", verb_gobject.verb):
                 is_found, pos = self.model.find(verb_gobject)
                 if is_found:
                     self.model.remove(pos)

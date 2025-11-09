@@ -9,8 +9,9 @@ import os
 import sys
 import csv
 import json
+import logging
 from dataclasses import asdict
-from .data_schemas import (
+from .schemas import (
     ProjectData,
     Item,
     Attribute,
@@ -68,6 +69,24 @@ class ProjectManager:
         self.is_new_project = False
         self.dirty_state_changed_callbacks = []
         self.project_loaded_callbacks = []
+        self.error_callbacks = []
+
+        self._data_files = {
+            'items': ('Data/ItemData.csv', Item, self._load_csv, self._save_csv),
+            'attributes': ('Data/Attributes.csv', Attribute, self._load_csv, self._save_csv),
+            'characters': ('Data/CharacterData.csv', Character, self._load_csv, self._save_csv),
+            'scenes': ('Logic/Scenes.json', Scene, self._load_json, self._save_json, self._scene_object_hook),
+            'logic_graphs': ('Logic/LogicGraphs.json', LogicGraph, self._load_graph_data, self._save_graph_data),
+            'assets': ('Data/Assets.json', Asset, self._load_json, self._save_json, self._asset_object_hook),
+            'audio_files': ('Data/Audio.json', Audio, self._load_json, self._save_json, lambda data: Audio(**data)),
+            'global_variables': ('Data/GlobalState.json', GlobalVariable, self._load_json, self._save_json, lambda data: GlobalVariable(**data)),
+            'verbs': ('Data/Verbs.json', Verb, self._load_json, self._save_json, lambda data: Verb(**data)),
+            'dialogue_graphs': ('Logic/DialogueGraphs.json', LogicGraph, self._load_graph_data, self._save_graph_data),
+            'interactions': ('Logic/Interactions.json', Interaction, self._load_json, self._save_json, lambda data: Interaction(**data)),
+            'quests': ('Logic/Quests.json', Quest, self._load_json, self._save_json, self._quest_object_hook),
+            'ui_layouts': ('UI/WindowLayout.json', UILayout, self._load_json, self._save_json, self._ui_layout_object_hook),
+            'fonts': ('Data/Fonts.json', Font, self._load_json, self._save_json, lambda data: Font(**data)),
+        }
 
     def load_project(self):
         """Loads all project data from files into memory.
@@ -76,23 +95,34 @@ class ProjectManager:
         and populates the `self.data` attribute with the loaded data. It is
         called once when a project is opened.
         """
-        self._load_csv("ItemData.csv", Item, self.data.items)
-        self._load_csv("Attributes.csv", Attribute, self.data.attributes)
-        self._load_csv("CharacterData.csv", Character, self.data.characters)
-        self._load_scenes()
-        self._load_logic_graphs()
-        self._load_assets()
-        self._load_audio()
-        self._load_global_variables()
-        self._load_verbs()
-        self._load_dialogue_graphs()
-        self._load_interactions()
-        self._load_quests()
-        self._load_ui_layouts()
-        self._load_fonts()
+        for key, config in self._data_files.items():
+            loader = config[2]
+            target_list = getattr(self.data, key)
+            if len(config) > 4: # Has object hook
+                loader(config[0], target_list, config[4])
+            elif loader == self._load_csv:
+                loader(config[0], config[1], target_list)
+            else:
+                 loader(config[0], target_list)
+
         self.is_new_project = False
         self.set_dirty(False)
         self._notify_project_loaded()
+
+    def save_project(self):
+        """Saves all project data from memory to their respective files.
+
+        This method writes all data from the `self.data` attribute to the
+        project's data files. It is called when the user saves the project.
+        """
+        for key, config in self._data_files.items():
+            saver = config[3]
+            data_list = getattr(self.data, key)
+            if saver == self._save_csv:
+                 saver(config[0], data_list, config[1])
+            else:
+                 saver(config[0], data_list)
+        self.set_dirty(False)
 
     def register_project_loaded_callback(self, callback: callable):
         """Registers a callback to be called when the project is loaded.
@@ -107,28 +137,6 @@ class ProjectManager:
         for callback in self.project_loaded_callbacks:
             callback()
 
-    def save_project(self):
-        """Saves all project data from memory to their respective files.
-
-        This method writes all data from the `self.data` attribute to the
-        project's data files. It is called when the user saves the project.
-        """
-        self._save_csv("ItemData.csv", self.data.items, Item)
-        self._save_csv("Attributes.csv", self.data.attributes, Attribute)
-        self._save_global_variables()
-        self._save_verbs()
-        self._save_interactions()
-        self._save_scenes()
-        self._save_logic_graphs()
-        self._save_assets()
-        self._save_audio()
-        self._save_characters()
-        self._save_dialogue_graphs()
-        self._save_quests()
-        self._save_ui_layouts()
-        self._save_fonts()
-        self.set_dirty(False)
-
     def register_dirty_state_callback(self, callback: callable):
         """Registers a callback to be called when the dirty state changes.
 
@@ -137,6 +145,25 @@ class ProjectManager:
                 which is the new dirty state.
         """
         self.dirty_state_changed_callbacks.append(callback)
+
+    def register_error_callback(self, callback: callable):
+        """Registers a callback to be called when a critical error occurs.
+
+        Args:
+            callback (callable): A callable that takes two string arguments,
+                which are the title and message of the error.
+        """
+        self.error_callbacks.append(callback)
+
+    def _notify_error(self, title: str, message: str):
+        """Notifies all registered error callbacks.
+
+        Args:
+            title (str): The title of the error.
+            message (str): The message of the error.
+        """
+        for callback in self.error_callbacks:
+            callback(title, message)
 
     def _notify_dirty_state_changed(self):
         """Notifies all registered callbacks of a change in the dirty state."""
@@ -164,7 +191,7 @@ class ProjectManager:
             data_list (list): A list of dataclass objects to save.
             dataclass_type (type): The type of the dataclass objects.
         """
-        file_path = os.path.join(self.project_path, "Data", filename)
+        file_path = os.path.join(self.project_path, filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         try:
             with open(file_path, "w", newline="") as f:
@@ -179,8 +206,9 @@ class ProjectManager:
                     writer.writeheader()
                     for item in data_list:
                         writer.writerow(asdict(item))
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        except (IOError, csv.Error) as e:
+            logging.error(f"Error saving {file_path}: {e}")
+            self._notify_error(f"Failed to Save {filename}", f"Could not write to file at {file_path}.\n\n{e}")
 
     def _load_csv(self, filename: str, dataclass_type: type, target_list: list):
         """Loads data from a CSV file into a list of dataclass objects.
@@ -190,7 +218,7 @@ class ProjectManager:
             dataclass_type (type): The type of the dataclass objects to create.
             target_list (list): The list to which the loaded objects will be appended.
         """
-        file_path = os.path.join(self.project_path, "Data", filename)
+        file_path = os.path.join(self.project_path, filename)
         try:
             with open(file_path, "r", newline="") as f:
                 reader = csv.DictReader(f)
@@ -204,9 +232,10 @@ class ProjectManager:
                     target_list.append(dataclass_type(**row))
         except FileNotFoundError:
             if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
+                logging.warning(f"Warning: {file_path} not found.")
         except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+            logging.error(f"Error loading {file_path}: {e}")
+            self._notify_error(f"Failed to Load {filename}", f"Could not read file at {file_path}.\n\n{e}")
 
     def _load_json(self, filename: str, target_list: list, object_hook: callable = None):
         """Loads data from a JSON file.
@@ -230,11 +259,13 @@ class ProjectManager:
                     target_list.extend(data)
         except FileNotFoundError:
             if not self.is_new_project:
-                print(f"Warning: {file_path} not found.")
+                logging.warning(f"Warning: {file_path} not found.")
         except json.JSONDecodeError as e:
-            print(f"Error decoding JSON from {file_path}: {e}")
+            logging.error(f"Error decoding JSON from {file_path}: {e}")
+            self._notify_error(f"Failed to Load {filename}", f"Could not parse JSON from {file_path}.\n\n{e}")
         except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+            logging.error(f"Error loading {file_path}: {e}")
+            self._notify_error(f"Failed to Load {filename}", f"An unexpected error occurred while reading {file_path}.\n\n{e}")
 
     def _save_json(self, filename: str, data_list: list):
         """Saves a list of dataclass objects to a JSON file.
@@ -248,20 +279,31 @@ class ProjectManager:
         try:
             with open(file_path, "w") as f:
                 json.dump([asdict(item) for item in data_list], f, indent=2)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        except (IOError, TypeError) as e:
+            logging.error(f"Error saving {file_path}: {e}")
+            self._notify_error(f"Failed to Save {filename}", f"Could not write to file at {file_path}.\n\n{e}")
 
-    def _load_scenes(self):
-        """Loads scenes from Logic/Scenes.json."""
-        def scene_object_hook(data):
-            hotspots = [Hotspot(**hs) for hs in data.get("hotspots", [])]
-            data["hotspots"] = hotspots
-            return Scene(**data)
-        self._load_json(os.path.join("Logic", "Scenes.json"), self.data.scenes, scene_object_hook)
+    def _scene_object_hook(self, data):
+        """Object hook for loading scenes from JSON."""
+        hotspots = [Hotspot(**hs) for hs in data.get("hotspots", [])]
+        data["hotspots"] = hotspots
+        return Scene(**data)
 
-    def _save_scenes(self):
-        """Saves scenes to Logic/Scenes.json."""
-        self._save_json(os.path.join("Logic", "Scenes.json"), self.data.scenes)
+    def _quest_object_hook(self, data):
+        """Object hook for loading quests from JSON."""
+        objectives = [Objective(**obj) for obj in data.get("objectives", [])]
+        data["objectives"] = objectives
+        return Quest(**data)
+
+    def _ui_layout_object_hook(self, data):
+        """Object hook for loading UI layouts from JSON."""
+        elements = [UIElement(**elem) for elem in data.get("elements", [])]
+        data["elements"] = elements
+        return UILayout(**data)
+
+    def _asset_object_hook(self, data):
+        """Object hook for loading assets from JSON."""
+        return Animation(**data) if data.get("asset_type") == "animation" else Asset(**data)
 
     def _load_graph_data(self, file_path, target_list):
         """Loads graph data from a JSON file.
@@ -306,230 +348,39 @@ class ProjectManager:
             file_path (str): The path to the JSON file.
             graph_list (list): A list of LogicGraph objects to save.
         """
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        try:
-            with open(file_path, "w") as f:
-                json.dump([asdict(graph) for graph in graph_list], f, indent=4)
-        except Exception as e:
-            print(f"Error saving {file_path}: {e}")
+        self._save_json(file_path, graph_list)
 
-    def _load_logic_graphs(self):
-        """Loads logic graphs from Logic/LogicGraphs.json."""
-        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
-        self._load_graph_data(file_path, self.data.logic_graphs)
+    def add_data_item(self, collection_name: str, item: object):
+        """Adds an item to the specified data collection.
 
-    def _save_logic_graphs(self):
-        """Saves logic graphs to Logic/LogicGraphs.json."""
-        file_path = os.path.join(self.project_path, "Logic", "LogicGraphs.json")
-        self._save_graph_data(file_path, self.data.logic_graphs)
-
-    def _load_dialogue_graphs(self):
-        """Loads dialogue graphs from Logic/DialogueGraphs.json."""
-        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        self._load_graph_data(file_path, self.data.dialogue_graphs)
-
-    def _save_dialogue_graphs(self):
-        """Saves dialogue graphs to Logic/DialogueGraphs.json."""
-        file_path = os.path.join(self.project_path, "Logic", "DialogueGraphs.json")
-        self._save_graph_data(file_path, self.data.dialogue_graphs)
-
-    def _load_assets(self):
-        """Loads assets from Data/Assets.json."""
-        def asset_object_hook(data):
-            return Animation(**data) if data.get("asset_type") == "animation" else Asset(**data)
-        self._load_json(os.path.join("Data", "Assets.json"), self.data.assets, asset_object_hook)
-
-    def _save_assets(self):
-        """Saves assets to Data/Assets.json."""
-        self._save_json(os.path.join("Data", "Assets.json"), self.data.assets)
-
-    def _load_audio(self):
-        """Loads audio files from Data/Audio.json."""
-        self._load_json(os.path.join("Data", "Audio.json"), self.data.audio_files, lambda data: Audio(**data))
-
-    def _save_audio(self):
-        """Saves audio files to Data/Audio.json."""
-        self._save_json(os.path.join("Data", "Audio.json"), self.data.audio_files)
-
-    def _load_global_variables(self):
-        """Loads global variables from Data/GlobalState.json."""
-        self._load_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables, lambda data: GlobalVariable(**data))
-
-    def _save_global_variables(self):
-        """Saves global variables to Data/GlobalState.json."""
-        self._save_json(os.path.join("Data", "GlobalState.json"), self.data.global_variables)
-
-    def _load_verbs(self):
-        """Loads verbs from Data/Verbs.json."""
-        self._load_json(os.path.join("Data", "Verbs.json"), self.data.verbs, lambda data: Verb(**data))
-
-    def _save_verbs(self):
-        """Saves verbs to Data/Verbs.json."""
-        self._save_json(os.path.join("Data", "Verbs.json"), self.data.verbs)
-
-    def _save_characters(self):
-        """Saves characters to Data/CharacterData.csv."""
-        self._save_csv("CharacterData.csv", self.data.characters, Character)
-
-    def _load_interactions(self):
-        """Loads interactions from Logic/Interactions.json."""
-        self._load_json(os.path.join("Logic", "Interactions.json"), self.data.interactions, lambda data: Interaction(**data))
-
-    def _save_interactions(self):
-        """Saves interactions to Logic/Interactions.json."""
-        self._save_json(os.path.join("Logic", "Interactions.json"), self.data.interactions)
-
-    def _load_quests(self):
-        """Loads quests from Logic/Quests.json."""
-        def quest_object_hook(data):
-            objectives = [Objective(**obj) for obj in data.get("objectives", [])]
-            data["objectives"] = objectives
-            return Quest(**data)
-        self._load_json(os.path.join("Logic", "Quests.json"), self.data.quests, quest_object_hook)
-
-    def _save_quests(self):
-        """Saves quests to Logic/Quests.json."""
-        self._save_json(os.path.join("Logic", "Quests.json"), self.data.quests)
-
-    def _load_ui_layouts(self):
-        """Loads UI layouts from UI/WindowLayout.json."""
-        def ui_layout_object_hook(data):
-            elements = [UIElement(**elem) for elem in data.get("elements", [])]
-            data["elements"] = elements
-            return UILayout(**data)
-        self._load_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts, ui_layout_object_hook)
-
-    def _save_ui_layouts(self):
-        """Saves UI layouts to UI/WindowLayout.json."""
-        self._save_json(os.path.join("UI", "WindowLayout.json"), self.data.ui_layouts)
-
-    def _load_fonts(self):
-        """Loads fonts from Data/Fonts.json."""
-        self._load_json(os.path.join("Data", "Fonts.json"), self.data.fonts, lambda data: Font(**data))
-
-    def _save_fonts(self):
-        """Saves fonts to Data/Fonts.json."""
-        self._save_json(os.path.join("Data", "Fonts.json"), self.data.fonts)
-
-    def add_item(self, item: Item):
-        """Adds a new item to the project."""
-        self.data.items.append(item)
-        self.set_dirty()
-
-    def remove_item(self, item: Item):
-        """Removes an item from the project."""
-        if item in self.data.items:
-            self.data.items.remove(item)
+        Args:
+            collection_name (str): The name of the collection to add the item to.
+            item (object): The item to add to the collection.
+        """
+        collection = getattr(self.data, collection_name, None)
+        if collection is not None:
+            collection.append(item)
             self.set_dirty()
-            return True
-        return False
+        else:
+            logging.error(f"Error: Collection '{collection_name}' not found.")
 
-    def add_attribute(self, attribute: Attribute):
-        """Adds a new attribute to the project."""
-        self.data.attributes.append(attribute)
-        self.set_dirty()
+    def remove_data_item(self, collection_name: str, item: object):
+        """Removes an item from the specified data collection.
 
-    def remove_attribute(self, attribute: Attribute):
-        """Removes an attribute from the project."""
-        if attribute in self.data.attributes:
-            self.data.attributes.remove(attribute)
-            self.set_dirty()
-            return True
-        return False
-
-    def add_character(self, character: Character):
-        """Adds a new character to the project."""
-        self.data.characters.append(character)
-        self.set_dirty()
-
-    def remove_character(self, character: Character):
-        """Removes a character from the project."""
-        if character in self.data.characters:
-            self.data.characters.remove(character)
-            self.set_dirty()
-            return True
-        return False
-
-    def add_global_variable(self, variable: GlobalVariable):
-        """Adds a new global variable to the project."""
-        self.data.global_variables.append(variable)
-        self.set_dirty()
-
-    def remove_global_variable(self, variable: GlobalVariable):
-        """Removes a global variable from the project."""
-        if variable in self.data.global_variables:
-            self.data.global_variables.remove(variable)
-            self.set_dirty()
-            return True
-        return False
-
-    def add_verb(self, verb: Verb):
-        """Adds a new verb to the project."""
-        self.data.verbs.append(verb)
-        self.set_dirty()
-
-    def remove_verb(self, verb: Verb):
-        """Removes a verb from the project."""
-        if verb in self.data.verbs:
-            self.data.verbs.remove(verb)
-            self.set_dirty()
-            return True
-        return False
-
-    def add_interaction(self, interaction: Interaction):
-        """Adds a new interaction to the project."""
-        self.data.interactions.append(interaction)
-        self.set_dirty()
-
-    def remove_interaction(self, interaction: Interaction):
-        """Removes an interaction from the project."""
-        if interaction in self.data.interactions:
-            self.data.interactions.remove(interaction)
-            self.set_dirty()
-
-    def add_quest(self, quest: Quest):
-        """Adds a new quest to the project."""
-        self.data.quests.append(quest)
-        self.set_dirty()
-
-    def remove_quest(self, quest: Quest):
-        """Removes a quest from the project."""
-        if quest in self.data.quests:
-            self.data.quests.remove(quest)
-            self.set_dirty()
-
-    def add_dialogue_graph(self, graph: LogicGraph):
-        """Adds a new dialogue graph to the project."""
-        self.data.dialogue_graphs.append(graph)
-        self.set_dirty()
-
-    def remove_dialogue_graph(self, graph: LogicGraph):
-        """Removes a dialogue graph from the project."""
-        if graph in self.data.dialogue_graphs:
-            self.data.dialogue_graphs.remove(graph)
-            self.set_dirty()
-
-    def add_ui_layout(self, layout: UILayout):
-        """Adds a new UI layout to the project."""
-        self.data.ui_layouts.append(layout)
-        self.set_dirty()
-
-    def remove_ui_layout(self, layout: UILayout):
-        """Removes a UI layout from the project."""
-        if layout in self.data.ui_layouts:
-            self.data.ui_layouts.remove(layout)
-            self.set_dirty()
-
-    def add_font(self, font: Font):
-        """Adds a new font to the project."""
-        self.data.fonts.append(font)
-        self.set_dirty()
-
-    def remove_font(self, font: Font):
-        """Removes a font from the project."""
-        if font in self.data.fonts:
-            self.data.fonts.remove(font)
-            self.set_dirty()
+        Args:
+            collection_name (str): The name of the collection to remove the item from.
+            item (object): The item to remove from the collection.
+        """
+        collection = getattr(self.data, collection_name, None)
+        if collection is not None:
+            if item in collection:
+                collection.remove(item)
+                self.set_dirty()
+                return True
+            return False
+        else:
+            logging.error(f"Error: Collection '{collection_name}' not found.")
+            return False
 
     @staticmethod
     def get_templates():
@@ -567,11 +418,9 @@ class ProjectManager:
                 else:
                     return None, f"Template '{template}' not found."
             else:
-                # Create a blank project
                 for subdir in ["Data", "Logic", "UI"]:
                     os.makedirs(os.path.join(project_path, subdir), exist_ok=True)
 
-                # Create CSV files
                 csv_files = {
                     "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
                     "Attributes.csv": ["id", "name", "initial_value", "max_value"],
@@ -581,11 +430,9 @@ class ProjectManager:
                     with open(os.path.join(project_path, "Data", filename), "w", newline="") as f:
                         csv.writer(f).writerow(headers)
 
-                # Add a default player character
                 with open(os.path.join(project_path, "Data", "CharacterData.csv"), "a", newline="") as f:
                     csv.writer(f).writerow(["player", "Player", "", "False", "", "", "", "{}"])
 
-                # Create JSON files
                 default_verbs = [{"id": f, "name": f.replace("_", " ").title()} for f in ["walk_to", "look_at", "take", "use", "talk_to", "open", "close", "push", "pull"]]
                 default_global_vars = [{"id": "score", "name": "Score", "type": "int", "initial_value": 0, "category": "Default"}]
                 json_files = {
