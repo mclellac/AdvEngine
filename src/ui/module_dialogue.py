@@ -2,6 +2,7 @@
 
 import os
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GObject, Gio
@@ -11,7 +12,8 @@ from .module_logic import DynamicNodeEditor
 
 class DialogueNodeGObject(GObject.Object):
     """GObject wrapper for the DialogueNode and ActionNode dataclasses."""
-    __gtype_name__ = 'DialogueNodeGObject'
+
+    __gtype_name__ = "DialogueNodeGObject"
 
     id = GObject.Property(type=str)
     node_type = GObject.Property(type=str)
@@ -33,7 +35,8 @@ class DialogueNodeGObject(GObject.Object):
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_dialogue.ui"))
 class DialogueEditor(Adw.Bin):
     """A widget for editing dialogue trees."""
-    __gtype_name__ = 'DialogueEditor'
+
+    __gtype_name__ = "DialogueEditor"
 
     EDITOR_NAME = "Dialogue"
     VIEW_NAME = "dialogue_editor"
@@ -49,8 +52,8 @@ class DialogueEditor(Adw.Bin):
     def __init__(self, **kwargs):
         """Initializes a new DialogueEditor instance."""
         print("DEBUG: DialogueEditor.__init__")
-        project_manager = kwargs.pop('project_manager')
-        settings_manager = kwargs.pop('settings_manager')
+        project_manager = kwargs.pop("project_manager")
+        settings_manager = kwargs.pop("settings_manager")
 
         super().__init__(**kwargs)
         self.project_manager = project_manager
@@ -59,7 +62,10 @@ class DialogueEditor(Adw.Bin):
         self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self.dialogue_node_editor = DynamicNodeEditor(
-            project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self._on_node_updated)
+            project_manager=self.project_manager,
+            settings_manager=self.settings_manager,
+            on_update_callback=self._on_node_updated,
+        )
         self.dialogue_node_editor_placeholder.append(self.dialogue_node_editor)
 
         self._setup_tree_view()
@@ -75,7 +81,11 @@ class DialogueEditor(Adw.Bin):
         """Sets up the tree view and its model."""
         self.model = Gio.ListStore(item_type=DialogueNodeGObject)
         self.tree_model = Gtk.TreeListModel.new(
-            self.model, passthrough=False, autoexpand=True, create_func=self._get_children)
+            self.model,
+            passthrough=False,
+            autoexpand=True,
+            create_func=self._get_children,
+        )
 
         self.selection = Gtk.SingleSelection(model=self.tree_model)
 
@@ -101,7 +111,8 @@ class DialogueEditor(Adw.Bin):
             children = Gio.ListStore(item_type=DialogueNodeGObject)
             for child_id in node.outputs:
                 child_node = next(
-                    (n for n in self.active_graph.nodes if n.id == child_id), None)
+                    (n for n in self.active_graph.nodes if n.id == child_id), None
+                )
                 if child_node:
                     children.append(DialogueNodeGObject(child_node))
             return children
@@ -120,12 +131,14 @@ class DialogueEditor(Adw.Bin):
             return
         node_gobject = tree_list_row.get_item()
         if node_gobject:
-            binding = node_gobject.bind_property("display_text", label, "label", GObject.BindingFlags.SYNC_CREATE)
+            binding = node_gobject.bind_property(
+                "display_text", label, "label", GObject.BindingFlags.SYNC_CREATE
+            )
             list_item.binding = binding
 
     def _unbind_list_item(self, factory, list_item):
         """Unbinds a list item from the data model."""
-        if hasattr(list_item, 'binding'):
+        if hasattr(list_item, "binding"):
             list_item.binding.unbind()
             del list_item.binding
 
@@ -137,11 +150,11 @@ class DialogueEditor(Adw.Bin):
             self.active_graph = self.project_manager.data.dialogue_graphs[0]
         else:
             self.active_graph = LogicGraph(
-                id="default_dialogue", name="Default Dialogue")
+                id="default_dialogue", name="Default Dialogue"
+            )
             self.project_manager.data.dialogue_graphs.append(self.active_graph)
 
-        root_nodes = [
-            n for n in self.active_graph.nodes if not n.inputs]
+        root_nodes = [n for n in self.active_graph.nodes if not n.inputs]
         for node in root_nodes:
             self.model.append(DialogueNodeGObject(node))
 
@@ -153,7 +166,13 @@ class DialogueEditor(Adw.Bin):
 
         new_node_id = f"dnode_{len(self.active_graph.nodes)}"
         new_node = DialogueNode(
-            id=new_node_id, node_type="Dialogue", x=50, y=50, character_id="char_01", dialogue_text="New dialogue...")
+            id=new_node_id,
+            node_type="Dialogue",
+            x=50,
+            y=50,
+            character_id="char_01",
+            dialogue_text="New dialogue...",
+        )
 
         selected_item = self.selection.get_selected_item()
         if selected_item:
@@ -184,7 +203,8 @@ class DialogueEditor(Adw.Bin):
 
         new_node_id = f"anode_{len(self.active_graph.nodes)}"
         new_node = ActionNode(
-            id=new_node_id, node_type="Action", action_command="SET_VARIABLE")
+            id=new_node_id, node_type="Action", action_command="SET_VARIABLE"
+        )
 
         parent_node.outputs.append(new_node_id)
         new_node.inputs.append(parent_node.id)
@@ -232,7 +252,9 @@ class DialogueEditor(Adw.Bin):
             node_gobject = selected_item.get_item()
             node = node_gobject.node
             if isinstance(node, DialogueNode):
-                node_gobject.display_text = f"{node.character_id}: {node.dialogue_text[:30]}..."
+                node_gobject.display_text = (
+                    f"{node.character_id}: {node.dialogue_text[:30]}..."
+                )
             elif isinstance(node, ActionNode):
                 node_gobject.display_text = f"-> ACTION: {node.action_command}"
         self.refresh_model()

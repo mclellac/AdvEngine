@@ -2,6 +2,7 @@
 
 import gi
 import os
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
@@ -11,7 +12,8 @@ from ..core.data_schemas import Quest, QuestGObject, Objective, ObjectiveGObject
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_quest.ui"))
 class QuestEditor(Adw.Bin):
     """A widget for editing quests."""
-    __gtype_name__ = 'QuestEditor'
+
+    __gtype_name__ = "QuestEditor"
 
     EDITOR_NAME = "Quests"
     VIEW_NAME = "quest_editor"
@@ -44,9 +46,10 @@ class QuestEditor(Adw.Bin):
 
         factory = Gtk.SignalListItemFactory()
         factory.connect(
-            "setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
-        factory.connect(
-            "bind", self._bind_quest_list_item)
+            "setup",
+            lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)),
+        )
+        factory.connect("bind", self._bind_quest_list_item)
 
         self.quest_list_view.set_model(self.selection)
         self.quest_list_view.set_factory(factory)
@@ -62,13 +65,17 @@ class QuestEditor(Adw.Bin):
         label = list_item.get_child()
         quest_gobject = list_item.get_item()
         label.set_text(quest_gobject.name)
-        quest_gobject.bind_property("name", label, "label", GObject.BindingFlags.BIDIRECTIONAL)
+        quest_gobject.bind_property(
+            "name", label, "label", GObject.BindingFlags.BIDIRECTIONAL
+        )
 
     def _update_visibility(self):
         """Updates the visibility of the quest list and status page."""
         has_quests = self.model.get_n_items() > 0
         is_quest_selected = self.selection.get_selected() != Gtk.INVALID_LIST_POSITION
-        print(f"DEBUG: QuestEditor._update_visibility: has_quests={has_quests}, is_quest_selected={is_quest_selected}")
+        print(
+            f"DEBUG: QuestEditor._update_visibility: has_quests={has_quests}, is_quest_selected={is_quest_selected}"
+        )
         self.status_page.set_visible(not has_quests or not is_quest_selected)
 
     def _on_quest_selected(self, selection, _):
@@ -76,12 +83,16 @@ class QuestEditor(Adw.Bin):
         print("DEBUG: QuestEditor._on_quest_selected")
         selected_quest_gobject = selection.get_selected_item()
         self.delete_quest_button.set_sensitive(selected_quest_gobject is not None)
-        self._display_quest_details(selected_quest_gobject.quest if selected_quest_gobject else None)
+        self._display_quest_details(
+            selected_quest_gobject.quest if selected_quest_gobject else None
+        )
         self._update_visibility()
 
     def _display_quest_details(self, quest):
         """Displays the details of the selected quest."""
-        print(f"DEBUG: QuestEditor._display_quest_details for quest: {quest.id if quest else 'None'}")
+        print(
+            f"DEBUG: QuestEditor._display_quest_details for quest: {quest.id if quest else 'None'}"
+        )
         while child := self.quest_details_panel.get_first_child():
             if child != self.status_page:
                 self.quest_details_panel.remove(child)
@@ -137,8 +148,7 @@ class QuestEditor(Adw.Bin):
         for objective in quest.objectives:
             self.objective_model.append(ObjectiveGObject(objective))
 
-        self.objective_selection = Gtk.SingleSelection(
-            model=self.objective_model)
+        self.objective_selection = Gtk.SingleSelection(model=self.objective_model)
         objective_list.set_model(self.objective_selection)
 
         self._create_objective_column(objective_list, "ID", "id")
@@ -165,9 +175,14 @@ class QuestEditor(Adw.Bin):
         objective_gobject = list_item.get_item()
         widget = list_item.get_child()
         list_item.binding = widget.bind_property(
-            "text", objective_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            "text",
+            objective_gobject,
+            column_id,
+            GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE,
+        )
         list_item.handler_id = widget.connect(
-            "changed", lambda w: self.project_manager.set_dirty(True))
+            "changed", lambda w: self.project_manager.set_dirty(True)
+        )
 
     def _unbind_objective_cell(self, factory, list_item):
         """Unbinds a cell for the objective list."""
@@ -189,8 +204,8 @@ class QuestEditor(Adw.Bin):
 
         for i, item in enumerate(self.model):
             if item.quest.id == original_id:
-                 self.model.items_changed(i, 1, 1)
-                 break
+                self.model.items_changed(i, 1, 1)
+                break
 
     def _on_add_quest(self, button):
         """Handles the clicked signal from the add quest button."""
@@ -207,14 +222,16 @@ class QuestEditor(Adw.Bin):
                 transient_for=self.get_root(),
                 modal=True,
                 heading="Delete Quest?",
-                body=f"Are you sure you want to delete '{selected_quest_gobject.name}'?"
+                body=f"Are you sure you want to delete '{selected_quest_gobject.name}'?",
             )
             dialog.add_response("cancel", "_Cancel")
             dialog.add_response("delete", "_Delete")
-            dialog.set_response_appearance(
-                "delete", Adw.ResponseAppearance.DESTRUCTIVE)
+            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
             dialog.connect(
-                "response", self._on_delete_quest_dialog_response, selected_quest_gobject)
+                "response",
+                self._on_delete_quest_dialog_response,
+                selected_quest_gobject,
+            )
             dialog.present()
 
     def _on_delete_quest_dialog_response(self, dialog, response, quest_gobject):
@@ -231,7 +248,8 @@ class QuestEditor(Adw.Bin):
         """Handles the clicked signal from the add objective button."""
         new_id = f"objective_{len(quest.objectives)}"
         new_objective = self.project_manager.add_objective_to_quest(
-            quest.id, new_id, "New Objective")
+            quest.id, new_id, "New Objective"
+        )
         if new_objective:
             self.objective_model.append(ObjectiveGObject(new_objective))
 
@@ -243,21 +261,27 @@ class QuestEditor(Adw.Bin):
                 transient_for=self.get_root(),
                 modal=True,
                 heading="Delete Objective?",
-                body=f"Are you sure you want to delete '{selected_objective_gobject.name}'?"
+                body=f"Are you sure you want to delete '{selected_objective_gobject.name}'?",
             )
             dialog.add_response("cancel", "_Cancel")
             dialog.add_response("delete", "_Delete")
-            dialog.set_response_appearance(
-                "delete", Adw.ResponseAppearance.DESTRUCTIVE)
+            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
             dialog.connect(
-                "response", self._on_delete_objective_dialog_response, quest, selected_objective_gobject)
+                "response",
+                self._on_delete_objective_dialog_response,
+                quest,
+                selected_objective_gobject,
+            )
             dialog.present()
 
-    def _on_delete_objective_dialog_response(self, dialog, response, quest, objective_gobject):
+    def _on_delete_objective_dialog_response(
+        self, dialog, response, quest, objective_gobject
+    ):
         """Handles the response from the delete objective dialog."""
         if response == "delete":
             self.project_manager.remove_objective_from_quest(
-                quest.id, objective_gobject.objective.id)
+                quest.id, objective_gobject.objective.id
+            )
             is_found, pos = self.objective_model.find(objective_gobject)
             if is_found:
                 self.objective_model.remove(pos)

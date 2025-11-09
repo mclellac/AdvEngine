@@ -2,16 +2,26 @@
 
 import gi
 import os
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
-from ..core.data_schemas import Interaction, InteractionGObject, Item, Verb, Hotspot, LogicGraph, StringGObject
+from ..core.data_schemas import (
+    Interaction,
+    InteractionGObject,
+    Item,
+    Verb,
+    Hotspot,
+    LogicGraph,
+    StringGObject,
+)
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_interaction.ui"))
 class InteractionEditor(Gtk.Box):
     """A widget for editing interactions."""
-    __gtype_name__ = 'InteractionEditor'
+
+    __gtype_name__ = "InteractionEditor"
 
     EDITOR_NAME = "Interactions"
     VIEW_NAME = "interaction_editor"
@@ -40,7 +50,9 @@ class InteractionEditor(Gtk.Box):
 
     def project_loaded(self):
         """Callback for when the project is loaded."""
-        print("DEBUG: InteractionEditor.project_loaded: Received project loaded signal.")
+        print(
+            "DEBUG: InteractionEditor.project_loaded: Received project loaded signal."
+        )
         self.refresh_model()
 
     def _setup_model(self):
@@ -58,7 +70,9 @@ class InteractionEditor(Gtk.Box):
     def _update_visibility(self):
         """Updates the visibility of the column view and status page."""
         has_interactions = self.model.get_n_items() > 0
-        print(f"DEBUG: InteractionEditor._update_visibility: has_interactions={has_interactions}")
+        print(
+            f"DEBUG: InteractionEditor._update_visibility: has_interactions={has_interactions}"
+        )
         self.scrolled_window.set_visible(has_interactions)
         self.status_page.set_visible(not has_interactions)
 
@@ -74,17 +88,18 @@ class InteractionEditor(Gtk.Box):
         """Creates the columns for the column view."""
         print("DEBUG: InteractionEditor._create_columns")
         columns = {
-            "verb_id": "Verb", "primary_item_id": "Primary Item",
-            "secondary_item_id": "Secondary Item", "target_hotspot_id": "Target Hotspot",
-            "logic_graph_id": "Logic Graph"
+            "verb_id": "Verb",
+            "primary_item_id": "Primary Item",
+            "secondary_item_id": "Secondary Item",
+            "target_hotspot_id": "Target Hotspot",
+            "logic_graph_id": "Logic Graph",
         }
         for col_id, title in columns.items():
             factory = Gtk.SignalListItemFactory()
             factory.connect("setup", self._setup_cell, col_id)
             factory.connect("bind", self._bind_cell, col_id)
             factory.connect("unbind", self._unbind_cell)
-            column = Gtk.ColumnViewColumn(
-                title=title, factory=factory, expand=True)
+            column = Gtk.ColumnViewColumn(title=title, factory=factory, expand=True)
             self.column_view.append_column(column)
 
     def _setup_cell(self, factory, list_item, column_id):
@@ -99,16 +114,21 @@ class InteractionEditor(Gtk.Box):
 
         if column_id == "verb_id":
             model = Gtk.StringList.new(
-                [""] + [v.id for v in self.project_manager.data.verbs])
+                [""] + [v.id for v in self.project_manager.data.verbs]
+            )
         elif "item_id" in column_id:
             model = Gtk.StringList.new(
-                [""] + [i.id for i in self.project_manager.data.items])
+                [""] + [i.id for i in self.project_manager.data.items]
+            )
         elif column_id == "target_hotspot_id":
             model = Gtk.StringList.new(
-                [""] + [h.id for s in self.project_manager.data.scenes for h in s.hotspots])
+                [""]
+                + [h.id for s in self.project_manager.data.scenes for h in s.hotspots]
+            )
         elif column_id == "logic_graph_id":
             model = Gtk.StringList.new(
-                [""] + [lg.id for lg in self.project_manager.data.logic_graphs])
+                [""] + [lg.id for lg in self.project_manager.data.logic_graphs]
+            )
 
         dropdown.set_model(model)
 
@@ -122,7 +142,11 @@ class InteractionEditor(Gtk.Box):
             dropdown.set_selected(0)
 
         handler_id = dropdown.connect(
-            "notify::selected", self._on_dropdown_changed, interaction_gobject, column_id)
+            "notify::selected",
+            self._on_dropdown_changed,
+            interaction_gobject,
+            column_id,
+        )
         list_item.handler_id = handler_id
 
     def _unbind_cell(self, factory, list_item):
@@ -143,7 +167,8 @@ class InteractionEditor(Gtk.Box):
         print("DEBUG: InteractionEditor._on_add_clicked")
         new_id = f"interaction_{len(self.project_manager.data.interactions)}"
         new_interaction = Interaction(
-            id=new_id, verb_id="", primary_item_id="", logic_graph_id="")
+            id=new_id, verb_id="", primary_item_id="", logic_graph_id=""
+        )
         self.project_manager.add_interaction(new_interaction)
         self._refresh_model()
         self.selection.set_selected(self.model.get_n_items() - 1)
@@ -160,19 +185,19 @@ class InteractionEditor(Gtk.Box):
             transient_for=self.get_root(),
             modal=True,
             heading="Delete Interaction?",
-            body=f"Are you sure you want to delete '{selected_item.id}'?"
+            body=f"Are you sure you want to delete '{selected_item.id}'?",
         )
         dialog.add_response("cancel", "_Cancel")
         dialog.add_response("delete", "_Delete")
-        dialog.set_response_appearance(
-            "delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.connect("response", self._on_delete_dialog_response,
-                       selected_item)
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_delete_dialog_response, selected_item)
         dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, interaction_gobject):
         """Handles the response from the delete confirmation dialog."""
-        print(f"DEBUG: InteractionEditor._on_delete_dialog_response: response={response}")
+        print(
+            f"DEBUG: InteractionEditor._on_delete_dialog_response: response={response}"
+        )
         if response == "delete":
             self.project_manager.remove_interaction(interaction_gobject.interaction)
             self._refresh_model()
@@ -181,5 +206,7 @@ class InteractionEditor(Gtk.Box):
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
-        print(f"DEBUG: InteractionEditor._on_selection_changed: is_selected={is_selected}")
+        print(
+            f"DEBUG: InteractionEditor._on_selection_changed: is_selected={is_selected}"
+        )
         self.delete_button.set_sensitive(is_selected)

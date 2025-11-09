@@ -10,6 +10,8 @@ import sys
 import csv
 import json
 import logging
+import tempfile
+import shutil
 from dataclasses import asdict
 from .schemas import (
     ProjectData,
@@ -37,6 +39,7 @@ from .schemas import (
     SearchResult,
 )
 from .settings_manager import SettingsManager
+
 
 class ProjectManager:
     """Manages all data for a single AdvEngine project.
@@ -70,22 +73,97 @@ class ProjectManager:
         self.dirty_state_changed_callbacks = []
         self.project_loaded_callbacks = []
         self.error_callbacks = []
+        self.project_saved_callbacks = []
 
         self._data_files = {
-            'items': ('Data/ItemData.csv', Item, self._load_csv, self._save_csv),
-            'attributes': ('Data/Attributes.csv', Attribute, self._load_csv, self._save_csv),
-            'characters': ('Data/CharacterData.csv', Character, self._load_csv, self._save_csv),
-            'scenes': ('Logic/Scenes.json', Scene, self._load_json, self._save_json, self._scene_object_hook),
-            'logic_graphs': ('Logic/LogicGraphs.json', LogicGraph, self._load_graph_data, self._save_graph_data),
-            'assets': ('Data/Assets.json', Asset, self._load_json, self._save_json, self._asset_object_hook),
-            'audio_files': ('Data/Audio.json', Audio, self._load_json, self._save_json, lambda data: Audio(**data)),
-            'global_variables': ('Data/GlobalState.json', GlobalVariable, self._load_json, self._save_json, lambda data: GlobalVariable(**data)),
-            'verbs': ('Data/Verbs.json', Verb, self._load_json, self._save_json, lambda data: Verb(**data)),
-            'dialogue_graphs': ('Logic/DialogueGraphs.json', LogicGraph, self._load_graph_data, self._save_graph_data),
-            'interactions': ('Logic/Interactions.json', Interaction, self._load_json, self._save_json, lambda data: Interaction(**data)),
-            'quests': ('Logic/Quests.json', Quest, self._load_json, self._save_json, self._quest_object_hook),
-            'ui_layouts': ('UI/WindowLayout.json', UILayout, self._load_json, self._save_json, self._ui_layout_object_hook),
-            'fonts': ('Data/Fonts.json', Font, self._load_json, self._save_json, lambda data: Font(**data)),
+            "items": ("Data/ItemData.csv", Item, self._load_csv, self._save_csv),
+            "attributes": (
+                "Data/Attributes.csv",
+                Attribute,
+                self._load_csv,
+                self._save_csv,
+            ),
+            "characters": (
+                "Data/CharacterData.csv",
+                Character,
+                self._load_csv,
+                self._save_csv,
+            ),
+            "scenes": (
+                "Logic/Scenes.json",
+                Scene,
+                self._load_json,
+                self._save_json,
+                self._scene_object_hook,
+            ),
+            "logic_graphs": (
+                "Logic/LogicGraphs.json",
+                LogicGraph,
+                self._load_graph_data,
+                self._save_graph_data,
+            ),
+            "assets": (
+                "Data/Assets.json",
+                Asset,
+                self._load_json,
+                self._save_json,
+                self._asset_object_hook,
+            ),
+            "audio_files": (
+                "Data/Audio.json",
+                Audio,
+                self._load_json,
+                self._save_json,
+                lambda data: Audio(**data),
+            ),
+            "global_variables": (
+                "Data/GlobalState.json",
+                GlobalVariable,
+                self._load_json,
+                self._save_json,
+                lambda data: GlobalVariable(**data),
+            ),
+            "verbs": (
+                "Data/Verbs.json",
+                Verb,
+                self._load_json,
+                self._save_json,
+                lambda data: Verb(**data),
+            ),
+            "dialogue_graphs": (
+                "Logic/DialogueGraphs.json",
+                LogicGraph,
+                self._load_graph_data,
+                self._save_graph_data,
+            ),
+            "interactions": (
+                "Logic/Interactions.json",
+                Interaction,
+                self._load_json,
+                self._save_json,
+                lambda data: Interaction(**data),
+            ),
+            "quests": (
+                "Logic/Quests.json",
+                Quest,
+                self._load_json,
+                self._save_json,
+                self._quest_object_hook,
+            ),
+            "ui_layouts": (
+                "UI/WindowLayout.json",
+                UILayout,
+                self._load_json,
+                self._save_json,
+                self._ui_layout_object_hook,
+            ),
+            "fonts": (
+                "Data/Fonts.json",
+                Font,
+                self._load_json,
+                self._save_json,
+                lambda data: Font(**data),
+            ),
         }
 
     def load_project(self):
@@ -98,12 +176,12 @@ class ProjectManager:
         for key, config in self._data_files.items():
             loader = config[2]
             target_list = getattr(self.data, key)
-            if len(config) > 4: # Has object hook
+            if len(config) > 4:  # Has object hook
                 loader(config[0], target_list, config[4])
             elif loader == self._load_csv:
                 loader(config[0], config[1], target_list)
             else:
-                 loader(config[0], target_list)
+                loader(config[0], target_list)
 
         self.is_new_project = False
         self.set_dirty(False)
@@ -119,10 +197,20 @@ class ProjectManager:
             saver = config[3]
             data_list = getattr(self.data, key)
             if saver == self._save_csv:
-                 saver(config[0], data_list, config[1])
+                saver(config[0], data_list, config[1])
             else:
-                 saver(config[0], data_list)
+                saver(config[0], data_list)
         self.set_dirty(False)
+        self._notify_project_saved()
+
+    def register_project_saved_callback(self, callback: callable):
+        """Registers a callback to be called when the project is saved."""
+        self.project_saved_callbacks.append(callback)
+
+    def _notify_project_saved(self):
+        """Notifies all registered callbacks that the project has been saved."""
+        for callback in self.project_saved_callbacks:
+            callback()
 
     def register_project_loaded_callback(self, callback: callable):
         """Registers a callback to be called when the project is loaded.
@@ -193,8 +281,11 @@ class ProjectManager:
         """
         file_path = os.path.join(self.project_path, filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w", delete=False, dir=os.path.dirname(file_path)
+        )
         try:
-            with open(file_path, "w", newline="") as f:
+            with temp_file as f:
                 if not data_list:
                     fieldnames = asdict(
                         dataclass_type(*[None] * len(dataclass_type.__annotations__))
@@ -206,9 +297,16 @@ class ProjectManager:
                     writer.writeheader()
                     for item in data_list:
                         writer.writerow(asdict(item))
+            shutil.move(temp_file.name, file_path)
         except (IOError, csv.Error) as e:
             logging.error(f"Error saving {file_path}: {e}")
-            self._notify_error(f"Failed to Save {filename}", f"Could not write to file at {file_path}.\n\n{e}")
+            self._notify_error(
+                f"Failed to Save {filename}",
+                f"Could not write to file at {file_path}.\n\n{e}",
+            )
+        finally:
+            if os.path.exists(temp_file.name):
+                os.remove(temp_file.name)
 
     def _load_csv(self, filename: str, dataclass_type: type, target_list: list):
         """Loads data from a CSV file into a list of dataclass objects.
@@ -235,9 +333,14 @@ class ProjectManager:
                 logging.warning(f"Warning: {file_path} not found.")
         except Exception as e:
             logging.error(f"Error loading {file_path}: {e}")
-            self._notify_error(f"Failed to Load {filename}", f"Could not read file at {file_path}.\n\n{e}")
+            self._notify_error(
+                f"Failed to Load {filename}",
+                f"Could not read file at {file_path}.\n\n{e}",
+            )
 
-    def _load_json(self, filename: str, target_list: list, object_hook: callable = None):
+    def _load_json(
+        self, filename: str, target_list: list, object_hook: callable = None
+    ):
         """Loads data from a JSON file.
 
         Args:
@@ -262,10 +365,16 @@ class ProjectManager:
                 logging.warning(f"Warning: {file_path} not found.")
         except json.JSONDecodeError as e:
             logging.error(f"Error decoding JSON from {file_path}: {e}")
-            self._notify_error(f"Failed to Load {filename}", f"Could not parse JSON from {file_path}.\n\n{e}")
+            self._notify_error(
+                f"Failed to Load {filename}",
+                f"Could not parse JSON from {file_path}.\n\n{e}",
+            )
         except Exception as e:
             logging.error(f"Error loading {file_path}: {e}")
-            self._notify_error(f"Failed to Load {filename}", f"An unexpected error occurred while reading {file_path}.\n\n{e}")
+            self._notify_error(
+                f"Failed to Load {filename}",
+                f"An unexpected error occurred while reading {file_path}.\n\n{e}",
+            )
 
     def _save_json(self, filename: str, data_list: list):
         """Saves a list of dataclass objects to a JSON file.
@@ -276,12 +385,22 @@ class ProjectManager:
         """
         file_path = os.path.join(self.project_path, filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w", delete=False, dir=os.path.dirname(file_path)
+        )
         try:
-            with open(file_path, "w") as f:
+            with temp_file as f:
                 json.dump([asdict(item) for item in data_list], f, indent=2)
+            shutil.move(temp_file.name, file_path)
         except (IOError, TypeError) as e:
             logging.error(f"Error saving {file_path}: {e}")
-            self._notify_error(f"Failed to Save {filename}", f"Could not write to file at {file_path}.\n\n{e}")
+            self._notify_error(
+                f"Failed to Save {filename}",
+                f"Could not write to file at {file_path}.\n\n{e}",
+            )
+        finally:
+            if os.path.exists(temp_file.name):
+                os.remove(temp_file.name)
 
     def _scene_object_hook(self, data):
         """Object hook for loading scenes from JSON."""
@@ -303,7 +422,11 @@ class ProjectManager:
 
     def _asset_object_hook(self, data):
         """Object hook for loading assets from JSON."""
-        return Animation(**data) if data.get("asset_type") == "animation" else Asset(**data)
+        return (
+            Animation(**data)
+            if data.get("asset_type") == "animation"
+            else Asset(**data)
+        )
 
     def _load_graph_data(self, file_path, target_list):
         """Loads graph data from a JSON file.
@@ -312,8 +435,10 @@ class ProjectManager:
             file_path (str): The path to the JSON file.
             target_list (list): The list to which the loaded objects will be appended.
         """
+
         def pascal_to_snake(name):
             import re
+
             name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
             return "var_name" if name == "varname" else name
 
@@ -386,11 +511,15 @@ class ProjectManager:
     def get_templates():
         """Returns a list of available project templates."""
         local_path = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
-        installed_path = os.path.join(sys.prefix, 'share', 'advengine', 'templates')
+        installed_path = os.path.join(sys.prefix, "share", "advengine", "templates")
         template_dir = installed_path if os.path.exists(installed_path) else local_path
 
         if template_dir and os.path.exists(template_dir):
-            return [d for d in os.listdir(template_dir) if os.path.isdir(os.path.join(template_dir, d))]
+            return [
+                d
+                for d in os.listdir(template_dir)
+                if os.path.isdir(os.path.join(template_dir, d))
+            ]
         return []
 
     @staticmethod
@@ -408,12 +537,19 @@ class ProjectManager:
         """
         try:
             if template and template != "Blank":
-                local_path = os.path.join(os.path.dirname(__file__), "..", "..", "templates", template)
-                installed_path = os.path.join(sys.prefix, "share", "advengine", "templates", template)
-                template_dir = installed_path if os.path.exists(installed_path) else local_path
+                local_path = os.path.join(
+                    os.path.dirname(__file__), "..", "..", "templates", template
+                )
+                installed_path = os.path.join(
+                    sys.prefix, "share", "advengine", "templates", template
+                )
+                template_dir = (
+                    installed_path if os.path.exists(installed_path) else local_path
+                )
 
                 if template_dir:
                     import shutil
+
                     shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
                 else:
                     return None, f"Template '{template}' not found."
@@ -422,19 +558,64 @@ class ProjectManager:
                     os.makedirs(os.path.join(project_path, subdir), exist_ok=True)
 
                 csv_files = {
-                    "ItemData.csv": ["id", "name", "description", "type", "buy_price", "sell_price"],
+                    "ItemData.csv": [
+                        "id",
+                        "name",
+                        "description",
+                        "type",
+                        "buy_price",
+                        "sell_price",
+                    ],
                     "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                    "CharacterData.csv": ["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id", "portrait_asset_id", "sprite_sheet_asset_id", "animations"],
+                    "CharacterData.csv": [
+                        "id",
+                        "display_name",
+                        "dialogue_start_id",
+                        "is_merchant",
+                        "shop_id",
+                        "portrait_asset_id",
+                        "sprite_sheet_asset_id",
+                        "animations",
+                    ],
                 }
                 for filename, headers in csv_files.items():
-                    with open(os.path.join(project_path, "Data", filename), "w", newline="") as f:
+                    with open(
+                        os.path.join(project_path, "Data", filename), "w", newline=""
+                    ) as f:
                         csv.writer(f).writerow(headers)
 
-                with open(os.path.join(project_path, "Data", "CharacterData.csv"), "a", newline="") as f:
-                    csv.writer(f).writerow(["player", "Player", "", "False", "", "", "", "{}"])
+                with open(
+                    os.path.join(project_path, "Data", "CharacterData.csv"),
+                    "a",
+                    newline="",
+                ) as f:
+                    csv.writer(f).writerow(
+                        ["player", "Player", "", "False", "", "", "", "{}"]
+                    )
 
-                default_verbs = [{"id": f, "name": f.replace("_", " ").title()} for f in ["walk_to", "look_at", "take", "use", "talk_to", "open", "close", "push", "pull"]]
-                default_global_vars = [{"id": "score", "name": "Score", "type": "int", "initial_value": 0, "category": "Default"}]
+                default_verbs = [
+                    {"id": f, "name": f.replace("_", " ").title()}
+                    for f in [
+                        "walk_to",
+                        "look_at",
+                        "take",
+                        "use",
+                        "talk_to",
+                        "open",
+                        "close",
+                        "push",
+                        "pull",
+                    ]
+                ]
+                default_global_vars = [
+                    {
+                        "id": "score",
+                        "name": "Score",
+                        "type": "int",
+                        "initial_value": 0,
+                        "category": "Default",
+                    }
+                ]
                 json_files = {
                     os.path.join("Data", "Assets.json"): [],
                     os.path.join("Data", "Audio.json"): [],
@@ -480,6 +661,13 @@ class ProjectManager:
 
         for data_type, data_list, name_field in searchable_data:
             for item in data_list:
-                if query_lower in getattr(item, name_field).lower() or query_lower in item.id.lower():
-                    results.append(SearchResult(id=item.id, name=getattr(item, name_field), type=data_type))
+                if (
+                    query_lower in getattr(item, name_field).lower()
+                    or query_lower in item.id.lower()
+                ):
+                    results.append(
+                        SearchResult(
+                            id=item.id, name=getattr(item, name_field), type=data_type
+                        )
+                    )
         return results

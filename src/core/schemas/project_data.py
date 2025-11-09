@@ -19,6 +19,7 @@ from .verb import Verb
 @dataclass
 class ProjectData:
     """A container for all data in an AdvEngine project."""
+
     global_variables: List[GlobalVariable] = field(default_factory=list)
     verbs: List[Verb] = field(default_factory=list)
     items: List[Item] = field(default_factory=list)

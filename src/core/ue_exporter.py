@@ -15,7 +15,9 @@ COMMAND_DEFINITIONS = {
         "PLAY_SFX": {"params": {"SoundID": "str"}},
         "UNLOCK_HOTSPOT": {"params": {"HotspotID": "str"}},
         "LOCK_HOTSPOT": {"params": {"HotspotID": "str"}},
-        "SET_ANIMATION": {"params": {"TargetID": "str", "AnimationKey": "str", "Loop": "bool"}},
+        "SET_ANIMATION": {
+            "params": {"TargetID": "str", "AnimationKey": "str", "Loop": "bool"}
+        },
         "HIDE_ENTITY": {"params": {"EntityID": "str"}},
         "SHOW_ENTITY": {"params": {"EntityID": "str", "X": "int", "Y": "int"}},
         "SET_CURSOR_MODE": {"params": {"Mode": ["Contextual", "Classic"]}},
@@ -31,7 +33,13 @@ COMMAND_DEFINITIONS = {
     "conditions": {
         "VARIABLE_EQUALS": {"params": {"VarName": "str", "Value": "any"}},
         "HAS_ITEM": {"params": {"ItemID": "str", "Amount": "int"}},
-        "ATTRIBUTE_CHECK": {"params": {"AttributeID": "str", "Value": "int", "Comparison": ["==", ">", "<", ">=", "<="]}},
+        "ATTRIBUTE_CHECK": {
+            "params": {
+                "AttributeID": "str",
+                "Value": "int",
+                "Comparison": ["==", ">", "<", ">=", "<="],
+            }
+        },
         "HOTSPOT_LOCKED": {"params": {"HotspotID": "str", "State": "bool"}},
         "ENTITY_VISIBLE": {"params": {"EntityID": "str", "Visible": "bool"}},
         "SCENE_VISITED": {"params": {"SceneID": "str", "Times": "int"}},
@@ -40,12 +48,16 @@ COMMAND_DEFINITIONS = {
         "HAS_FAILED_CHECK": {"params": {"CheckID": "str"}},
         "ENTITY_HAS_ITEM": {"params": {"EntityID": "str", "ItemID": "str"}},
         "WALK_MESH_ACTIVE": {"params": {"MeshID": "str", "State": "bool"}},
-        "TIME_OF_DAY_IS": {"params": {"TimeState": ["Night", "Morning", "Day", "Evening"]}},
-    }
+        "TIME_OF_DAY_IS": {
+            "params": {"TimeState": ["Night", "Morning", "Day", "Evening"]}
+        },
+    },
 }
+
 
 def get_command_definitions():
     return COMMAND_DEFINITIONS
+
 
 def export_project(project_manager):
     """
@@ -66,21 +78,34 @@ def export_project(project_manager):
 
     # --- Export Items to ItemData.csv ---
     with open(os.path.join(data_dir, "ItemData.csv"), "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "name", "type", "buy_price", "sell_price"])
+        writer = csv.DictWriter(
+            f, fieldnames=["id", "name", "type", "buy_price", "sell_price"]
+        )
         writer.writeheader()
         for item in data.items:
             writer.writerow(asdict(item))
 
     # --- Export Characters to CharacterData.csv ---
     with open(os.path.join(data_dir, "CharacterData.csv"), "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "display_name", "dialogue_start_id", "is_merchant", "shop_id"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "id",
+                "display_name",
+                "dialogue_start_id",
+                "is_merchant",
+                "shop_id",
+            ],
+        )
         writer.writeheader()
         for char in data.characters:
             writer.writerow(asdict(char))
 
     # --- Export Attributes to Attributes.csv ---
     with open(os.path.join(data_dir, "Attributes.csv"), "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "name", "initial_value", "max_value"])
+        writer = csv.DictWriter(
+            f, fieldnames=["id", "name", "initial_value", "max_value"]
+        )
         writer.writeheader()
         for attr in data.attributes:
             writer.writerow(asdict(attr))
@@ -91,7 +116,9 @@ def export_project(project_manager):
 
     # --- Export Interactions to Interactions.json ---
     with open(os.path.join(logic_dir, "Interactions.json"), "w") as f:
-        json.dump([asdict(interaction) for interaction in data.interactions], f, indent=2)
+        json.dump(
+            [asdict(interaction) for interaction in data.interactions], f, indent=2
+        )
 
     # --- Placeholder JSON files ---
     with open(os.path.join(dialogues_dir, "Graph_Placeholder.json"), "w") as f:
@@ -100,8 +127,10 @@ def export_project(project_manager):
     with open(os.path.join(ui_dir, "WindowLayout.json"), "w") as f:
         json.dump({}, f, indent=2)
 
+
 if __name__ == "__main__":
     from project_manager import ProjectManager
+
     # This is a simple test to run the exporter on the TestGame directory
     pm = ProjectManager("TestGame")
     pm.load_project()

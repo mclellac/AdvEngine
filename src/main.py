@@ -2,6 +2,7 @@ import sys
 import subprocess
 import gi
 import os
+import logging
 from importlib import resources
 
 gi.require_version("Gtk", "4.0")
@@ -10,9 +11,9 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
 
 from .core.project_manager import ProjectManager
-from .core.schemas import DialogueNode
 import importlib
 import inspect
+
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "ui/main_window.ui"))
 class EditorWindow(Adw.ApplicationWindow):
@@ -29,7 +30,7 @@ class EditorWindow(Adw.ApplicationWindow):
     content_stack = Gtk.Template.Child()
     sidebar_list = Gtk.Template.Child()
     menu_button = Gtk.Template.Child()
-
+    toast_overlay = Gtk.Template.Child()
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
         """Initializes a new EditorWindow instance."""
@@ -42,11 +43,17 @@ class EditorWindow(Adw.ApplicationWindow):
 
         self.project_manager.register_dirty_state_callback(self.on_dirty_state_changed)
         self.project_manager.register_error_callback(self.on_error)
+        self.project_manager.register_project_saved_callback(self.on_project_saved)
 
         # Connect signals
         self.save_button.connect("clicked", self.on_save_clicked)
         self.play_button.connect("clicked", self._on_play_clicked)
-        self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
+        self.new_project_button.connect(
+            "clicked",
+            lambda w: self.get_application()
+            .lookup_action("new-project")
+            .activate(None),
+        )
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.sidebar_list.connect("row-activated", self.on_sidebar_activated)
 
@@ -56,7 +63,12 @@ class EditorWindow(Adw.ApplicationWindow):
         menu.append("About", "app.about")
         self.menu_button.set_menu_model(menu)
 
-        self.toggle_button.bind_property("active", self.split_view, "show-sidebar", GObject.BindingFlags.BIDIRECTIONAL)
+        self.toggle_button.bind_property(
+            "active",
+            self.split_view,
+            "show-sidebar",
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
 
         self.logic_editor = None
         self.discover_and_add_editors()
@@ -65,7 +77,9 @@ class EditorWindow(Adw.ApplicationWindow):
         self.content_stack.add_named(self.search_results_view, "search_results")
 
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
-        self.on_sidebar_activated(self.sidebar_list, self.sidebar_list.get_selected_row())
+        self.on_sidebar_activated(
+            self.sidebar_list, self.sidebar_list.get_selected_row()
+        )
         self.split_view.set_show_sidebar(True)
 
     def on_search_changed(self, search_entry: Gtk.SearchEntry):
@@ -112,14 +126,22 @@ class EditorWindow(Adw.ApplicationWindow):
                                 discovered_view_names.add(obj.VIEW_NAME)
                 except Exception as e:
                     logging.error(f"Error discovering editor in {module_name}: {e}")
-                    self.on_error("Failed to Load Editor", f"An error occurred while loading the editor from {module_name}.\n\n{e}")
+                    self.on_error(
+                        "Failed to Load Editor",
+                        f"An error occurred while loading the editor from {module_name}.\n\n{e}",
+                    )
 
         editors.sort(key=lambda e: getattr(e, "ORDER", 999))
 
         for editor_class in editors:
-            editor_instance = editor_class(project_manager=self.project_manager, settings_manager=self.get_application().settings_manager)
-            self.add_editor(editor_class.EDITOR_NAME, editor_class.VIEW_NAME, editor_instance)
-            if editor_class.VIEW_NAME == 'logic_editor':
+            editor_instance = editor_class(
+                project_manager=self.project_manager,
+                settings_manager=self.get_application().settings_manager,
+            )
+            self.add_editor(
+                editor_class.EDITOR_NAME, editor_class.VIEW_NAME, editor_instance
+            )
+            if editor_class.VIEW_NAME == "logic_editor":
                 self.logic_editor = editor_instance
 
     def on_dirty_state_changed(self, is_dirty: bool):
@@ -129,6 +151,10 @@ class EditorWindow(Adw.ApplicationWindow):
     def on_save_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the save button."""
         self.get_application().save_project()
+
+    def on_project_saved(self):
+        """Displays a toast notification when the project is saved."""
+        self.toast_overlay.add_toast(Adw.Toast.new("Project Saved"))
 
     def on_error(self, title: str, message: str):
         """Displays an error dialog to the user."""
@@ -149,7 +175,8 @@ class EditorWindow(Adw.ApplicationWindow):
             dialog = Adw.MessageDialog(
                 transient_for=self,
                 heading="Unreal Engine Path Not Set",
-                body="Please set the path to the Unreal Engine editor in the preferences.")
+                body="Please set the path to the Unreal Engine editor in the preferences.",
+            )
             dialog.add_response("ok", "OK")
             dialog.connect("response", lambda d, r: d.close())
             dialog.present()
@@ -161,7 +188,8 @@ class EditorWindow(Adw.ApplicationWindow):
             dialog = Adw.MessageDialog(
                 transient_for=self,
                 heading="Unreal Engine Not Found",
-                body=f"Could not find the Unreal Engine editor at the specified path: {ue_path}")
+                body=f"Could not find the Unreal Engine editor at the specified path: {ue_path}",
+            )
             dialog.add_response("ok", "OK")
             dialog.connect("response", lambda d, r: d.close())
             dialog.present()
@@ -169,7 +197,8 @@ class EditorWindow(Adw.ApplicationWindow):
             dialog = Adw.MessageDialog(
                 transient_for=self,
                 heading="Error Launching Engine",
-                body=f"An unexpected error occurred: {e}")
+                body=f"An unexpected error occurred: {e}",
+            )
             dialog.add_response("ok", "OK")
             dialog.connect("response", lambda d, r: d.close())
             dialog.present()
@@ -192,6 +221,7 @@ class AdvEngine(Adw.Application):
     def on_activate(self, app: Adw.Application):
         """Handles the activate signal of the application."""
         from .ui import welcome
+
         self.win = welcome.WelcomeWindow(application=app)
         self.win.present()
         self._setup_actions()
@@ -205,7 +235,13 @@ class AdvEngine(Adw.Application):
 
         play_action = Gio.SimpleAction.new("play", None)
         play_action.connect(
-            "activate", lambda a, p: self.win._on_play_clicked(None) if hasattr(self.win, '_on_play_clicked') else None)
+            "activate",
+            lambda a, p: (
+                self.win._on_play_clicked(None)
+                if hasattr(self.win, "_on_play_clicked")
+                else None
+            ),
+        )
         self.add_action(play_action)
         self.set_accels_for_action("app.play", ["<Primary>p"])
 
@@ -229,16 +265,12 @@ class AdvEngine(Adw.Application):
         open_project_action.connect("activate", self.on_open_project_activate)
         self.add_action(open_project_action)
 
-        export_localization_action = Gio.SimpleAction.new(
-            "export-localization", None)
-        export_localization_action.connect(
-            "activate", self.on_export_localization)
+        export_localization_action = Gio.SimpleAction.new("export-localization", None)
+        export_localization_action.connect("activate", self.on_export_localization)
         self.add_action(export_localization_action)
 
-        import_localization_action = Gio.SimpleAction.new(
-            "import-localization", None)
-        import_localization_action.connect(
-            "activate", self.on_import_localization)
+        import_localization_action = Gio.SimpleAction.new("import-localization", None)
+        import_localization_action.connect("activate", self.on_import_localization)
         self.add_action(import_localization_action)
 
         self.setup_navigation_shortcuts()
@@ -246,17 +278,21 @@ class AdvEngine(Adw.Application):
     def setup_navigation_shortcuts(self):
         """Creates and sets up keyboard shortcuts for navigating between editors."""
         shortcuts = {
-            "1": "scenes_editor", "2": "logic_editor", "3": "interaction_editor",
-            "4": "dialogue_editor", "6": "assets_editor",
-            "7": "global_state_editor", "8": "character_manager", "9": "quest_editor",
+            "1": "scenes_editor",
+            "2": "logic_editor",
+            "3": "interaction_editor",
+            "4": "dialogue_editor",
+            "6": "assets_editor",
+            "7": "global_state_editor",
+            "8": "character_manager",
+            "9": "quest_editor",
             "0": "db_editor",
         }
         for key, view_name in shortcuts.items():
             action = Gio.SimpleAction(name=f"go-to-{view_name}")
             action.connect("activate", self.on_go_to, view_name)
             self.add_action(action)
-            self.set_accels_for_action(
-                f"app.go-to-{view_name}", [f"<Primary>{key}"])
+            self.set_accels_for_action(f"app.go-to-{view_name}", [f"<Primary>{key}"])
 
     def on_go_to(self, action: Gio.SimpleAction, param: None, view_name: str):
         """Handles the go-to action for navigating between editors."""
@@ -269,63 +305,72 @@ class AdvEngine(Adw.Application):
 
     def on_export_localization(self, action: Gio.SimpleAction, param: None):
         """Handles the export-localization action."""
-        dialog = Gtk.FileChooserNative(
-            title="Export Localization", transient_for=self.win, action=Gtk.FileChooserAction.SAVE)
-        dialog.connect("response", lambda d,
-                       r: self.on_export_localization_response(d, r))
-        dialog.show()
+        dialog = Adw.FileDialog.new()
+        dialog.set_title("Export Localization")
+        dialog.save(self.win, None, self.on_export_localization_response)
 
-    def on_export_localization_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+    def on_export_localization_response(self, dialog, result):
         """Handles the response from the export localization file chooser."""
-        if response == Gtk.ResponseType.ACCEPT:
-            file = dialog.get_file()
+        try:
+            file = dialog.save_finish(result)
             self.project_manager.export_localization(file.get_path())
+        except Exception as e:
+            logging.error(f"Error exporting localization: {e}")
 
     def on_import_localization(self, action: Gio.SimpleAction, param: None):
         """Handles the import-localization action."""
-        dialog = Gtk.FileChooserNative(
-            title="Import Localization", transient_for=self.win, action=Gtk.FileChooserAction.OPEN)
-        dialog.connect("response", lambda d,
-                       r: self.on_import_localization_response(d, r))
-        dialog.show()
+        dialog = Adw.FileDialog.new()
+        dialog.set_title("Import Localization")
+        dialog.open(self.win, None, self.on_import_localization_response)
 
-    def on_import_localization_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+    def on_import_localization_response(self, dialog, result):
         """Handles the response from the import localization file chooser."""
-        if response == Gtk.ResponseType.ACCEPT:
-            file = dialog.get_file()
+        try:
+            file = dialog.open_finish(result)
             self.project_manager.import_localization(file.get_path())
+        except Exception as e:
+            logging.error(f"Error importing localization: {e}")
 
     def on_open_project_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the open-project action."""
-        dialog = Gtk.FileChooserNative(
-            title="Open Project", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
-        dialog.connect("response", lambda d,
-                       r: self.on_open_project_response(d, r))
-        dialog.show()
+        dialog = Adw.FileDialog.new()
+        dialog.set_title("Open Project")
+        dialog.select_folder(self.win, None, self.on_open_project_response)
 
-    def on_open_project_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+    def on_open_project_response(self, dialog, result):
         """Handles the response from the open project file chooser."""
-        if response == Gtk.ResponseType.ACCEPT:
-            folder = dialog.get_file().get_path()
-            self.load_project(folder)
+        try:
+            folder = dialog.select_folder_finish(result)
+            self.load_project(folder.get_path())
+        except Exception as e:
+            logging.error(f"Error opening project: {e}")
 
     def on_preferences_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the preferences action."""
         from .ui import preferences
+
         dialog = preferences.PreferencesDialog(
-            parent=self.win, project_manager=self.project_manager, settings_manager=self.settings_manager)
+            parent=self.win,
+            project_manager=self.project_manager,
+            settings_manager=self.settings_manager,
+        )
         dialog.present()
 
     def on_shortcuts_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the shortcuts action."""
         from .ui import shortcuts
+
         dialog = shortcuts.ShortcutsDialog(transient_for=self.win)
         dialog.present()
 
     def on_about_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the about action."""
         dialog = Adw.AboutWindow(
-            transient_for=self.win, application_name="AdvEngine", developer_name="Carey McLelland", version="0.1.0")
+            transient_for=self.win,
+            application_name="AdvEngine",
+            developer_name="Carey McLelland",
+            version="0.1.0",
+        )
         dialog.present()
 
     def save_project(self):
@@ -342,8 +387,7 @@ class AdvEngine(Adw.Application):
             self.project_manager = ProjectManager(project_path)
             self.project_manager.load_project()
         self.settings_manager.add_recent_project(project_path)
-        new_win = EditorWindow(
-            application=self, project_manager=self.project_manager)
+        new_win = EditorWindow(application=self, project_manager=self.project_manager)
         new_win.present()
         if self.win:
             self.win.close()
@@ -371,32 +415,37 @@ class AdvEngine(Adw.Application):
                     error_dialog.present()
                     return
 
-                file_dialog = Gtk.FileChooserNative(
-                    title="Select Project Location", transient_for=self.win, action=Gtk.FileChooserAction.SELECT_FOLDER)
-                file_dialog.connect(
-                    "response", lambda fd, resp: self.on_new_project_folder_selected(fd, resp, name, template))
-                file_dialog.show()
+                file_dialog = Adw.FileDialog.new()
+                file_dialog.set_title("Select Project Location")
+                file_dialog.select_folder(
+                    self.win, None, self.on_new_project_folder_selected, name, template
+                )
 
         dialog.connect("response", on_response)
-        dialog.present(self.win)
+        dialog.present()
 
-    def on_new_project_folder_selected(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType, name: str, template: str):
+    def on_new_project_folder_selected(self, dialog, result, name, template):
         """Handles the response from the new project folder chooser."""
-        if response == Gtk.ResponseType.ACCEPT:
-            folder = dialog.get_file().get_path()
-            project_path = os.path.join(folder, name)
+        try:
+            folder = dialog.select_folder_finish(result)
+            project_path = os.path.join(folder.get_path(), name)
             project_manager, error = ProjectManager.create_project(
-                project_path, template)
+                project_path, template
+            )
             if project_manager:
                 self.load_project(project_path, project_manager=project_manager)
             else:
-                print(f"Error: {error}")
+                logging.error(f"Error creating project: {error}")
+        except Exception as e:
+            logging.error(f"Error creating project: {e}")
 
 
 def main(version="0.1.0"):
     """The main entry point of the application."""
-    app = AdvEngine(application_id="com.github.mclellac.AdvEngine",
-                    flags=Gio.ApplicationFlags.FLAGS_NONE)
+    app = AdvEngine(
+        application_id="com.github.mclellac.AdvEngine",
+        flags=Gio.ApplicationFlags.FLAGS_NONE,
+    )
     return app.run(sys.argv)
 
 

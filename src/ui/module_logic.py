@@ -1,20 +1,27 @@
 """The logic editor for the AdvEngine application."""
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf, GLib
 import json
 import os
 import re
-from ..core.data_schemas import LogicNode, DialogueNode, ConditionNode, ActionNode, LogicGraph
+from ..core.data_schemas import (
+    LogicNode,
+    DialogueNode,
+    ConditionNode,
+    ActionNode,
+    LogicGraph,
+)
 from ..core.ue_exporter import get_command_definitions
 
 
 def pascal_to_snake(name):
     """Converts a PascalCase string to snake_case."""
-    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+    name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
 class MiniMap(Gtk.DrawingArea):
@@ -48,22 +55,30 @@ class MiniMap(Gtk.DrawingArea):
             return
 
         scale = min(width / graph_width, height / graph_height) * 0.9
-        offset_x = (width - (graph_width * scale)) / \
-            2 - (min_x * scale)
-        offset_y = (height - (graph_height * scale)) / \
-            2 - (min_y * scale)
+        offset_x = (width - (graph_width * scale)) / 2 - (min_x * scale)
+        offset_y = (height - (graph_height * scale)) / 2 - (min_y * scale)
 
         for node in active_graph.nodes:
             cr.set_source_rgb(0.5, 0.5, 0.5)
-            cr.rectangle(node.x * scale + offset_x, node.y * scale +
-                         offset_y, node.width * scale, node.height * scale)
+            cr.rectangle(
+                node.x * scale + offset_x,
+                node.y * scale + offset_y,
+                node.width * scale,
+                node.height * scale,
+            )
             cr.fill()
 
 
 class DynamicNodeEditor(Adw.Bin):
     """A dynamic editor for logic nodes."""
 
-    def __init__(self, project_manager=None, settings_manager=None, on_update_callback=None, **kwargs):
+    def __init__(
+        self,
+        project_manager=None,
+        settings_manager=None,
+        on_update_callback=None,
+        **kwargs,
+    ):
         """Initializes a new DynamicNodeEditor instance."""
         print("DEBUG: DynamicNodeEditor.__init__")
         super().__init__(**kwargs)
@@ -74,8 +89,7 @@ class DynamicNodeEditor(Adw.Bin):
         self.main_widgets = {}
         self.param_widgets = {}
 
-        self.container_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_child(self.container_box)
 
         self.main_group = None
@@ -111,19 +125,33 @@ class DynamicNodeEditor(Adw.Bin):
         self.main_group.set_visible(True)
 
         if isinstance(self.node, DialogueNode):
-            self.add_entry(self.main_group, "character_id",
-                           "Character ID", self.node.character_id)
-            self.add_entry(self.main_group, "dialogue_text",
-                           "Dialogue Text", self.node.dialogue_text)
+            self.add_entry(
+                self.main_group, "character_id", "Character ID", self.node.character_id
+            )
+            self.add_entry(
+                self.main_group,
+                "dialogue_text",
+                "Dialogue Text",
+                self.node.dialogue_text,
+            )
         elif isinstance(self.node, (ConditionNode, ActionNode)):
             defs = get_command_definitions()
-            command_key = "conditions" if isinstance(
-                self.node, ConditionNode) else "actions"
-            command_type_key = "condition_type" if isinstance(
-                self.node, ConditionNode) else "action_command"
+            command_key = (
+                "conditions" if isinstance(self.node, ConditionNode) else "actions"
+            )
+            command_type_key = (
+                "condition_type"
+                if isinstance(self.node, ConditionNode)
+                else "action_command"
+            )
             command_types = list(defs[command_key].keys())
-            self.add_dropdown(self.main_group, command_type_key, "Type",
-                              command_types, getattr(self.node, command_type_key))
+            self.add_dropdown(
+                self.main_group,
+                command_type_key,
+                "Type",
+                command_types,
+                getattr(self.node, command_type_key),
+            )
             self.update_params_ui()
 
     def add_entry(self, group, key, title, default_value):
@@ -158,19 +186,25 @@ class DynamicNodeEditor(Adw.Bin):
             return
 
         self.params_group.set_visible(True)
-        command_key = "conditions" if isinstance(
-            self.node, ConditionNode) else "actions"
-        command_type_key = "condition_type" if isinstance(
-            self.node, ConditionNode) else "action_command"
-        selected_command = self.main_widgets[command_type_key].get_selected_item(
-        ).get_string()
+        command_key = (
+            "conditions" if isinstance(self.node, ConditionNode) else "actions"
+        )
+        command_type_key = (
+            "condition_type"
+            if isinstance(self.node, ConditionNode)
+            else "action_command"
+        )
+        selected_command = (
+            self.main_widgets[command_type_key].get_selected_item().get_string()
+        )
 
         if selected_command:
             defs = get_command_definitions()[command_key][selected_command]
             self.params_group.set_title(f"Parameters for {selected_command}")
             for param, p_type in defs["params"].items():
                 self.add_param_widget(
-                    param, p_type, getattr(self.node, pascal_to_snake(param), ""))
+                    param, p_type, getattr(self.node, pascal_to_snake(param), "")
+                )
 
     def add_param_widget(self, key, param_type, default_value):
         """Adds a parameter widget to the UI."""
@@ -187,7 +221,9 @@ class DynamicNodeEditor(Adw.Bin):
             widget.set_active(bool(default_value))
             widget.connect("toggled", self.on_value_changed)
         elif param_type == "int":
-            widget = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=999999, step_increment=1))
+            widget = Gtk.SpinButton(
+                adjustment=Gtk.Adjustment(lower=0, upper=999999, step_increment=1)
+            )
             widget.set_value(int(default_value or 0))
             widget.connect("value-changed", self.on_value_changed)
         else:
@@ -218,7 +254,9 @@ class DynamicNodeEditor(Adw.Bin):
         print(f"DEBUG: DynamicNodeEditor.on_value_changed: {values}")
         for key, value in values.items():
             if hasattr(self.node, key):
-                field_type = getattr(self.node.__class__, '__annotations__', {}).get(key, 'any')
+                field_type = getattr(self.node.__class__, "__annotations__", {}).get(
+                    key, "any"
+                )
 
                 coerced_value = value
                 if field_type == int:
@@ -227,7 +265,7 @@ class DynamicNodeEditor(Adw.Bin):
                     except (ValueError, TypeError):
                         coerced_value = 0
                 elif field_type == bool:
-                    coerced_value = str(value).lower() in ['true', '1', 'yes']
+                    coerced_value = str(value).lower() in ["true", "1", "yes"]
                 elif field_type == str:
                     coerced_value = str(value)
 
@@ -268,6 +306,7 @@ class LogicEditor(Adw.Bin):
     tool palette for adding new nodes, and a properties panel for editing
     the selected node.
     """
+
     EDITOR_NAME = "Logic"
     VIEW_NAME = "logic_editor"
     ORDER = 1
@@ -275,8 +314,8 @@ class LogicEditor(Adw.Bin):
     def __init__(self, **kwargs):
         """Initializes a new LogicEditor instance."""
         print("DEBUG: LogicEditor.__init__")
-        project_manager = kwargs.pop('project_manager')
-        settings_manager = kwargs.pop('settings_manager')
+        project_manager = kwargs.pop("project_manager")
+        settings_manager = kwargs.pop("settings_manager")
 
         super().__init__(**kwargs)
         self.project_manager = project_manager
@@ -326,7 +365,7 @@ class LogicEditor(Adw.Bin):
         status_page = Adw.StatusPage(
             title="Logic Editor",
             description="This editor scripts the consequences of player actions. Use Action Nodes to perform commands, Condition Nodes to check game state, and Dialogue Nodes for simple character barks.",
-            icon_name="dialog-information-symbolic"
+            icon_name="dialog-information-symbolic",
         )
         self.canvas_stack.add_named(status_page, "placeholder")
 
@@ -349,12 +388,14 @@ class LogicEditor(Adw.Bin):
         node_types = [
             ("Add Dialogue Node", "Add Dialogue", DialogueNode, "Dialogue"),
             ("Add Condition Node", "Add Condition", ConditionNode, "Condition"),
-            ("Add Action Node", "Add Action", ActionNode, "Action")
+            ("Add Action Node", "Add Action", ActionNode, "Action"),
         ]
         for title, label, node_class, node_type in node_types:
             button = Gtk.Button(label=label)
             button.connect(
-                "clicked", lambda _, nc=node_class, nt=node_type: self.on_add_node(nc, nt))
+                "clicked",
+                lambda _, nc=node_class, nt=node_type: self.on_add_node(nc, nt),
+            )
             row = Adw.ActionRow(title=title, activatable_widget=button)
             row.add_suffix(button)
             palette.add(row)
@@ -363,7 +404,10 @@ class LogicEditor(Adw.Bin):
         sidebar.append(self.minimap)
 
         self.props_panel = DynamicNodeEditor(
-            project_manager=self.project_manager, settings_manager=self.settings_manager, on_update_callback=self.update_node_and_redraw)
+            project_manager=self.project_manager,
+            settings_manager=self.settings_manager,
+            on_update_callback=self.update_node_and_redraw,
+        )
         sidebar.append(self.props_panel)
 
         return sidebar
@@ -431,12 +475,15 @@ class LogicEditor(Adw.Bin):
                 self.draw_node(cr, node)
                 for output_node_id in node.outputs:
                     output_node = next(
-                        (n for n in self.active_graph.nodes if n.id == output_node_id), None)
+                        (n for n in self.active_graph.nodes if n.id == output_node_id),
+                        None,
+                    )
                     if output_node:
                         self.draw_connection(cr, node, output_node)
             if self.connecting_from_node:
                 start_x, start_y = self.get_connector_pos(
-                    self.connecting_from_node, "out")
+                    self.connecting_from_node, "out"
+                )
                 cr.set_source_rgb(0.8, 0.8, 0.2)
                 cr.move_to(start_x, start_y)
                 cr.line_to(self.connecting_line_x, self.connecting_line_y)
@@ -444,8 +491,7 @@ class LogicEditor(Adw.Bin):
             if self.drag_selection_rect:
                 cr.set_source_rgba(0.2, 0.5, 1.0, 0.3)
                 x1, y1, x2, y2 = self.drag_selection_rect
-                cr.rectangle(min(x1, x2), min(y1, y2),
-                             abs(x1 - x2), abs(y1 - y2))
+                cr.rectangle(min(x1, x2), min(y1, y2), abs(x1 - x2), abs(y1 - y2))
                 cr.fill()
 
     def draw_node(self, cr, node):
@@ -468,8 +514,7 @@ class LogicEditor(Adw.Bin):
         if node in self.selected_nodes:
             cr.set_source_rgb(1.0, 1.0, 0.0)
             cr.set_line_width(3)
-            cr.rectangle(node.x - 2, node.y - 2,
-                         node.width + 4, node.height + 4)
+            cr.rectangle(node.x - 2, node.y - 2, node.width + 4, node.height + 4)
             cr.stroke()
 
         layout = PangoCairo.create_layout(cr)
@@ -493,7 +538,9 @@ class LogicEditor(Adw.Bin):
         """Updates the body text of a node."""
         body_text = ""
         if isinstance(node, DialogueNode):
-            body_text = f"<b>Char:</b> {node.character_id}\n<i>\"{node.dialogue_text}\"</i>"
+            body_text = (
+                f'<b>Char:</b> {node.character_id}\n<i>"{node.dialogue_text}"</i>'
+            )
         elif isinstance(node, ConditionNode):
             body_text = f"<b>IF</b> {node.condition_type}\n"
             if node.condition_type == "VARIABLE_EQUALS":
@@ -503,13 +550,13 @@ class LogicEditor(Adw.Bin):
             elif node.condition_type == "ATTRIBUTE_CHECK":
                 body_text += f"  {node.attribute_id} {node.comparison} {node.value}"
             else:
-                 body_text += "<i>(Condition details not yet formatted)</i>"
+                body_text += "<i>(Condition details not yet formatted)</i>"
 
         elif isinstance(node, ActionNode):
             body_text = f"<b>DO</b> {node.action_command}\n"
-            defs = get_command_definitions()['actions']
+            defs = get_command_definitions()["actions"]
             if node.action_command in defs:
-                params = defs[node.action_command]['params']
+                params = defs[node.action_command]["params"]
                 param_strings = []
                 for param, p_type in params.items():
                     param_snake_case = pascal_to_snake(param)
@@ -534,8 +581,7 @@ class LogicEditor(Adw.Bin):
         cr.rectangle(node.x + node.width - 5, connector_y - 5, 10, 10)
         cr.fill()
         cr.set_source_rgb(0.5, 0.5, 0.5)
-        cr.rectangle(node.x + node.width - 10,
-                     node.y + node.height - 10, 10, 10)
+        cr.rectangle(node.x + node.width - 10, node.y + node.height - 10, 10, 10)
         cr.fill()
 
     def draw_connection(self, cr, from_node, to_node):
@@ -560,10 +606,17 @@ class LogicEditor(Adw.Bin):
 
             node_width = self.settings_manager.get("default_node_width", 240)
             node_height = self.settings_manager.get("default_node_height", 160)
-            new_node = node_class(id=new_id, node_type=node_type, x=50, y=50, width=node_width, height=node_height)
+            new_node = node_class(
+                id=new_id,
+                node_type=node_type,
+                x=50,
+                y=50,
+                width=node_width,
+                height=node_height,
+            )
             self.active_graph.nodes.append(new_node)
             self.canvas.queue_draw()
-            if hasattr(self, 'minimap'):
+            if hasattr(self, "minimap"):
                 self.minimap.queue_draw()
             self.project_manager.set_dirty(True)
 
@@ -582,8 +635,7 @@ class LogicEditor(Adw.Bin):
             if node_clicked not in self.selected_nodes:
                 self.selected_nodes = [node_clicked]
                 self.props_panel.set_node(node_clicked)
-            self.drag_offsets = {
-                n.id: (x - n.x, y - n.y) for n in self.selected_nodes}
+            self.drag_offsets = {n.id: (x - n.x, y - n.y) for n in self.selected_nodes}
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
             self.drag_selection_rect = [x, y, x, y]
@@ -626,7 +678,12 @@ class LogicEditor(Adw.Bin):
             rect.height = abs(y1 - y2)
             for node in self.active_graph.nodes:
                 node_rect = Gdk.Rectangle()
-                node_rect.x, node_rect.y, node_rect.width, node_rect.height = node.x, node.y, node.width, node.height
+                node_rect.x, node_rect.y, node_rect.width, node_rect.height = (
+                    node.x,
+                    node.y,
+                    node.width,
+                    node.height,
+                )
                 if rect.intersect(node_rect)[0]:
                     self.selected_nodes.append(node)
             self.drag_selection_rect = None
@@ -647,7 +704,8 @@ class LogicEditor(Adw.Bin):
         else:
             self.selected_nodes = []
         self.props_panel.set_node(
-            self.selected_nodes[0] if len(self.selected_nodes) == 1 else None)
+            self.selected_nodes[0] if len(self.selected_nodes) == 1 else None
+        )
         self.canvas.queue_draw()
 
     def on_key_pressed(self, controller, keyval, keycode, state):
@@ -691,7 +749,11 @@ class LogicEditor(Adw.Bin):
         if self.connecting_from_node:
             for node in self.active_graph.nodes:
                 in_x, in_y = self.get_connector_pos(node, "in")
-                if abs(self.connecting_line_x - in_x) < 10 and abs(self.connecting_line_y - in_y) < 10 and node != self.connecting_from_node:
+                if (
+                    abs(self.connecting_line_x - in_x) < 10
+                    and abs(self.connecting_line_y - in_y) < 10
+                    and node != self.connecting_from_node
+                ):
                     self.connecting_from_node.outputs.append(node.id)
                     node.inputs.append(self.connecting_from_node.id)
                     self.project_manager.set_dirty(True)
@@ -703,8 +765,12 @@ class LogicEditor(Adw.Bin):
         """Handles the drag-begin signal from the resize drag gesture."""
         print("DEBUG: LogicEditor.on_resize_drag_begin")
         for node in reversed(self.active_graph.nodes):
-            if x >= node.x + node.width - 10 and x <= node.x + node.width and \
-               y >= node.y + node.height - 10 and y <= node.y + node.height:
+            if (
+                x >= node.x + node.width - 10
+                and x <= node.x + node.width
+                and y >= node.y + node.height - 10
+                and y <= node.y + node.height
+            ):
                 self.resizing_node = node
                 self.initial_node_width = node.width
                 self.initial_node_height = node.height
@@ -716,10 +782,10 @@ class LogicEditor(Adw.Bin):
         if self.resizing_node:
             success, offset_x, offset_y = gesture.get_offset()
             if success:
-                self.resizing_node.width = max(
-                    150, self.initial_node_width + offset_x)
+                self.resizing_node.width = max(150, self.initial_node_width + offset_x)
                 self.resizing_node.height = max(
-                    100, self.initial_node_height + offset_y)
+                    100, self.initial_node_height + offset_y
+                )
                 self.canvas.queue_draw()
 
     def on_resize_drag_end(self, gesture, x, y):
@@ -733,7 +799,12 @@ class LogicEditor(Adw.Bin):
         """Gets the node at the given coordinates."""
         if self.active_graph:
             for node in reversed(self.active_graph.nodes):
-                if x >= node.x and x <= node.x + node.width and y >= node.y and y <= node.y + node.height:
+                if (
+                    x >= node.x
+                    and x <= node.x + node.width
+                    and y >= node.y
+                    and y <= node.y + node.height
+                ):
                     return node
         return None
 
@@ -746,6 +817,5 @@ class LogicEditor(Adw.Bin):
             self.node_context_menu.set_pointing_to(Gdk.Rectangle(x, y, 1, 1))
             self.node_context_menu.popup()
         else:
-            self.canvas_context_menu.set_pointing_to(
-                Gdk.Rectangle(x, y, 1, 1))
+            self.canvas_context_menu.set_pointing_to(Gdk.Rectangle(x, y, 1, 1))
             self.canvas_context_menu.popup()

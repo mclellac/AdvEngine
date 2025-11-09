@@ -7,6 +7,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GObject
 from ..core.project_manager import ProjectManager
 
+
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "new_project_dialog.ui"))
 class NewProjectDialog(Adw.AlertDialog):
     __gtype_name__ = "NewProjectDialog"

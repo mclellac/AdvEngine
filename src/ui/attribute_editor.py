@@ -40,8 +40,8 @@ class AttributeEditor(Gtk.Box):
         Args:
             **kwargs: Additional keyword arguments.
         """
-        project_manager = kwargs.pop('project_manager')
-        settings_manager = kwargs.pop('settings_manager')
+        project_manager = kwargs.pop("project_manager")
+        settings_manager = kwargs.pop("settings_manager")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -201,9 +201,7 @@ class AttributeEditor(Gtk.Box):
         search_text = search_entry.get_text().lower()
         if not search_text:
             return True
-        return (
-            search_text in item.id.lower() or search_text in item.name.lower()
-        )
+        return search_text in item.id.lower() or search_text in item.name.lower()
 
     def _update_visibility(self, *args):
         """Switches the view based on whether there are items."""
@@ -269,7 +267,9 @@ class AttributeEditor(Gtk.Box):
             attr_gobject (AttributeGObject): The attribute to delete.
         """
         if response == "delete":
-            if self.project_manager.remove_data_item("attributes", attr_gobject.attribute):
+            if self.project_manager.remove_data_item(
+                "attributes", attr_gobject.attribute
+            ):
                 is_found, pos = self.model.find(attr_gobject)
                 if is_found:
                     self.model.remove(pos)

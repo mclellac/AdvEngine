@@ -2,6 +2,7 @@
 
 import gi
 import os
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
@@ -13,7 +14,8 @@ from ..core.project_manager import ProjectManager
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "verb_editor.ui"))
 class VerbEditor(Gtk.Box):
     """A widget for editing verbs in a project."""
-    __gtype_name__ = 'VerbEditor'
+
+    __gtype_name__ = "VerbEditor"
 
     add_button = Gtk.Template.Child()
     delete_button = Gtk.Template.Child()
@@ -71,7 +73,7 @@ class VerbEditor(Gtk.Box):
         """Creates and appends all columns to the ColumnView."""
         columns_def = {
             "id": {"title": "ID", "expand": True},
-            "name": {"title": "Name", "expand": True}
+            "name": {"title": "Name", "expand": True},
         }
 
         for col_id, col_info in columns_def.items():
@@ -79,8 +81,7 @@ class VerbEditor(Gtk.Box):
             factory.connect("setup", self._setup_cell)
             factory.connect("bind", self._bind_cell, col_id)
             factory.connect("unbind", self._unbind_cell)
-            column = Gtk.ColumnViewColumn(
-                title=col_info["title"], factory=factory)
+            column = Gtk.ColumnViewColumn(title=col_info["title"], factory=factory)
             column.set_expand(col_info["expand"])
             column_view.append_column(column)
 
@@ -94,9 +95,14 @@ class VerbEditor(Gtk.Box):
         verb_gobject = list_item.get_item()
         widget = list_item.get_child()
         list_item.binding = widget.bind_property(
-            "text", verb_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+            "text",
+            verb_gobject,
+            column_id,
+            GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE,
+        )
         list_item.handler_id = widget.connect(
-            "changed", lambda w: self.project_manager.set_dirty(True))
+            "changed", lambda w: self.project_manager.set_dirty(True)
+        )
 
     def _unbind_cell(self, factory, list_item):
         """Unbinds a cell from the data model."""
@@ -116,8 +122,7 @@ class VerbEditor(Gtk.Box):
         search_text = search_entry.get_text().lower()
         if not search_text:
             return True
-        return (search_text in item.id.lower() or
-                search_text in item.name.lower())
+        return search_text in item.id.lower() or search_text in item.name.lower()
 
     def _update_visibility(self, *args):
         """Switches the view based on whether there are items."""
@@ -157,12 +162,11 @@ class VerbEditor(Gtk.Box):
             transient_for=self.get_root(),
             modal=True,
             heading="Delete Verb?",
-            body=f"Are you sure you want to delete '{selected_item.name}'?"
+            body=f"Are you sure you want to delete '{selected_item.name}'?",
         )
         dialog.add_response("cancel", "_Cancel")
         dialog.add_response("delete", "_Delete")
-        dialog.set_response_appearance(
-            "delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_delete_dialog_response, selected_item)
         dialog.present()
 

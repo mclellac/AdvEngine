@@ -1,6 +1,7 @@
 """A widget to display search results."""
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GObject, Gio, Adw
@@ -23,25 +24,21 @@ class SearchResultsView(Adw.Bin):
 
         factory_type = Gtk.SignalListItemFactory()
         factory_type.connect("setup", self._on_setup_label)
-        factory_type.connect(
-            "bind", lambda f, i: self._on_bind_label(f, i, "type"))
+        factory_type.connect("bind", lambda f, i: self._on_bind_label(f, i, "type"))
 
         factory_name = Gtk.SignalListItemFactory()
         factory_name.connect("setup", self._on_setup_label)
-        factory_name.connect(
-            "bind", lambda f, i: self._on_bind_label(f, i, "name"))
+        factory_name.connect("bind", lambda f, i: self._on_bind_label(f, i, "name"))
 
         factory_id = Gtk.SignalListItemFactory()
         factory_id.connect("setup", self._on_setup_label)
-        factory_id.connect(
-            "bind", lambda f, i: self._on_bind_label(f, i, "id"))
+        factory_id.connect("bind", lambda f, i: self._on_bind_label(f, i, "id"))
 
         col_type = Gtk.ColumnViewColumn(title="Type", factory=factory_type)
         col_name = Gtk.ColumnViewColumn(title="Name", factory=factory_name)
         col_id = Gtk.ColumnViewColumn(title="ID", factory=factory_id)
 
-        self.column_view = Gtk.ColumnView(
-            model=Gtk.NoSelection(model=self.model))
+        self.column_view = Gtk.ColumnView(model=Gtk.NoSelection(model=self.model))
         self.column_view.append_column(col_type)
         self.column_view.append_column(col_name)
         self.column_view.append_column(col_id)
@@ -72,7 +69,5 @@ class SearchResultsView(Adw.Bin):
         self.model.remove_all()
         for result in results:
             self.model.append(
-                SearchResultGObject(
-                    id=result.id, name=result.name, type=result.type
-                )
+                SearchResultGObject(id=result.id, name=result.name, type=result.type)
             )
