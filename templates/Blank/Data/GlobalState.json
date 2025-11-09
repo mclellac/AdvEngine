@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "score",
+    "name": "Score",
+    "type": "int",
+    "initial_value": 0,
+    "category": "Default"
+  }
+]

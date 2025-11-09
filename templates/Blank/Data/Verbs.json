@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "walk_to",
+    "name": "Walk To"
+  },
+  {
+    "id": "look_at",
+    "name": "Look At"
+  },
+  {
+    "id": "take",
+    "name": "Take"
+  },
+  {
+    "id": "use",
+    "name": "Use"
+  },
+  {
+    "id": "talk_to",
+    "name": "Talk To"
+  },
+  {
+    "id": "open",
+    "name": "Open"
+  },
+  {
+    "id": "close",
+    "name": "Close"
+  },
+  {
+    "id": "push",
+    "name": "Push"
+  },
+  {
+    "id": "pull",
+    "name": "Pull"
+  }
+]

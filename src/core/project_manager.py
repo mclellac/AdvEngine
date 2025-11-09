@@ -536,107 +536,29 @@ class ProjectManager:
             will be None.
         """
         try:
-            if template and template != "Blank":
-                local_path = os.path.join(
-                    os.path.dirname(__file__), "..", "..", "templates", template
-                )
-                installed_path = os.path.join(
-                    sys.prefix, "share", "advengine", "templates", template
-                )
-                template_dir = (
-                    installed_path if os.path.exists(installed_path) else local_path
-                )
+            if not template:
+                return None, "A template must be specified."
 
-                if template_dir:
-                    import shutil
+            local_path = os.path.join(
+                os.path.dirname(__file__), "..", "..", "templates", template
+            )
+            installed_path = os.path.join(
+                sys.prefix, "share", "advengine", "templates", template
+            )
+            template_dir = (
+                installed_path if os.path.exists(installed_path) else local_path
+            )
 
-                    shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
-                else:
-                    return None, f"Template '{template}' not found."
-            else:
-                for subdir in ["Data", "Logic", "UI"]:
-                    os.makedirs(os.path.join(project_path, subdir), exist_ok=True)
+            if not os.path.exists(template_dir):
+                return None, f"Template '{template}' not found."
 
-                csv_files = {
-                    "ItemData.csv": [
-                        "id",
-                        "name",
-                        "description",
-                        "type",
-                        "buy_price",
-                        "sell_price",
-                    ],
-                    "Attributes.csv": ["id", "name", "initial_value", "max_value"],
-                    "CharacterData.csv": [
-                        "id",
-                        "display_name",
-                        "dialogue_start_id",
-                        "is_merchant",
-                        "shop_id",
-                        "portrait_asset_id",
-                        "sprite_sheet_asset_id",
-                        "animations",
-                    ],
-                }
-                for filename, headers in csv_files.items():
-                    with open(
-                        os.path.join(project_path, "Data", filename), "w", newline=""
-                    ) as f:
-                        csv.writer(f).writerow(headers)
-
-                with open(
-                    os.path.join(project_path, "Data", "CharacterData.csv"),
-                    "a",
-                    newline="",
-                ) as f:
-                    csv.writer(f).writerow(
-                        ["player", "Player", "", "False", "", "", "", "{}"]
-                    )
-
-                default_verbs = [
-                    {"id": f, "name": f.replace("_", " ").title()}
-                    for f in [
-                        "walk_to",
-                        "look_at",
-                        "take",
-                        "use",
-                        "talk_to",
-                        "open",
-                        "close",
-                        "push",
-                        "pull",
-                    ]
-                ]
-                default_global_vars = [
-                    {
-                        "id": "score",
-                        "name": "Score",
-                        "type": "int",
-                        "initial_value": 0,
-                        "category": "Default",
-                    }
-                ]
-                json_files = {
-                    os.path.join("Data", "Assets.json"): [],
-                    os.path.join("Data", "Audio.json"): [],
-                    os.path.join("Data", "GlobalState.json"): default_global_vars,
-                    os.path.join("Data", "Verbs.json"): default_verbs,
-                    os.path.join("Data", "Fonts.json"): [],
-                    os.path.join("Logic", "Scenes.json"): [],
-                    os.path.join("Logic", "LogicGraphs.json"): [],
-                    os.path.join("Logic", "DialogueGraphs.json"): [],
-                    os.path.join("Logic", "Interactions.json"): [],
-                    os.path.join("Logic", "Quests.json"): [],
-                    os.path.join("UI", "WindowLayout.json"): [],
-                }
-                for file_path, default_content in json_files.items():
-                    with open(os.path.join(project_path, file_path), "w") as f:
-                        json.dump(default_content, f, indent=2)
+            shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
 
             project_manager = ProjectManager(project_path)
             project_manager.is_new_project = True
             return project_manager, None
         except Exception as e:
+            logging.error(f"Failed to create project from template '{template}': {e}")
             return None, str(e)
 
     def search(self, query: str) -> list[SearchResult]:
