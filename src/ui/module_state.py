@@ -2,6 +2,7 @@
 
 import gi
 import os
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
@@ -13,6 +14,7 @@ from ..core.project_manager import ProjectManager
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_state.ui"))
 class GlobalStateEditor(Gtk.Box):
     """A widget for editing global variables."""
+
     __gtype_name__ = "GlobalStateEditor"
 
     EDITOR_NAME = "Global State"
@@ -78,7 +80,11 @@ class GlobalStateEditor(Gtk.Box):
             "name": {"title": "Name", "expand": True, "type": "text"},
             "category": {"title": "Category", "expand": True, "type": "text"},
             "type": {"title": "Type", "expand": False, "type": "combo"},
-            "initial_value_str": {"title": "Initial Value", "expand": True, "type": "text"}
+            "initial_value_str": {
+                "title": "Initial Value",
+                "expand": True,
+                "type": "text",
+            },
         }
 
         for col_id, col_info in columns_def.items():
@@ -90,8 +96,7 @@ class GlobalStateEditor(Gtk.Box):
                 factory.connect("setup", self._setup_text_cell)
                 factory.connect("bind", self._bind_text_cell, col_id)
             factory.connect("unbind", self._unbind_cell)
-            column = Gtk.ColumnViewColumn(
-                title=col_info["title"], factory=factory)
+            column = Gtk.ColumnViewColumn(title=col_info["title"], factory=factory)
             column.set_expand(col_info["expand"])
             column_view.append_column(column)
 
@@ -106,10 +111,15 @@ class GlobalStateEditor(Gtk.Box):
         widget = list_item.get_child()
         list_item.bindings = [
             widget.bind_property(
-                "text", var_gobject, column_id, GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+                "text",
+                var_gobject,
+                column_id,
+                GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE,
+            )
         ]
         list_item.handler_id = widget.connect(
-            "changed", self._on_value_changed, var_gobject)
+            "changed", self._on_value_changed, var_gobject
+        )
 
     def _setup_type_cell(self, factory, list_item):
         """Sets up a type cell in the column view."""
@@ -132,7 +142,9 @@ class GlobalStateEditor(Gtk.Box):
 
         update_combo_from_gobject()
 
-        handler_id = widget.connect("notify::selected", self._on_type_changed, var_gobject)
+        handler_id = widget.connect(
+            "notify::selected", self._on_type_changed, var_gobject
+        )
         list_item.handler_id = handler_id
 
     def _unbind_cell(self, factory, list_item):
@@ -147,15 +159,13 @@ class GlobalStateEditor(Gtk.Box):
 
     def _on_value_changed(self, widget, var_gobject: GlobalVariableGObject):
         """Handles the value-changed signal from a cell."""
-        self.project_manager.update_global_variable(
-            var_gobject.variable, var_gobject)
+        self.project_manager.update_global_variable(var_gobject.variable, var_gobject)
 
     def _on_type_changed(self, dropdown, pspec, var_gobject: GlobalVariableGObject):
         """Handles the selected signal from the type dropdown."""
         selected_str = dropdown.get_selected_item().get_string()
         var_gobject.set_property("type", selected_str)
-        self.project_manager.update_global_variable(
-            var_gobject.variable, var_gobject)
+        self.project_manager.update_global_variable(var_gobject.variable, var_gobject)
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
@@ -166,9 +176,11 @@ class GlobalStateEditor(Gtk.Box):
         search_text = search_entry.get_text().lower()
         if not search_text:
             return True
-        return (search_text in item.id.lower() or
-                search_text in item.name.lower() or
-                search_text in item.category.lower())
+        return (
+            search_text in item.id.lower()
+            or search_text in item.name.lower()
+            or search_text in item.category.lower()
+        )
 
     def _update_visibility(self, *args):
         """Switches the view based on whether there are items."""
@@ -182,14 +194,18 @@ class GlobalStateEditor(Gtk.Box):
         new_id_base = "new_variable"
         new_id = new_id_base
         count = 1
-        existing_ids = {
-            v.id for v in self.project_manager.data.global_variables}
+        existing_ids = {v.id for v in self.project_manager.data.global_variables}
         while new_id in existing_ids:
             new_id = f"{new_id_base}_{count}"
             count += 1
 
         new_var_data = GlobalVariable(
-            id=new_id, name="New Variable", type="bool", initial_value=False, category="Default")
+            id=new_id,
+            name="New Variable",
+            type="bool",
+            initial_value=False,
+            category="Default",
+        )
         self.project_manager.add_data_item("global_variables", new_var_data)
         gobject = GlobalVariableGObject(new_var_data)
         self.model.append(gobject)
@@ -210,20 +226,20 @@ class GlobalStateEditor(Gtk.Box):
             transient_for=self.get_root(),
             modal=True,
             heading="Delete Variable?",
-            body=f"Are you sure you want to delete '{selected_item.name}'?"
+            body=f"Are you sure you want to delete '{selected_item.name}'?",
         )
         dialog.add_response("cancel", "_Cancel")
         dialog.add_response("delete", "_Delete")
-        dialog.set_response_appearance(
-            "delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.connect("response", self._on_delete_dialog_response,
-                       selected_item)
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect("response", self._on_delete_dialog_response, selected_item)
         dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, var_gobject):
         """Handles the response from the delete confirmation dialog."""
         if response == "delete":
-            if self.project_manager.remove_data_item("global_variables", var_gobject.variable):
+            if self.project_manager.remove_data_item(
+                "global_variables", var_gobject.variable
+            ):
                 is_found, pos = self.model.find(var_gobject)
                 if is_found:
                     self.model.remove(pos)

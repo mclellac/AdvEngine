@@ -3,6 +3,7 @@
 import gi
 import os
 import shutil
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Adw, Gdk
@@ -12,7 +13,8 @@ from ..core.data_schemas import Asset, Animation, StringGObject, AssetGObject
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_assets.ui"))
 class AssetEditor(Gtk.Box):
     """A widget for managing game assets."""
-    __gtype_name__ = 'AssetEditor'
+
+    __gtype_name__ = "AssetEditor"
 
     EDITOR_NAME = "Assets"
     VIEW_NAME = "assets_editor"
@@ -65,7 +67,9 @@ class AssetEditor(Gtk.Box):
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._setup_frame_row)
         factory.connect("bind", self._bind_frame_row)
-        self.frame_list_view.set_model(Gtk.SingleSelection(model=self.animation_frames_model))
+        self.frame_list_view.set_model(
+            Gtk.SingleSelection(model=self.animation_frames_model)
+        )
         self.frame_list_view.set_factory(factory)
 
     def _connect_signals(self):
@@ -95,9 +99,12 @@ class AssetEditor(Gtk.Box):
         asset = asset_gobject.asset
 
         label.set_text(asset.name)
-        if asset.asset_type in ["sprite", "texture"] and os.path.exists(os.path.join(self.project_manager.project_path, asset.file_path)):
-            picture.set_filename(os.path.join(
-                self.project_manager.project_path, asset.file_path))
+        if asset.asset_type in ["sprite", "texture"] and os.path.exists(
+            os.path.join(self.project_manager.project_path, asset.file_path)
+        ):
+            picture.set_filename(
+                os.path.join(self.project_manager.project_path, asset.file_path)
+            )
         else:
             picture.set_filename(None)
 
@@ -113,7 +120,8 @@ class AssetEditor(Gtk.Box):
         row.add_controller(drag_source)
 
         drop_target = Gtk.DropTarget.new(
-            type=StringGObject, actions=Gdk.DragAction.MOVE)
+            type=StringGObject, actions=Gdk.DragAction.MOVE
+        )
         drop_target.connect("drop", self._on_frame_drop)
         row.add_controller(drop_target)
 
@@ -129,9 +137,19 @@ class AssetEditor(Gtk.Box):
         selected_asset_gobject = selection_model.get_selected_item()
         if selected_asset_gobject:
             self.selected_asset = selected_asset_gobject.asset
-            if self.selected_asset.asset_type in ["sprite", "texture"] and os.path.exists(os.path.join(self.project_manager.project_path, self.selected_asset.file_path)):
-                self.preview_image.set_filename(os.path.join(
-                    self.project_manager.project_path, self.selected_asset.file_path))
+            if self.selected_asset.asset_type in [
+                "sprite",
+                "texture",
+            ] and os.path.exists(
+                os.path.join(
+                    self.project_manager.project_path, self.selected_asset.file_path
+                )
+            ):
+                self.preview_image.set_filename(
+                    os.path.join(
+                        self.project_manager.project_path, self.selected_asset.file_path
+                    )
+                )
                 self.animation_editor.set_visible(False)
             elif self.selected_asset.asset_type == "animation":
                 self.animation_editor.set_visible(True)
@@ -170,24 +188,22 @@ class AssetEditor(Gtk.Box):
     def _on_import_asset(self, button):
         """Handles the clicked signal from the import button."""
         print("DEBUG: AssetEditor._on_import_asset")
-        dialog = Gtk.FileChooserNative(
-            title="Import Asset", transient_for=self.get_native(), action=Gtk.FileChooserAction.OPEN)
-        dialog.set_select_multiple(True)
+        dialog = Adw.FileDialog.new()
+        dialog.set_title("Import Asset")
+        dialog.set_modal(True)
 
         file_filter = Gtk.FileFilter()
         file_filter.set_name("Image Files")
         file_filter.add_pixbuf_formats()
-        dialog.add_filter(file_filter)
+        dialog.set_default_filter(file_filter)
 
-        dialog.connect("response", self._on_import_asset_response)
-        dialog.show()
+        dialog.open_multiple(self.get_native(), None, self._on_import_asset_response)
 
-    def _on_import_asset_response(self, dialog, response_id):
+    def _on_import_asset_response(self, dialog, result):
         """Handles the response from the import asset file chooser."""
-        print(f"DEBUG: AssetEditor._on_import_asset_response: {response_id}")
-        if response_id == Gtk.ResponseType.ACCEPT:
-            files = dialog.get_files()
-            try:
+        try:
+            files = dialog.open_multiple_finish(result)
+            if files:
                 if len(files) > 1:
                     self._import_animation(files)
                 else:
@@ -195,29 +211,38 @@ class AssetEditor(Gtk.Box):
 
                 self.project_manager.set_dirty()
                 self.refresh_asset_list()
-            except Exception as e:
-                self._show_error_dialog(f"Error importing asset(s): {e}")
+        except Exception as e:
+            self._show_error_dialog(f"Error importing asset(s): {e}")
 
     def _import_animation(self, files):
         """Imports a sequence of files as an animation."""
         print("DEBUG: AssetEditor._import_animation")
-        asset_name = os.path.basename(files[0].get_path()).split('.')[0]
-        new_anim = Animation(id=f"anim_{len(self.project_manager.data.assets)}",
-                             name=asset_name, asset_type="animation", file_path="", frame_count=len(files), frame_rate=10, frames=[])
+        asset_name = os.path.basename(files[0].get_path()).split(".")[0]
+        new_anim = Animation(
+            id=f"anim_{len(self.project_manager.data.assets)}",
+            name=asset_name,
+            asset_type="animation",
+            file_path="",
+            frame_count=len(files),
+            frame_rate=10,
+            frames=[],
+        )
 
-        anim_dir = os.path.join(
-            self.project_manager.project_path, "Assets", asset_name)
+        anim_dir = os.path.join(self.project_manager.project_path, "Assets", asset_name)
         os.makedirs(anim_dir, exist_ok=True)
 
         for file in files:
             filepath = file.get_path()
             if not self._is_supported_image_file(filepath):
                 self._show_error_dialog(
-                    f"Unsupported file type: {os.path.basename(filepath)}")
+                    f"Unsupported file type: {os.path.basename(filepath)}"
+                )
                 continue
             new_filepath = os.path.join(anim_dir, os.path.basename(filepath))
             shutil.copy(filepath, new_filepath)
-            new_anim.frames.append(os.path.relpath(new_filepath, self.project_manager.project_path))
+            new_anim.frames.append(
+                os.path.relpath(new_filepath, self.project_manager.project_path)
+            )
 
         self.project_manager.data.assets.append(new_anim)
 
@@ -227,7 +252,8 @@ class AssetEditor(Gtk.Box):
         filepath = file.get_path()
         if not self._is_supported_image_file(filepath):
             self._show_error_dialog(
-                f"Unsupported file type: {os.path.basename(filepath)}")
+                f"Unsupported file type: {os.path.basename(filepath)}"
+            )
             return
         asset_name = os.path.basename(filepath)
         asset_type = "sprite"
@@ -238,7 +264,11 @@ class AssetEditor(Gtk.Box):
         shutil.copy(filepath, new_filepath)
 
         new_asset = Asset(
-            id=f"asset_{len(self.project_manager.data.assets)}", name=asset_name, asset_type=asset_type, file_path=os.path.relpath(new_filepath, self.project_manager.project_path))
+            id=f"asset_{len(self.project_manager.data.assets)}",
+            name=asset_name,
+            asset_type=asset_type,
+            file_path=os.path.relpath(new_filepath, self.project_manager.project_path),
+        )
         self.project_manager.data.assets.append(new_asset)
 
     def _on_frame_drag_prepare(self, source, x, y):
@@ -276,7 +306,7 @@ class AssetEditor(Gtk.Box):
 
     def _is_supported_image_file(self, filepath):
         """Checks if a file is a supported image file."""
-        supported_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
+        supported_extensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif"]
         return any(filepath.lower().endswith(ext) for ext in supported_extensions)
 
     def _show_error_dialog(self, message):

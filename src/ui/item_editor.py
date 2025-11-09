@@ -40,8 +40,8 @@ class ItemEditor(Gtk.Box):
         Args:
             **kwargs: Additional keyword arguments.
         """
-        project_manager = kwargs.pop('project_manager')
-        settings_manager = kwargs.pop('settings_manager')
+        project_manager = kwargs.pop("project_manager")
+        settings_manager = kwargs.pop("settings_manager")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager

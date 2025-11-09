@@ -1,9 +1,11 @@
 """A factory for creating GObject wrappers for dataclasses."""
 
 import gi
-gi.require_version('Gtk', '4.0')
+
+gi.require_version("Gtk", "4.0")
 from gi.repository import GObject
 import json
+
 
 def create_gobject_wrapper(dataclass_type):
     """Dynamically creates a GObject wrapper for a given dataclass."""
@@ -27,7 +29,7 @@ def create_gobject_wrapper(dataclass_type):
         GObject.Object.__init__(self)
         self.instance = instance
         for prop in self.list_properties():
-            prop_name = prop.name.replace('-', '_')
+            prop_name = prop.name.replace("-", "_")
             if hasattr(instance, prop_name):
                 value = getattr(instance, prop_name)
                 if isinstance(value, dict):
@@ -36,18 +38,22 @@ def create_gobject_wrapper(dataclass_type):
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
-        py_attr_name = pspec.name.replace('-', '_')
+        py_attr_name = pspec.name.replace("-", "_")
         if hasattr(self.instance, py_attr_name):
             value = getattr(self, py_attr_name)
             if isinstance(getattr(self.instance, py_attr_name), dict):
                 value = json.loads(value)
             setattr(self.instance, py_attr_name, value)
 
-    new_class = type(class_name, (GObject.Object,), {
-        "__gtype_name__": class_name,
-        "__init__": __init__,
-        "_on_property_changed": _on_property_changed,
-        **properties
-    })
+    new_class = type(
+        class_name,
+        (GObject.Object,),
+        {
+            "__gtype_name__": class_name,
+            "__init__": __init__,
+            "_on_property_changed": _on_property_changed,
+            **properties,
+        },
+    )
 
     return new_class

@@ -1,6 +1,7 @@
 """The preferences window for the AdvEngine application."""
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GObject
@@ -14,6 +15,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
     including appearance, editor behavior, external tool paths, and project-
     specific options.
     """
+
     __gtype_name__ = "PreferencesDialog"
 
     def __init__(self, parent, project_manager=None, settings_manager=None):
@@ -51,15 +53,17 @@ class PreferencesDialog(Adw.PreferencesWindow):
         theme_row = Adw.ComboRow(
             title="Application Theme",
             subtitle="Choose how the application should look.",
-            model=Gtk.StringList.new(["System", "Light", "Dark"])
+            model=Gtk.StringList.new(["System", "Light", "Dark"]),
         )
         theme_row.set_tooltip_text(
-            "Set the application theme to match the system, or force light or dark mode.")
+            "Set the application theme to match the system, or force light or dark mode."
+        )
         theme_group.add(theme_row)
 
         if style_manager.get_dark():
             theme_row.set_selected(
-                0 if style_manager.get_system_supports_color_schemes() else 2)
+                0 if style_manager.get_system_supports_color_schemes() else 2
+            )
         else:
             theme_row.set_selected(1)
         theme_row.connect("notify::selected", self._on_theme_selected)
@@ -76,7 +80,10 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
         ue_path_row = Adw.EntryRow(title="Editor Path")
         ue_path_row.set_text(self.settings_manager.get("ue_path", ""))
-        ue_path_row.connect("changed", lambda entry: self.settings_manager.set("ue_path", entry.get_text()))
+        ue_path_row.connect(
+            "changed",
+            lambda entry: self.settings_manager.set("ue_path", entry.get_text()),
+        )
         ue_group.add(ue_path_row)
 
     def _add_project_page(self):
@@ -92,7 +99,8 @@ class PreferencesDialog(Adw.PreferencesWindow):
         project_name_row = Adw.EntryRow(title="Project Name")
         project_name_row.set_tooltip_text("Set the name of the project.")
         project_name_row.set_text(
-            self.settings_manager.get_project_setting("project_name"))
+            self.settings_manager.get_project_setting("project_name")
+        )
         project_name_row.connect("notify::text", self._on_project_name_changed)
         project_group.add(project_name_row)
 
@@ -100,19 +108,19 @@ class PreferencesDialog(Adw.PreferencesWindow):
         scene_ids = [scene.id for scene in self.project_manager.data.scenes]
 
         default_scene_row = Adw.ComboRow(
-            title="Default Starting Scene",
-            model=Gtk.StringList.new(scene_names)
+            title="Default Starting Scene", model=Gtk.StringList.new(scene_names)
         )
         default_scene_row.set_tooltip_text(
-            "Set the default scene that the game will load when it starts.")
+            "Set the default scene that the game will load when it starts."
+        )
 
-        default_scene_id = self.settings_manager.get_project_setting(
-            "default_scene")
+        default_scene_id = self.settings_manager.get_project_setting("default_scene")
         if default_scene_id in scene_ids:
             default_scene_row.set_selected(scene_ids.index(default_scene_id))
 
         default_scene_row.connect(
-            "notify::selected", self._on_default_scene_changed, scene_ids)
+            "notify::selected", self._on_default_scene_changed, scene_ids
+        )
         project_group.add(default_scene_row)
 
     def _on_theme_selected(self, combo_row, _):
@@ -128,8 +136,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
     def _on_project_name_changed(self, entry_row, _):
         """Handles the project name change."""
-        self.settings_manager.set_project_setting(
-            "project_name", entry_row.get_text())
+        self.settings_manager.set_project_setting("project_name", entry_row.get_text())
 
     def _add_editor_page(self):
         """Adds the Editor page to the preferences window."""
@@ -153,12 +160,14 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
         autosave_row = Adw.SwitchRow(
             title="Enable Autosave",
-            subtitle="Automatically save the project at a set interval."
+            subtitle="Automatically save the project at a set interval.",
         )
         autosave_row.set_tooltip_text(
-            "If enabled, the project will be saved automatically every 5 minutes.")
+            "If enabled, the project will be saved automatically every 5 minutes."
+        )
         autosave_row.set_active(
-            self.settings_manager.get_app_setting("autosave_enabled"))
+            self.settings_manager.get_app_setting("autosave_enabled")
+        )
         autosave_row.connect("notify::active", self._on_autosave_toggled)
         autosave_group.add(autosave_row)
 
@@ -170,19 +179,31 @@ class PreferencesDialog(Adw.PreferencesWindow):
         default_node_width_row = Adw.SpinRow(
             title="Default Node Width",
             subtitle="The default width for new logic nodes.",
-            adjustment=Gtk.Adjustment(value=240, lower=100, upper=500, step_increment=10),
+            adjustment=Gtk.Adjustment(
+                value=240, lower=100, upper=500, step_increment=10
+            ),
         )
-        default_node_width_row.set_value(self.settings_manager.get("default_node_width", 240))
-        default_node_width_row.connect("notify::value", self._on_default_node_width_changed)
+        default_node_width_row.set_value(
+            self.settings_manager.get("default_node_width", 240)
+        )
+        default_node_width_row.connect(
+            "notify::value", self._on_default_node_width_changed
+        )
         logic_editor_group.add(default_node_width_row)
 
         default_node_height_row = Adw.SpinRow(
             title="Default Node Height",
             subtitle="The default height for new logic nodes.",
-            adjustment=Gtk.Adjustment(value=160, lower=50, upper=400, step_increment=10),
+            adjustment=Gtk.Adjustment(
+                value=160, lower=50, upper=400, step_increment=10
+            ),
         )
-        default_node_height_row.set_value(self.settings_manager.get("default_node_height", 160))
-        default_node_height_row.connect("notify::value", self._on_default_node_height_changed)
+        default_node_height_row.set_value(
+            self.settings_manager.get("default_node_height", 160)
+        )
+        default_node_height_row.connect(
+            "notify::value", self._on_default_node_height_changed
+        )
         logic_editor_group.add(default_node_height_row)
 
         # Grid Snapping
@@ -191,7 +212,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
         grid_snap_row = Adw.SwitchRow(
             title="Enable Grid Snapping",
-            subtitle="Snap nodes and other elements to the grid."
+            subtitle="Snap nodes and other elements to the grid.",
         )
         grid_snap_row.set_active(self.settings_manager.get("grid_snap_enabled", True))
         grid_snap_row.connect("notify::active", self._on_grid_snap_toggled)
@@ -231,9 +252,9 @@ class PreferencesDialog(Adw.PreferencesWindow):
         selected_index = combo_row.get_selected()
         if 0 <= selected_index < len(scene_ids):
             self.settings_manager.set_project_setting(
-                "default_scene", scene_ids[selected_index])
+                "default_scene", scene_ids[selected_index]
+            )
 
     def _on_autosave_toggled(self, switch, _):
         """Handles the autosave toggle."""
-        self.settings_manager.set_app_setting(
-            "autosave_enabled", switch.get_active())
+        self.settings_manager.set_app_setting("autosave_enabled", switch.get_active())

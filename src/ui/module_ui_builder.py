@@ -1,8 +1,10 @@
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw
 from ..core.data_schemas import UILayout, UIElement, UILayoutGObject
+
 
 class UIBuilder(Adw.Bin):
     EDITOR_NAME = "UI Builder"
@@ -11,8 +13,8 @@ class UIBuilder(Adw.Bin):
 
     def __init__(self, **kwargs):
         print("DEBUG: UIBuilder.__init__")
-        project_manager = kwargs.pop('project_manager')
-        settings_manager = kwargs.pop('settings_manager')
+        project_manager = kwargs.pop("project_manager")
+        settings_manager = kwargs.pop("settings_manager")
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -42,7 +44,9 @@ class UIBuilder(Adw.Bin):
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.layout_list)
 
-        self.status_page = Adw.StatusPage(title="No UI Layouts", icon_name="applications-graphics-symbolic")
+        self.status_page = Adw.StatusPage(
+            title="No UI Layouts", icon_name="applications-graphics-symbolic"
+        )
 
         self.main_stack = Gtk.Stack()
         self.main_stack.add_named(scrolled_window, "list")
@@ -57,7 +61,9 @@ class UIBuilder(Adw.Bin):
         main_box.append(self.canvas)
 
         # Properties Editor
-        self.properties_editor = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.properties_editor = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=10
+        )
         self.properties_editor.set_size_request(200, -1)
         main_box.append(self.properties_editor)
 
@@ -103,7 +109,12 @@ class UIBuilder(Adw.Bin):
 
         element_clicked = None
         for element in self.active_layout.layout.elements:
-            if x >= element.x and x <= element.x + element.width and y >= element.y and y <= element.y + element.height:
+            if (
+                x >= element.x
+                and x <= element.x + element.width
+                and y >= element.y
+                and y <= element.y + element.height
+            ):
                 element_clicked = element
                 break
 
@@ -112,8 +123,16 @@ class UIBuilder(Adw.Bin):
 
     def _create_column(self, title, expression_func):
         factory = Gtk.SignalListItemFactory()
-        factory.connect("setup", lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)))
-        factory.connect("bind", lambda _, list_item: list_item.get_child().set_label(expression_func(list_item.get_item())))
+        factory.connect(
+            "setup",
+            lambda _, list_item: list_item.set_child(Gtk.Label(halign=Gtk.Align.START)),
+        )
+        factory.connect(
+            "bind",
+            lambda _, list_item: list_item.get_child().set_label(
+                expression_func(list_item.get_item())
+            ),
+        )
 
         col = Gtk.ColumnViewColumn(title=title, factory=factory)
         self.layout_list.append_column(col)
@@ -146,7 +165,9 @@ class UIBuilder(Adw.Bin):
 
     def _on_add_layout(self, button):
         print("DEBUG: UIBuilder._on_add_layout")
-        new_layout = UILayout(id=f"layout_{self.model.get_n_items() + 1}", name="New Layout")
+        new_layout = UILayout(
+            id=f"layout_{self.model.get_n_items() + 1}", name="New Layout"
+        )
         self.project_manager.add_ui_layout(new_layout)
         self.model.append(UILayoutGObject(new_layout))
         self._update_visibility()
@@ -165,13 +186,23 @@ class UIBuilder(Adw.Bin):
     def _on_add_element(self, button):
         print("DEBUG: UIBuilder._on_add_element")
         if self.active_layout:
-            new_element = self.project_manager.add_element_to_layout(self.active_layout.id, f"elem_{len(self.active_layout.layout.elements) + 1}", "Button", 10, 10, 100, 30)
+            new_element = self.project_manager.add_element_to_layout(
+                self.active_layout.id,
+                f"elem_{len(self.active_layout.layout.elements) + 1}",
+                "Button",
+                10,
+                10,
+                100,
+                30,
+            )
             self.canvas.queue_draw()
 
     def _on_delete_element(self, button):
         print("DEBUG: UIBuilder._on_delete_element")
         if self.active_layout and self.active_element:
-            self.project_manager.remove_element_from_layout(self.active_layout.id, self.active_element.id)
+            self.project_manager.remove_element_from_layout(
+                self.active_layout.id, self.active_element.id
+            )
             self.active_element = None
             self.canvas.queue_draw()
             self._clear_properties_editor()
@@ -201,23 +232,39 @@ class UIBuilder(Adw.Bin):
         grid.attach(type_entry, 1, 1, 1, 1)
 
         grid.attach(Gtk.Label(label="X:"), 0, 2, 1, 1)
-        x_spin = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1), value=element.x)
+        x_spin = Gtk.SpinButton(
+            adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1),
+            value=element.x,
+        )
         x_spin.connect("value-changed", self._on_element_detail_changed, element, "x")
         grid.attach(x_spin, 1, 2, 1, 1)
 
         grid.attach(Gtk.Label(label="Y:"), 0, 3, 1, 1)
-        y_spin = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1), value=element.y)
+        y_spin = Gtk.SpinButton(
+            adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1),
+            value=element.y,
+        )
         y_spin.connect("value-changed", self._on_element_detail_changed, element, "y")
         grid.attach(y_spin, 1, 3, 1, 1)
 
         grid.attach(Gtk.Label(label="Width:"), 0, 4, 1, 1)
-        width_spin = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1), value=element.width)
-        width_spin.connect("value-changed", self._on_element_detail_changed, element, "width")
+        width_spin = Gtk.SpinButton(
+            adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1),
+            value=element.width,
+        )
+        width_spin.connect(
+            "value-changed", self._on_element_detail_changed, element, "width"
+        )
         grid.attach(width_spin, 1, 4, 1, 1)
 
         grid.attach(Gtk.Label(label="Height:"), 0, 5, 1, 1)
-        height_spin = Gtk.SpinButton(adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1), value=element.height)
-        height_spin.connect("value-changed", self._on_element_detail_changed, element, "height")
+        height_spin = Gtk.SpinButton(
+            adjustment=Gtk.Adjustment(lower=0, upper=9999, step_increment=1),
+            value=element.height,
+        )
+        height_spin.connect(
+            "value-changed", self._on_element_detail_changed, element, "height"
+        )
         grid.attach(height_spin, 1, 5, 1, 1)
 
     def _on_element_detail_changed(self, widget, element, property_name):

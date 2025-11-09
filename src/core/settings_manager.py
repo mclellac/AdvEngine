@@ -5,16 +5,25 @@ Manages application and project settings.
 import os
 import json
 
+
 class SettingsManager:
     def __init__(self, project_path=None):
         self.project_path = project_path
-        self.app_settings_file = os.path.expanduser("~/.config/adv_engine/settings.json")
+        self.app_settings_file = os.path.expanduser(
+            "~/.config/adv_engine/settings.json"
+        )
         self.project_settings_file = None
         if self.project_path:
-            self.project_settings_file = os.path.join(self.project_path, "settings.json")
+            self.project_settings_file = os.path.join(
+                self.project_path, "settings.json"
+            )
 
-        self.app_settings = self._load_settings(self.app_settings_file, self._get_default_app_settings())
-        self.project_settings = self._load_settings(self.project_settings_file, self._get_default_project_settings())
+        self.app_settings = self._load_settings(
+            self.app_settings_file, self._get_default_app_settings()
+        )
+        self.project_settings = self._load_settings(
+            self.project_settings_file, self._get_default_project_settings()
+        )
 
     def _get_default_app_settings(self):
         return {

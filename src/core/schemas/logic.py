@@ -3,9 +3,11 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+
 @dataclass
 class LogicNode:
     """Base class for all nodes in a logic graph."""
+
     id: str
     node_type: str
     x: int
@@ -15,16 +17,20 @@ class LogicNode:
     inputs: List[str] = field(default_factory=list)
     outputs: List[str] = field(default_factory=list)
 
+
 @dataclass
 class DialogueNode(LogicNode):
     """A node that represents a line of dialogue."""
+
     character_id: str = ""
     dialogue_text: str = ""
     action_node: Optional["ActionNode"] = None
 
+
 @dataclass
 class ConditionNode(LogicNode):
     """A node that checks a condition in the game world."""
+
     condition_type: str = ""
     var_name: str = ""
     value: str = ""
@@ -42,9 +48,11 @@ class ConditionNode(LogicNode):
     mesh_id: str = ""
     time_state: str = ""
 
+
 @dataclass
 class ActionNode(LogicNode):
     """A node that performs an action in the game world."""
+
     action_command: str = ""
     var_name: str = ""
     value: str = ""
@@ -69,9 +77,11 @@ class ActionNode(LogicNode):
     quest_id: str = ""
     objective_id: str = ""
 
+
 @dataclass
 class LogicGraph:
     """Represents a graph of logic nodes."""
+
     id: str
     name: str
     nodes: List[LogicNode] = field(default_factory=list)

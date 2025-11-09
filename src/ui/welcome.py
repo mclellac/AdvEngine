@@ -2,13 +2,16 @@
 
 import gi
 import os
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
+
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "welcome.ui"))
 class WelcomeWindow(Adw.ApplicationWindow):
     """The main welcome window for the application."""
+
     __gtype_name__ = "WelcomeWindow"
 
     new_project_button = Gtk.Template.Child()
@@ -27,8 +30,18 @@ class WelcomeWindow(Adw.ApplicationWindow):
         menu.append("About", "app.about")
         self.menu_button.set_menu_model(menu)
 
-        self.new_project_button.connect("clicked", lambda w: self.get_application().lookup_action("new-project").activate(None))
-        self.open_project_button.connect("clicked", lambda w: self.get_application().lookup_action("open-project").activate(None))
+        self.new_project_button.connect(
+            "clicked",
+            lambda w: self.get_application()
+            .lookup_action("new-project")
+            .activate(None),
+        )
+        self.open_project_button.connect(
+            "clicked",
+            lambda w: self.get_application()
+            .lookup_action("open-project")
+            .activate(None),
+        )
 
         self.settings = self.get_application().settings_manager
         self.populate_recent_projects()
