@@ -201,7 +201,7 @@ class InteractionEditor(Gtk.Box):
         if response == "delete":
             self.project_manager.remove_data_item("interactions", interaction_gobject.interaction)
             self.refresh_model()
-        dialog.destroy()
+        dialog.close()
 
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model."""

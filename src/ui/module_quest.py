@@ -252,7 +252,7 @@ class QuestEditor(Adw.Bin):
             if is_found:
                 self.model.remove(pos)
             self._update_visibility()
-        dialog.destroy()
+        dialog.close()
 
     def _on_add_objective(self, button, quest):
         """Handles the clicked signal from the add objective button."""
@@ -293,4 +293,4 @@ class QuestEditor(Adw.Bin):
             is_found, pos = self.objective_model.find(objective_gobject)
             if is_found:
                 self.objective_model.remove(pos)
-        dialog.destroy()
+        dialog.close()

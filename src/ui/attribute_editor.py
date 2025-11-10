@@ -273,7 +273,7 @@ class AttributeEditor(Gtk.Box):
                 is_found, pos = self.model.find(attr_gobject)
                 if is_found:
                     self.model.remove(pos)
-        dialog.destroy()
+        dialog.close()
 
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model.
