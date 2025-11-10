@@ -13,4 +13,3 @@ from .ui import Font, FontGObject, UIElement, UILayout, UILayoutGObject
 from .quest import Quest, QuestGObject, Objective, ObjectiveGObject
 from .search import SearchResult, SearchResultGObject
 from .project_data import ProjectData
-from .utility import StringGObject
