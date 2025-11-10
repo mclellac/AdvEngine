@@ -419,13 +419,14 @@ class LogicEditor(Adw.Bin):
         self.settings_manager = settings_manager
         self.active_graph = None
         self.selected_nodes = []
+        self.drag_mode = None  # None, 'dragging', 'connecting', 'resizing', 'selecting'
         self.connecting_from_node = None
+        self.connecting_line_pos = (0, 0)
         self.resizing_node = None
         self.drag_selection_rect = None
 
         self.drag_offsets = {}
-        self.initial_node_width = 0
-        self.initial_node_height = 0
+        self.initial_node_size = (0, 0)
 
         root_widget = self._build_ui()
         self.set_child(root_widget)
@@ -433,9 +434,6 @@ class LogicEditor(Adw.Bin):
         self._setup_canvas_controllers()
         self._create_context_menus()
         self.project_manager.register_project_loaded_callback(self.project_loaded)
-
-        self.project_loaded()
-        self.canvas.queue_draw()
 
     def project_loaded(self):
         """Callback for when the project is loaded."""
@@ -527,11 +525,11 @@ class LogicEditor(Adw.Bin):
 
     def _setup_canvas_controllers(self):
         """Sets up the event controllers for the main canvas."""
-        node_drag = Gtk.GestureDrag.new()
-        node_drag.connect("drag-begin", self.on_drag_begin)
-        node_drag.connect("drag-update", self.on_drag_update)
-        node_drag.connect("drag-end", self.on_drag_end)
-        self.canvas.add_controller(node_drag)
+        drag_gesture = Gtk.GestureDrag.new()
+        drag_gesture.connect("drag-begin", self.on_drag_begin)
+        drag_gesture.connect("drag-update", self.on_drag_update)
+        drag_gesture.connect("drag-end", self.on_drag_end)
+        self.canvas.add_controller(drag_gesture)
 
         click_gesture = Gtk.GestureClick.new()
         click_gesture.connect("pressed", self.on_canvas_click)
@@ -540,18 +538,6 @@ class LogicEditor(Adw.Bin):
         key_controller = Gtk.EventControllerKey.new()
         key_controller.connect("key-pressed", self.on_key_pressed)
         self.canvas.add_controller(key_controller)
-
-        connection_drag = Gtk.GestureDrag.new()
-        connection_drag.connect("drag-begin", self.on_connection_drag_begin)
-        connection_drag.connect("drag-update", self.on_connection_drag_update)
-        connection_drag.connect("drag-end", self.on_connection_drag_end)
-        self.canvas.add_controller(connection_drag)
-
-        resize_drag = Gtk.GestureDrag.new()
-        resize_drag.connect("drag-begin", self.on_resize_drag_begin)
-        resize_drag.connect("drag-update", self.on_resize_drag_update)
-        resize_drag.connect("drag-end", self.on_resize_drag_end)
-        self.canvas.add_controller(resize_drag)
 
         right_click_gesture = Gtk.GestureClick.new()
         right_click_gesture.set_button(Gdk.BUTTON_SECONDARY)
@@ -599,15 +585,16 @@ class LogicEditor(Adw.Bin):
                     )
                     if output_node:
                         self.draw_connection(cr, node, output_node)
-            if self.connecting_from_node:
+            if self.drag_mode == "connecting" and self.connecting_from_node:
                 start_x, start_y = self.get_connector_pos(
                     self.connecting_from_node, "out"
                 )
+                end_x, end_y = self.connecting_line_pos
                 cr.set_source_rgb(0.8, 0.8, 0.2)
                 cr.move_to(start_x, start_y)
-                cr.line_to(self.connecting_line_x, self.connecting_line_y)
+                cr.line_to(end_x, end_y)
                 cr.stroke()
-            if self.drag_selection_rect:
+            if self.drag_mode == "selecting" and self.drag_selection_rect:
                 cr.set_source_rgba(0.2, 0.5, 1.0, 0.3)
                 x1, y1, x2, y2 = self.drag_selection_rect
                 cr.rectangle(min(x1, x2), min(y1, y2), abs(x1 - x2), abs(y1 - y2))
@@ -785,15 +772,51 @@ class LogicEditor(Adw.Bin):
             x (float): The x-coordinate of the drag start.
             y (float): The y-coordinate of the drag start.
         """
+        self.drag_mode = None
+        for node in reversed(self.active_graph.nodes if self.active_graph else []):
+            # Check for resize handle
+            if (
+                x >= node.x + node.width - 15
+                and y >= node.y + node.height - 15
+            ):
+                self.drag_mode = "resizing"
+                self.resizing_node = node
+                self.initial_node_size = (node.width, node.height)
+                gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+                return
+
+            # Check for output connector
+            out_x, out_y = self.get_connector_pos(node, "out")
+            if abs(x - out_x) < 10 and abs(y - out_y) < 10:
+                self.drag_mode = "connecting"
+                self.connecting_from_node = node
+                self.connecting_line_pos = (x, y)
+                gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+                return
+
+        # Check for node drag
         node_clicked = self.get_node_at(x, y)
         if node_clicked:
+            self.drag_mode = "dragging"
             if node_clicked not in self.selected_nodes:
-                self.selected_nodes = [node_clicked]
-                self.props_panel.set_node(node_clicked)
+                # If not multi-selecting, start a new selection
+                if not gesture.get_current_event_state() & Gdk.ModifierType.SHIFT_MASK:
+                    self.selected_nodes = [node_clicked]
+                else:
+                    self.selected_nodes.append(node_clicked)
+
+            self.props_panel.set_node(
+                self.selected_nodes[0] if len(self.selected_nodes) == 1 else None
+            )
+
             self.drag_offsets = {n.id: (x - n.x, y - n.y) for n in self.selected_nodes}
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-        else:
-            self.drag_selection_rect = [x, y, x, y]
+            return
+
+        # If nothing else, start selection rectangle
+        self.drag_mode = "selecting"
+        self.drag_selection_rect = [x, y, x, y]
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def on_drag_update(self, gesture: Gtk.GestureDrag, x: float, y: float):
         """Handles the update of a drag operation.
@@ -803,8 +826,11 @@ class LogicEditor(Adw.Bin):
             x (float): The x-offset of the drag.
             y (float): The y-offset of the drag.
         """
-        if self.drag_offsets:
-            success, start_x, start_y = gesture.get_start_point()
+        success, start_x, start_y = gesture.get_start_point()
+        if not success:
+            return
+
+        if self.drag_mode == "dragging":
             for node in self.selected_nodes:
                 offset_x, offset_y = self.drag_offsets[node.id]
                 new_x = start_x + x - offset_x
@@ -818,9 +844,18 @@ class LogicEditor(Adw.Bin):
                 node.x = new_x
                 node.y = new_y
             self.canvas.queue_draw()
-        elif self.drag_selection_rect:
-            self.drag_selection_rect[2] = x
-            self.drag_selection_rect[3] = y
+        elif self.drag_mode == "selecting":
+            if self.drag_selection_rect:
+                self.drag_selection_rect[2] = start_x + x
+                self.drag_selection_rect[3] = start_y + y
+                self.canvas.queue_draw()
+        elif self.drag_mode == "connecting":
+            self.connecting_line_pos = (start_x + x, start_y + y)
+            self.canvas.queue_draw()
+        elif self.drag_mode == "resizing" and self.resizing_node:
+            initial_width, initial_height = self.initial_node_size
+            self.resizing_node.width = max(150, initial_width + x)
+            self.resizing_node.height = max(100, initial_height + y)
             self.canvas.queue_draw()
 
     def on_drag_end(self, gesture: Gtk.GestureDrag, x: float, y: float):
@@ -831,10 +866,9 @@ class LogicEditor(Adw.Bin):
             x (float): The x-offset of the drag end.
             y (float): The y-offset of the drag end.
         """
-        if self.drag_offsets:
-            self.project_manager.set_dirty()
-            self.drag_offsets = {}
-        elif self.drag_selection_rect:
+        if self.drag_mode == "dragging":
+            self.project_manager.set_dirty(True)
+        elif self.drag_mode == "selecting" and self.drag_selection_rect:
             self.selected_nodes.clear()
             x1, y1, x2, y2 = self.drag_selection_rect
             rect = Gdk.Rectangle()
@@ -842,18 +876,37 @@ class LogicEditor(Adw.Bin):
             rect.y = min(y1, y2)
             rect.width = abs(x1 - x2)
             rect.height = abs(y1 - y2)
-            for node in self.active_graph.nodes:
-                node_rect = Gdk.Rectangle()
-                node_rect.x, node_rect.y, node_rect.width, node_rect.height = (
-                    node.x,
-                    node.y,
-                    node.width,
-                    node.height,
-                )
-                if rect.intersect(node_rect)[0]:
-                    self.selected_nodes.append(node)
-            self.drag_selection_rect = None
+            if self.active_graph:
+                for node in self.active_graph.nodes:
+                    node_rect = Gdk.Rectangle()
+                    node_rect.x, node_rect.y, node_rect.width, node_rect.height = (
+                        node.x,
+                        node.y,
+                        node.width,
+                        node.height,
+                    )
+                    if rect.intersect(node_rect)[0]:
+                        self.selected_nodes.append(node)
             self.canvas.queue_draw()
+        elif self.drag_mode == "connecting" and self.connecting_from_node:
+            end_x, end_y = self.connecting_line_pos
+            target_node = self.get_node_at(end_x, end_y)
+            if target_node and target_node != self.connecting_from_node:
+                in_x, in_y = self.get_connector_pos(target_node, "in")
+                if abs(end_x - in_x) < 10 and abs(end_y - in_y) < 10:
+                    self.connecting_from_node.outputs.append(target_node.id)
+                    target_node.inputs.append(self.connecting_from_node.id)
+                    self.project_manager.set_dirty(True)
+            self.canvas.queue_draw()
+        elif self.drag_mode == "resizing":
+            self.project_manager.set_dirty(True)
+
+        # Reset state
+        self.drag_mode = None
+        self.drag_offsets = {}
+        self.drag_selection_rect = None
+        self.connecting_from_node = None
+        self.resizing_node = None
 
     def on_canvas_click(self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float):
         """Handles a click event on the canvas.
@@ -890,120 +943,18 @@ class LogicEditor(Adw.Bin):
             state: The modifier state.
         """
         if keyval == Gdk.KEY_Delete:
+            if not self.active_graph:
+                return
             for node_to_delete in self.selected_nodes:
                 self.active_graph.nodes.remove(node_to_delete)
+                # Also remove any connections pointing to the deleted node
                 for node in self.active_graph.nodes:
                     if node_to_delete.id in node.outputs:
                         node.outputs.remove(node_to_delete.id)
-                    if node_to_delete.id in node.inputs:
-                        node.inputs.remove(node_to_delete.id)
             self.selected_nodes.clear()
             self.props_panel.set_node(None)
             self.canvas.queue_draw()
             self.project_manager.set_dirty(True)
-
-    def on_connection_drag_begin(self, gesture: Gtk.GestureDrag, x: float, y: float):
-        """Handles the beginning of a connection drag.
-
-        Args:
-            gesture (Gtk.GestureDrag): The drag gesture.
-            x (float): The starting x-coordinate.
-            y (float): The starting y-coordinate.
-        """
-        for node in reversed(self.active_graph.nodes):
-            out_x, out_y = self.get_connector_pos(node, "out")
-            if abs(x - out_x) < 10 and abs(y - out_y) < 10:
-                self.connecting_from_node = node
-                self.connecting_line_x, self.connecting_line_y = x, y
-                gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-                return
-
-    def on_connection_drag_update(self, gesture: Gtk.GestureDrag, x: float, y: float):
-        """Handles the update of a connection drag.
-
-        Args:
-            gesture (Gtk.GestureDrag): The drag gesture.
-            x (float): The x-offset of the drag.
-            y (float): The y-offset of the drag.
-        """
-        if self.connecting_from_node:
-            success, start_x, start_y = gesture.get_start_point()
-            self.connecting_line_x = start_x + x
-            self.connecting_line_y = start_y + y
-            self.canvas.queue_draw()
-
-    def on_connection_drag_end(self, gesture: Gtk.GestureDrag, x: float, y: float):
-        """Handles the end of a connection drag.
-
-        Args:
-            gesture (Gtk.GestureDrag): The drag gesture.
-            x (float): The x-offset of the drag end.
-            y (float): The y-offset of the drag end.
-        """
-        if self.connecting_from_node:
-            for node in self.active_graph.nodes:
-                in_x, in_y = self.get_connector_pos(node, "in")
-                if (
-                    abs(self.connecting_line_x - in_x) < 10
-                    and abs(self.connecting_line_y - in_y) < 10
-                    and node != self.connecting_from_node
-                ):
-                    self.connecting_from_node.outputs.append(node.id)
-                    node.inputs.append(self.connecting_from_node.id)
-                    self.project_manager.set_dirty(True)
-                    break
-        self.connecting_from_node = None
-        self.canvas.queue_draw()
-
-    def on_resize_drag_begin(self, gesture: Gtk.GestureDrag, x: float, y: float):
-        """Handles the beginning of a resize drag.
-
-        Args:
-            gesture (Gtk.GestureDrag): The drag gesture.
-            x (float): The starting x-coordinate.
-            y (float): The starting y-coordinate.
-        """
-        for node in reversed(self.active_graph.nodes):
-            if (
-                x >= node.x + node.width - 10
-                and x <= node.x + node.width
-                and y >= node.y + node.height - 10
-                and y <= node.y + node.height
-            ):
-                self.resizing_node = node
-                self.initial_node_width = node.width
-                self.initial_node_height = node.height
-                gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-                return
-
-    def on_resize_drag_update(self, gesture: Gtk.GestureDrag, x: float, y: float):
-        """Handles the update of a resize drag.
-
-        Args:
-            gesture (Gtk.GestureDrag): The drag gesture.
-            x (float): The x-offset of the drag.
-            y (float): The y-offset of the drag.
-        """
-        if self.resizing_node:
-            success, offset_x, offset_y = gesture.get_offset()
-            if success:
-                self.resizing_node.width = max(150, self.initial_node_width + offset_x)
-                self.resizing_node.height = max(
-                    100, self.initial_node_height + offset_y
-                )
-                self.canvas.queue_draw()
-
-    def on_resize_drag_end(self, gesture: Gtk.GestureDrag, x: float, y: float):
-        """Handles the end of a resize drag.
-
-        Args:
-            gesture (Gtk.GestureDrag): The drag gesture.
-            x (float): The x-offset of the drag end.
-            y (float): The y-offset of the drag end.
-        """
-        if self.resizing_node:
-            self.project_manager.set_dirty(True)
-            self.resizing_node = None
 
     def get_node_at(self, x: float, y: float) -> LogicNode | None:
         """Gets the topmost node at the given coordinates.
