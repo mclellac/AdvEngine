@@ -25,9 +25,11 @@ def create_gobject_wrapper(dataclass_type):
         else:
             properties[name] = GObject.Property(type=str, default="")
 
+    instance_attr_name = dataclass_type.__name__.lower()
+
     def __init__(self, instance):
         GObject.Object.__init__(self)
-        self.instance = instance
+        setattr(self, instance_attr_name, instance)
         for prop in self.list_properties():
             prop_name = prop.name.replace("-", "_")
             if hasattr(instance, prop_name):
@@ -38,12 +40,13 @@ def create_gobject_wrapper(dataclass_type):
         self.connect("notify", self._on_property_changed)
 
     def _on_property_changed(self, obj, pspec):
+        instance = getattr(self, instance_attr_name)
         py_attr_name = pspec.name.replace("-", "_")
-        if hasattr(self.instance, py_attr_name):
+        if hasattr(instance, py_attr_name):
             value = getattr(self, py_attr_name)
-            if isinstance(getattr(self.instance, py_attr_name), dict):
+            if isinstance(getattr(instance, py_attr_name), dict):
                 value = json.loads(value)
-            setattr(self.instance, py_attr_name, value)
+            setattr(instance, py_attr_name, value)
 
     new_class = type(
         class_name,

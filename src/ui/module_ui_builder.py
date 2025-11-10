@@ -108,7 +108,7 @@ class UIBuilder(Adw.Bin):
             return
 
         element_clicked = None
-        for element in self.active_layout.layout.elements:
+        for element in self.active_layout.uilayout.elements:
             if (
                 x >= element.x
                 and x <= element.x + element.width
@@ -152,7 +152,7 @@ class UIBuilder(Adw.Bin):
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
         if self.active_layout:
-            for element in self.active_layout.layout.elements:
+            for element in self.active_layout.uilayout.elements:
                 self._draw_element(cr, element)
 
     def _draw_element(self, cr, element):
@@ -176,7 +176,9 @@ class UIBuilder(Adw.Bin):
         print("DEBUG: UIBuilder._on_delete_layout")
         selected_layout = self.selection.get_selected_item()
         if selected_layout:
-            self.project_manager.remove_data_item("ui_layouts", selected_layout.layout)
+            self.project_manager.remove_data_item(
+                "ui_layouts", selected_layout.uilayout
+            )
             for i, item in enumerate(self.model):
                 if item.id == selected_layout.id:
                     self.model.remove(i)
@@ -187,21 +189,21 @@ class UIBuilder(Adw.Bin):
         print("DEBUG: UIBuilder._on_add_element")
         if self.active_layout:
             new_element = UIElement(
-                id=f"elem_{len(self.active_layout.layout.elements) + 1}",
+                id=f"elem_{len(self.active_layout.uilayout.elements) + 1}",
                 type="Button",
                 x=10,
                 y=10,
                 width=100,
                 height=30,
             )
-            self.active_layout.layout.elements.append(new_element)
+            self.active_layout.uilayout.elements.append(new_element)
             self.project_manager.set_dirty(True)
             self.canvas.queue_draw()
 
     def _on_delete_element(self, button):
         print("DEBUG: UIBuilder._on_delete_element")
         if self.active_layout and self.active_element:
-            self.active_layout.layout.elements.remove(self.active_element)
+            self.active_layout.uilayout.elements.remove(self.active_element)
             self.project_manager.set_dirty(True)
             self.active_element = None
             self.canvas.queue_draw()

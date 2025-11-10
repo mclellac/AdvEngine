@@ -211,10 +211,11 @@ class SceneEditor(Gtk.Box):
             if response_id == "create":
                 name = entry.get_text()
                 if name:
-                    self.project_manager.create_scene(name)
+                    new_scene = {"id": name.lower(), "name": name, "hotspots": []}
+                    self.project_manager.add_data_item("scenes", new_scene)
                     self._update_scene_list()
                     self._update_visibility()
-            d.destroy()
+            d.close()
 
         dialog.connect("response", on_response)
         dialog.present()
@@ -237,10 +238,12 @@ class SceneEditor(Gtk.Box):
 
     def _on_delete_scene_response(self, dialog, response):
         if response == "delete":
-            self.project_manager.delete_scene(self.selected_scene_gobject.scene.id)
+            self.project_manager.remove_data_item(
+                "scenes", self.selected_scene_gobject.scene
+            )
             self._update_scene_list()
             self._update_visibility()
-        dialog.destroy()
+        dialog.close()
 
     def _on_set_background(self, button):
         if not self.selected_scene_gobject:
@@ -360,9 +363,15 @@ class SceneEditor(Gtk.Box):
             grid_size = 50
             snapped_x = round(world_x / grid_size) * grid_size
             snapped_y = round(world_y / grid_size) * grid_size
-            self.project_manager.add_hotspot_to_scene(
-                scene.id, "New Hotspot", snapped_x, snapped_y, 100, 50
+            new_hotspot = Hotspot(
+                name="New Hotspot",
+                x=snapped_x,
+                y=snapped_y,
+                width=100,
+                height=50,
             )
+            scene.hotspots.append(new_hotspot)
+            self.project_manager.set_dirty(True)
             self._update_layer_list()
             self.canvas.queue_draw()
         else:
