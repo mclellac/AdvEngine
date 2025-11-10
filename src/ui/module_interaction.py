@@ -75,7 +75,10 @@ class InteractionEditor(Gtk.Box):
 
     def refresh_model(self):
         """Refreshes the data model."""
-        print("DEBUG: InteractionEditor.refresh_model")
+        interaction_count = len(self.project_manager.data.interactions)
+        print(
+            f"DEBUG: InteractionEditor.refresh_model: Found {interaction_count} interactions in project data."
+        )
         self.model.remove_all()
         for interaction in self.project_manager.data.interactions:
             self.model.append(InteractionGObject(interaction))

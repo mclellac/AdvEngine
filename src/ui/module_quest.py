@@ -31,17 +31,26 @@ class QuestEditor(Adw.Bin):
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
+        self.project_manager.register_project_loaded_callback(self.refresh_model)
 
         self._setup_quest_list()
         self._connect_signals()
+        self.refresh_model()
+
+    def refresh_model(self, *args):
+        """Refreshes the data model."""
+        quest_count = len(self.project_manager.data.quests)
+        print(
+            f"DEBUG: QuestEditor.refresh_model: Found {quest_count} quests in project data."
+        )
+        self.model.remove_all()
+        for quest in self.project_manager.data.quests:
+            self.model.append(QuestGObject(quest))
         self._update_visibility()
 
     def _setup_quest_list(self):
         """Sets up the quest list and its model."""
         self.model = Gio.ListStore(item_type=QuestGObject)
-        for quest in self.project_manager.data.quests:
-            self.model.append(QuestGObject(quest))
-
         self.selection = Gtk.SingleSelection(model=self.model)
 
         factory = Gtk.SignalListItemFactory()

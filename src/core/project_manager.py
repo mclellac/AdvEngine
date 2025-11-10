@@ -312,14 +312,19 @@ class ProjectManager:
         try:
             with open(file_path, "r", newline="") as f:
                 reader = csv.DictReader(f)
+                count = 0
                 for row in reader:
                     for key, value in row.items():
                         field_type = dataclass_type.__annotations__.get(key)
                         if field_type == int:
-                            row[key] = int(value)
+                            row[key] = int(value) if value else 0
                         elif field_type == bool:
                             row[key] = value.lower() in ["true", "1"]
+                        elif field_type == dict:
+                            row[key] = json.loads(value) if value else {}
                     target_list.append(dataclass_type(**row))
+                    count += 1
+                logging.debug(f"Loaded {count} items from {filename}")
         except FileNotFoundError:
             if not self.is_new_project:
                 logging.warning(f"Warning: {file_path} not found.")
@@ -345,13 +350,18 @@ class ProjectManager:
             with open(file_path, "r") as f:
                 content = f.read()
                 if not content:
+                    logging.debug(f"File {filename} is empty.")
                     return
                 data = json.loads(content)
+                count = 0
                 if object_hook:
                     for item_data in data:
                         target_list.append(object_hook(item_data))
+                        count += 1
                 else:
                     target_list.extend(data)
+                    count = len(data)
+                logging.debug(f"Loaded {count} items from {filename}")
         except FileNotFoundError:
             if not self.is_new_project:
                 logging.warning(f"Warning: {file_path} not found.")
@@ -545,9 +555,11 @@ class ProjectManager:
                 return None, f"Template '{template}' not found."
 
             shutil.copytree(template_dir, project_path, dirs_exist_ok=True)
+            logging.debug(f"Copied template '{template}' to '{project_path}'")
 
             project_manager = ProjectManager(project_path)
             project_manager.is_new_project = True
+            project_manager.load_project()
             return project_manager, None
         except Exception as e:
             logging.error(f"Failed to create project from template '{template}': {e}")
