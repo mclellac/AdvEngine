@@ -60,16 +60,12 @@ class InteractionEditor(Gtk.Box):
         self.settings_manager = settings_manager
         self.project_manager.register_project_loaded_callback(self.project_loaded)
 
-        self._setup_model()
         self._create_columns()
         self._connect_signals()
-
-        self._update_visibility()
 
     def project_loaded(self):
         """Callback executed when a project is finished loading."""
         self._setup_model()
-        self._create_columns()
         self._update_visibility()
 
     def _setup_model(self):
