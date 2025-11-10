@@ -64,12 +64,13 @@ class InteractionEditor(Gtk.Box):
         self._create_columns()
         self._connect_signals()
 
-        self.refresh_model()
         self._update_visibility()
 
     def project_loaded(self):
         """Callback executed when a project is finished loading."""
-        self.refresh_model()
+        self._setup_model()
+        self._create_columns()
+        self._update_visibility()
 
     def _setup_model(self):
         """Sets up the data model and selection model."""
