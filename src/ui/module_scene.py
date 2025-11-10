@@ -77,6 +77,7 @@ class SceneEditor(Gtk.Box):
         self._connect_signals()
         self._setup_canvas()
 
+        self._update_scene_list()
         self._update_visibility()
         self.project_manager.register_project_loaded_callback(self._on_project_loaded)
 

@@ -37,6 +37,13 @@ class VerbEditor(Gtk.Box):
 
         self._connect_signals()
         self._update_visibility()
+        self.project_manager.register_project_loaded_callback(self.project_loaded)
+
+    def project_loaded(self):
+        """Callback for when the project is loaded."""
+        self.model = self._setup_model()
+        self.filter_model.set_model(self.model)
+        self._update_visibility()
 
     def _connect_signals(self):
         """Connects widget signals to handlers."""

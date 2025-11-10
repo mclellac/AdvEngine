@@ -432,14 +432,21 @@ class LogicEditor(Adw.Bin):
 
         self._setup_canvas_controllers()
         self._create_context_menus()
+        self.project_manager.register_project_loaded_callback(self.project_loaded)
 
+        self.project_loaded()
+        self.canvas.queue_draw()
+
+    def project_loaded(self):
+        """Callback for when the project is loaded."""
         if self.project_manager.data.logic_graphs:
             self.active_graph = self.project_manager.data.logic_graphs[0]
         else:
             self.active_graph = LogicGraph(id="default_graph", name="Default")
             self.project_manager.data.logic_graphs.append(self.active_graph)
-
         self.canvas.queue_draw()
+        if hasattr(self, "minimap"):
+            self.minimap.queue_draw()
 
     def _build_ui(self):
         """Builds the user interface for the editor.

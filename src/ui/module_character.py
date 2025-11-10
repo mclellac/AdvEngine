@@ -72,13 +72,8 @@ class CharacterManager(Gtk.Box):
 
     def project_loaded(self):
         """Callback for when the project is loaded."""
-        self.refresh_model()
-
-    def refresh_model(self):
-        """Clears and repopulates the model from the project manager."""
-        self.model.remove_all()
-        for character in self.project_manager.data.characters:
-            self.model.append(CharacterGObject(character))
+        self.model = self._setup_model()
+        self.filter_model.set_model(self.model)
         self._update_visibility()
 
     def _connect_signals(self):
