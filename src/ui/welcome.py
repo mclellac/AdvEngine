@@ -1,4 +1,10 @@
-"""The welcome window for the AdvEngine application."""
+"""The welcome window for the AdvEngine application.
+
+This module defines the WelcomeWindow class, which is the initial window
+displayed to the user upon starting the application. It provides options to
+create a new project, open an existing one, or select from a list of recent
+projects.
+"""
 
 import gi
 import os
@@ -10,15 +16,22 @@ from gi.repository import Gtk, Adw, Gio
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "welcome.ui"))
 class WelcomeWindow(Adw.ApplicationWindow):
-    """The main welcome window for the application."""
+    """The main welcome window for the application.
+
+    This window is the first point of interaction for the user. It presents
+    a clean interface for project management before the main editor is shown.
+
+    Attributes:
+        settings: A reference to the application's SettingsManager instance.
+    """
 
     __gtype_name__ = "WelcomeWindow"
 
-    new_project_button = Gtk.Template.Child()
-    open_project_button = Gtk.Template.Child()
-    recent_projects_list = Gtk.Template.Child()
-    recent_projects_group = Gtk.Template.Child()
-    menu_button = Gtk.Template.Child()
+    new_project_button: Gtk.Button = Gtk.Template.Child()
+    open_project_button: Gtk.Button = Gtk.Template.Child()
+    recent_projects_list: Gtk.ListBox = Gtk.Template.Child()
+    recent_projects_group: Adw.PreferencesGroup = Gtk.Template.Child()
+    menu_button: Gtk.MenuButton = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         """Initializes a new WelcomeWindow instance."""
@@ -47,7 +60,12 @@ class WelcomeWindow(Adw.ApplicationWindow):
         self.populate_recent_projects()
 
     def populate_recent_projects(self):
-        """Populates the recent projects list."""
+        """Populates the list of recent projects from settings.
+
+        This method reads the list of recent projects from the SettingsManager,
+        clears the existing list in the UI, and then repopulates it with
+        widgets for each recent project.
+        """
         # Clear existing
         while child := self.recent_projects_list.get_first_child():
             self.recent_projects_list.remove(child)
@@ -72,10 +90,20 @@ class WelcomeWindow(Adw.ApplicationWindow):
         self.recent_projects_group.set_visible(bool(recent_projects))
 
     def on_open_recent(self, button: Gtk.Button, project_path: str):
-        """Handles the clicked signal from a recent project's open button."""
+        """Handles the click event for a recent project's 'Open' button.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+            project_path (str): The path of the project to open.
+        """
         self.get_application().load_project(project_path)
 
     def on_remove_recent(self, button: Gtk.Button, project_path: str):
-        """Handles the clicked signal from a recent project's remove button."""
+        """Handles the click event for a recent project's 'Remove' button.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+            project_path (str): The path of the project to remove.
+        """
         self.settings.remove_recent_project(project_path)
         self.populate_recent_projects()

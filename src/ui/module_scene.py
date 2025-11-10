@@ -1,4 +1,9 @@
-"""The scene editor for the AdvEngine application."""
+"""The scene editor for the AdvEngine application.
+
+This module defines the SceneEditor, a graphical interface for creating and
+managing game scenes. It includes a canvas for placing and manipulating
+hotspots, a properties panel, and a layer list.
+"""
 
 import gi
 import os
@@ -12,7 +17,17 @@ from ..core.project_manager import ProjectManager
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_scene.ui"))
 class SceneEditor(Gtk.Box):
-    """A widget for editing scenes."""
+    """A widget for editing game scenes and their hotspots.
+
+    This editor provides a visual canvas for placing hotspots on a scene's
+    background image. It supports panning, zooming, and grid snapping.
+
+    Attributes:
+        project_manager (ProjectManager): The main project manager instance.
+        settings_manager: The main settings manager instance.
+        selected_scene_gobject (SceneGObject): The currently selected scene.
+        selected_hotspot (Hotspot): The currently selected hotspot.
+    """
 
     __gtype_name__ = "SceneEditor"
 
@@ -20,26 +35,31 @@ class SceneEditor(Gtk.Box):
     VIEW_NAME = "scenes_editor"
     ORDER = 0
 
-    add_scene_button = Gtk.Template.Child()
-    delete_scene_button = Gtk.Template.Child()
-    scene_list_view = Gtk.Template.Child()
-    content_stack = Gtk.Template.Child()
-    hotspot_toggle = Gtk.Template.Child()
-    grid_toggle = Gtk.Template.Child()
-    canvas = Gtk.Template.Child()
-    background_preview = Gtk.Template.Child()
-    set_bg_button = Gtk.Template.Child()
-    props_group = Gtk.Template.Child()
-    prop_name = Gtk.Template.Child()
-    prop_x = Gtk.Template.Child()
-    prop_y = Gtk.Template.Child()
-    prop_w = Gtk.Template.Child()
-    prop_h = Gtk.Template.Child()
-    layer_list = Gtk.Template.Child()
+    add_scene_button: Gtk.Button = Gtk.Template.Child()
+    delete_scene_button: Gtk.Button = Gtk.Template.Child()
+    scene_list_view: Gtk.ListView = Gtk.Template.Child()
+    content_stack: Gtk.Stack = Gtk.Template.Child()
+    hotspot_toggle: Gtk.ToggleButton = Gtk.Template.Child()
+    grid_toggle: Gtk.ToggleButton = Gtk.Template.Child()
+    canvas: Gtk.DrawingArea = Gtk.Template.Child()
+    background_preview: Gtk.Picture = Gtk.Template.Child()
+    set_bg_button: Gtk.Button = Gtk.Template.Child()
+    props_group: Adw.PreferencesGroup = Gtk.Template.Child()
+    prop_name: Adw.EntryRow = Gtk.Template.Child()
+    prop_x: Adw.SpinRow = Gtk.Template.Child()
+    prop_y: Adw.SpinRow = Gtk.Template.Child()
+    prop_w: Adw.SpinRow = Gtk.Template.Child()
+    prop_h: Adw.SpinRow = Gtk.Template.Child()
+    layer_list: Gtk.ListView = Gtk.Template.Child()
 
     def __init__(self, project_manager: ProjectManager, settings_manager, **kwargs):
-        """Initializes a new SceneEditor instance."""
-        print("DEBUG: SceneEditor.__init__")
+        """Initializes a new SceneEditor instance.
+
+        Args:
+            project_manager (ProjectManager): The project manager instance.
+            settings_manager: The settings manager instance.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -61,7 +81,7 @@ class SceneEditor(Gtk.Box):
         self.project_manager.register_project_loaded_callback(self._on_project_loaded)
 
     def _setup_models(self):
-        """Sets up the data models and list views."""
+        """Sets up the data models and list views for scenes and layers."""
         # Scene List
         self.scene_model = Gio.ListStore(item_type=SceneGObject)
         self.scene_selection = Gtk.SingleSelection(model=self.scene_model)
@@ -120,39 +140,63 @@ class SceneEditor(Gtk.Box):
 
     def _on_project_loaded(self, *args):
         """Handles the project-loaded signal from the project manager."""
-        print("DEBUG: SceneEditor._on_project_loaded")
         self._update_scene_list()
         self._update_visibility()
 
     def _setup_scene_list_item(self, factory, list_item):
-        """Sets up a scene list item."""
+        """Sets up a widget for an item in the scene list.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory.
+            list_item (Gtk.ListItem): The list item to set up.
+        """
         label = Gtk.Label(
             halign=Gtk.Align.START, margin_start=10, margin_top=10, margin_bottom=10
         )
         list_item.set_child(label)
 
     def _bind_scene_list_item(self, factory, list_item):
-        """Binds a scene list item to the data model."""
+        """Binds a scene list item to the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory.
+            list_item (Gtk.ListItem): The list item to bind.
+        """
         label = list_item.get_child()
         scene_gobject = list_item.get_item()
         label.set_text(scene_gobject.name)
 
     def _setup_layer_item(self, factory, list_item):
-        """Sets up a layer item."""
+        """Sets up a widget for an item in the layer (hotspot) list.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory.
+            list_item (Gtk.ListItem): The list item to set up.
+        """
         label = Gtk.Label(
             halign=Gtk.Align.START, margin_start=10, margin_top=10, margin_bottom=10
         )
         list_item.set_child(label)
 
     def _bind_layer_item(self, factory, list_item):
-        """Binds a layer item to the data model."""
+        """Binds a layer list item to the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory.
+            list_item (Gtk.ListItem): The list item to bind.
+        """
         label = list_item.get_child()
         hotspot_gobject = list_item.get_item()
         label.set_text(hotspot_gobject.name)
 
     def _on_layer_selected(self, selection, position, n_items):
-        """Handles the selection-changed signal from the layer list."""
-        print("DEBUG: SceneEditor._on_layer_selected")
+        """Handles selection changes in the layer list.
+
+        Args:
+            selection (Gtk.SingleSelection): The selection model.
+            position (int): The position of the selected item.
+            n_items (int): The number of items in the model.
+        """
         hotspot_gobject = selection.get_selected_item()
         if hotspot_gobject:
             self.selected_hotspot = hotspot_gobject.hotspot
@@ -162,8 +206,7 @@ class SceneEditor(Gtk.Box):
         self.canvas.queue_draw()
 
     def _update_layer_list(self):
-        """Updates the layer list."""
-        print("DEBUG: SceneEditor._update_layer_list")
+        """Updates the layer list from the currently selected scene."""
         self.hotspot_model.remove_all()
         scene = (
             self.selected_scene_gobject.scene if self.selected_scene_gobject else None
@@ -173,21 +216,24 @@ class SceneEditor(Gtk.Box):
                 self.hotspot_model.append(HotspotGObject(hotspot))
 
     def _update_visibility(self):
-        """Updates the visibility of the main content."""
+        """Updates the visibility of the main content stack."""
         has_scenes = self.scene_model.get_n_items() > 0
-        print(f"DEBUG: SceneEditor._update_visibility: has_scenes={has_scenes}")
         self.content_stack.set_visible_child_name("canvas" if has_scenes else "status")
 
     def _update_scene_list(self):
-        """Updates the scene list."""
-        print("DEBUG: SceneEditor._update_scene_list")
+        """Updates the scene list from the project manager."""
         self.scene_model.remove_all()
         for scene in self.project_manager.data.scenes:
             self.scene_model.append(SceneGObject(scene))
 
     def _on_scene_selected(self, selection, position, n_items):
-        """Handles the selection-changed signal from the scene list."""
-        print("DEBUG: SceneEditor._on_scene_selected")
+        """Handles selection changes in the scene list.
+
+        Args:
+            selection (Gtk.SingleSelection): The selection model.
+            position (int): The position of the selected item.
+            n_items (int): The number of items in the model.
+        """
         self.selected_scene_gobject = selection.get_selected_item()
         self.delete_scene_button.set_sensitive(self.selected_scene_gobject is not None)
         self.selected_hotspot = None
@@ -196,8 +242,11 @@ class SceneEditor(Gtk.Box):
         self.canvas.queue_draw()
 
     def _on_add_scene(self, button):
-        """Handles the clicked signal from the add scene button."""
-        print("DEBUG: SceneEditor._on_add_scene")
+        """Handles the 'Add Scene' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(), modal=True, heading="Create New Scene"
         )
@@ -221,7 +270,11 @@ class SceneEditor(Gtk.Box):
         dialog.present()
 
     def _on_remove_scene(self, button):
-        """Handles the clicked signal from the remove scene button."""
+        """Handles the 'Remove Scene' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         if not self.selected_scene_gobject:
             return
         dialog = Adw.MessageDialog(
@@ -237,6 +290,12 @@ class SceneEditor(Gtk.Box):
         dialog.present()
 
     def _on_delete_scene_response(self, dialog, response):
+        """Handles the response from the delete scene confirmation dialog.
+
+        Args:
+            dialog (Adw.MessageDialog): The dialog.
+            response (str): The response ID.
+        """
         if response == "delete":
             self.project_manager.remove_data_item(
                 "scenes", self.selected_scene_gobject.scene
@@ -246,9 +305,14 @@ class SceneEditor(Gtk.Box):
         dialog.close()
 
     def _on_set_background(self, button):
+        """Handles the 'Set Background' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         if not self.selected_scene_gobject:
             return
-        dialog = Adw.FileDialog.new()
+        dialog = Gtk.FileDialog.new()
         dialog.set_title("Select a Background Image")
         file_filter = Gtk.FileFilter()
         file_filter.add_pixbuf_formats()
@@ -256,6 +320,12 @@ class SceneEditor(Gtk.Box):
         dialog.open(self.get_root(), None, self._on_file_chooser_response)
 
     def _on_file_chooser_response(self, dialog, result):
+        """Handles the response from the background image file chooser.
+
+        Args:
+            dialog: The file dialog.
+            result: The result of the dialog.
+        """
         try:
             file = dialog.open_finish(result)
             file_path = file.get_path()
@@ -271,6 +341,7 @@ class SceneEditor(Gtk.Box):
             print(f"Error selecting background image: {e}")
 
     def _update_background_preview(self):
+        """Updates the background image preview in the properties panel."""
         scene = (
             self.selected_scene_gobject.scene if self.selected_scene_gobject else None
         )
@@ -284,6 +355,7 @@ class SceneEditor(Gtk.Box):
         self.background_preview.set_filename(None)
 
     def _update_props_panel(self):
+        """Updates the properties panel with the selected hotspot's data."""
         is_visible = self.selected_hotspot is not None
         self.props_group.set_visible(is_visible)
         if is_visible:
@@ -295,6 +367,12 @@ class SceneEditor(Gtk.Box):
         self._update_background_preview()
 
     def _on_prop_changed(self, widget, *args):
+        """Handles value changes from the properties panel.
+
+        Args:
+            widget: The widget that emitted the signal.
+            *args: Additional arguments from the signal.
+        """
         if not self.selected_hotspot:
             return
         self.selected_hotspot.name = self.prop_name.get_text()
@@ -307,6 +385,15 @@ class SceneEditor(Gtk.Box):
         self._update_layer_list()  # To refresh the name in the list
 
     def _on_canvas_draw(self, area, cr, w, h, _):
+        """Draws the content of the scene editor canvas.
+
+        Args:
+            area (Gtk.DrawingArea): The drawing area.
+            cr: The Cairo context.
+            w (int): The width of the drawing area.
+            h (int): The height of the drawing area.
+            _: User data (unused).
+        """
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
         scene = (
@@ -351,6 +438,14 @@ class SceneEditor(Gtk.Box):
         cr.restore()
 
     def _on_canvas_click(self, gesture, n_press, x, y):
+        """Handles a click event on the canvas.
+
+        Args:
+            gesture (Gtk.GestureClick): The click gesture.
+            n_press (int): The number of presses.
+            x (float): The x-coordinate of the click.
+            y (float): The y-coordinate of the click.
+        """
         world_x, world_y = (x - self.pan_x) / self.zoom_level, (
             y - self.pan_y
         ) / self.zoom_level
@@ -390,6 +485,16 @@ class SceneEditor(Gtk.Box):
             self.canvas.queue_draw()
 
     def _on_scroll(self, controller, dx, dy):
+        """Handles scroll events for zooming.
+
+        Args:
+            controller: The event controller.
+            dx (float): The scroll delta on the x-axis.
+            dy (float): The scroll delta on the y-axis.
+
+        Returns:
+            bool: True to indicate the event was handled.
+        """
         if controller.get_current_event_state() & Gdk.ModifierType.CONTROL_MASK:
             self.zoom_level *= 1.1 if dy < 0 else 1 / 1.1
             self.zoom_level = max(0.1, min(self.zoom_level, 5.0))
@@ -398,10 +503,24 @@ class SceneEditor(Gtk.Box):
         return False
 
     def _on_pan_begin(self, gesture, x, y):
+        """Handles the beginning of a pan drag.
+
+        Args:
+            gesture (Gtk.GestureDrag): The drag gesture.
+            x (float): The starting x-coordinate.
+            y (float): The starting y-coordinate.
+        """
         self.pan_start_x = self.pan_x
         self.pan_start_y = self.pan_y
 
     def _on_pan_update(self, gesture, x, y):
+        """Handles the update of a pan drag.
+
+        Args:
+            gesture (Gtk.GestureDrag): The drag gesture.
+            x (float): The x-offset of the drag.
+            y (float): The y-offset of the drag.
+        """
         self.pan_x = self.pan_start_x + x
         self.pan_y = self.pan_start_y + y
         self.canvas.queue_draw()

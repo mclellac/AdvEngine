@@ -1,4 +1,8 @@
-"""The dialogue editor for the AdvEngine application."""
+"""The dialogue editor for the AdvEngine application.
+
+This module provides the DialogueEditor, a tree-based interface for creating
+and managing branching conversations and in-game events.
+"""
 
 import os
 import gi
@@ -11,7 +15,14 @@ from .module_logic import DynamicNodeEditor
 
 
 class DialogueNodeGObject(GObject.Object):
-    """GObject wrapper for the DialogueNode and ActionNode dataclasses."""
+    """GObject wrapper for the DialogueNode and ActionNode dataclasses.
+
+    This class provides GObject-compatible properties for dialogue tree nodes,
+    allowing them to be used in GTK models.
+
+    Attributes:
+        node: The underlying DialogueNode or ActionNode dataclass instance.
+    """
 
     __gtype_name__ = "DialogueNodeGObject"
 
@@ -20,7 +31,11 @@ class DialogueNodeGObject(GObject.Object):
     display_text = GObject.Property(type=str)
 
     def __init__(self, node):
-        """Initializes a new DialogueNodeGObject instance."""
+        """Initializes a new DialogueNodeGObject instance.
+
+        Args:
+            node (Union[DialogueNode, ActionNode]): The node to wrap.
+        """
         super().__init__()
         self.node = node
         self.id = node.id
@@ -34,7 +49,20 @@ class DialogueNodeGObject(GObject.Object):
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_dialogue.ui"))
 class DialogueEditor(Adw.Bin):
-    """A widget for editing dialogue trees."""
+    """A widget for editing branching dialogue trees.
+
+    This editor uses a Gtk.ColumnView with a Gtk.TreeListModel to represent
+    the hierarchical structure of a conversation. It allows for adding dialogue
+    lines and embedding actions within the conversation flow.
+
+    Attributes:
+        project_manager: The main project manager instance.
+        settings_manager: The main settings manager instance.
+        active_graph (LogicGraph): The currently active dialogue graph.
+        model (Gio.ListStore): The root data store for the tree view.
+        tree_model (Gtk.TreeListModel): The tree model for the view.
+        selection (Gtk.SingleSelection): The selection model for the view.
+    """
 
     __gtype_name__ = "DialogueEditor"
 
@@ -42,16 +70,19 @@ class DialogueEditor(Adw.Bin):
     VIEW_NAME = "dialogue_editor"
     ORDER = 3
 
-    add_dialogue_button = Gtk.Template.Child()
-    add_action_button = Gtk.Template.Child()
-    delete_button = Gtk.Template.Child()
-    dialogue_tree_view = Gtk.Template.Child()
-    properties_stack = Gtk.Template.Child()
-    dialogue_node_editor_placeholder = Gtk.Template.Child()
+    add_dialogue_button: Gtk.Button = Gtk.Template.Child()
+    add_action_button: Gtk.Button = Gtk.Template.Child()
+    delete_button: Gtk.Button = Gtk.Template.Child()
+    dialogue_tree_view: Gtk.ColumnView = Gtk.Template.Child()
+    properties_stack: Gtk.Stack = Gtk.Template.Child()
+    dialogue_node_editor_placeholder: Gtk.Box = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
-        """Initializes a new DialogueEditor instance."""
-        print("DEBUG: DialogueEditor.__init__")
+        """Initializes a new DialogueEditor instance.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
         project_manager = kwargs.pop("project_manager")
         settings_manager = kwargs.pop("settings_manager")
 
@@ -74,11 +105,10 @@ class DialogueEditor(Adw.Bin):
 
     def project_loaded(self):
         """Callback for when the project is loaded."""
-        print("DEBUG: DialogueEditor.project_loaded: Received project loaded signal.")
         self.refresh_model()
 
     def _setup_tree_view(self):
-        """Sets up the tree view and its model."""
+        """Sets up the tree view and its underlying models."""
         self.model = Gio.ListStore(item_type=DialogueNodeGObject)
         self.tree_model = Gtk.TreeListModel.new(
             self.model,
@@ -94,8 +124,9 @@ class DialogueEditor(Adw.Bin):
         factory.connect("bind", self._bind_list_item)
         factory.connect("unbind", self._unbind_list_item)
 
+        column = Gtk.ColumnViewColumn(title="Dialogue Flow", factory=factory)
+        self.dialogue_tree_view.append_column(column)
         self.dialogue_tree_view.set_model(self.selection)
-        self.dialogue_tree_view.set_factory(factory)
 
     def _connect_signals(self):
         """Connects the widget signals to the handler functions."""
@@ -105,7 +136,16 @@ class DialogueEditor(Adw.Bin):
         self.selection.connect("selection-changed", self._on_selection_changed)
 
     def _get_children(self, item, *args):
-        """Gets the children of a node in the dialogue tree."""
+        """Gets the children of a node for the tree model.
+
+        Args:
+            item (DialogueNodeGObject): The parent item.
+            *args: Additional arguments (unused).
+
+        Returns:
+            Gio.ListStore or None: A list store containing the children, or
+            None if the item has no children.
+        """
         node = item.node
         if isinstance(node, DialogueNode):
             children = Gio.ListStore(item_type=DialogueNodeGObject)
@@ -119,12 +159,24 @@ class DialogueEditor(Adw.Bin):
         return None
 
     def _setup_list_item(self, factory, list_item):
-        """Sets up a list item in the dialogue tree."""
+        """Sets up a list item widget for the tree view.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to set up.
+        """
         label = Gtk.Label(halign=Gtk.Align.START)
         list_item.set_child(label)
 
     def _bind_list_item(self, factory, list_item):
-        """Binds a list item to the data model."""
+        """Binds a list item to the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to bind.
+        """
         label = list_item.get_child()
         tree_list_row = list_item.get_item()
         if tree_list_row is None:
@@ -137,14 +189,19 @@ class DialogueEditor(Adw.Bin):
             list_item.binding = binding
 
     def _unbind_list_item(self, factory, list_item):
-        """Unbinds a list item from the data model."""
+        """Unbinds a list item from the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to unbind.
+        """
         if hasattr(list_item, "binding"):
             list_item.binding.unbind()
             del list_item.binding
 
     def refresh_model(self):
-        """Loads the dialogue graphs from the project manager."""
-        print("DEBUG: DialogueEditor.refresh_model")
+        """Loads or creates the dialogue graph and populates the model."""
         self.model.remove_all()
         if self.project_manager.data.dialogue_graphs:
             self.active_graph = self.project_manager.data.dialogue_graphs[0]
@@ -159,8 +216,11 @@ class DialogueEditor(Adw.Bin):
             self.model.append(DialogueNodeGObject(node))
 
     def _on_add_dialogue_node(self, button):
-        """Handles the clicked signal from the add dialogue button."""
-        print("DEBUG: DialogueEditor._on_add_dialogue_node")
+        """Handles the 'Add Dialogue' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         if not self.active_graph:
             return
 
@@ -188,8 +248,11 @@ class DialogueEditor(Adw.Bin):
         self.refresh_model()
 
     def _on_add_action_node(self, button):
-        """Handles the clicked signal from the add action button."""
-        print("DEBUG: DialogueEditor._on_add_action_node")
+        """Handles the 'Add Action' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         if not self.active_graph:
             return
 
@@ -214,8 +277,11 @@ class DialogueEditor(Adw.Bin):
         self.refresh_model()
 
     def _on_delete_node(self, button):
-        """Handles the clicked signal from the delete button."""
-        print("DEBUG: DialogueEditor._on_delete_node")
+        """Handles the 'Delete' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         selected_item = self.selection.get_selected_item()
         if not selected_item or not self.active_graph:
             return
@@ -232,8 +298,13 @@ class DialogueEditor(Adw.Bin):
         self.project_manager.set_dirty()
 
     def _on_selection_changed(self, selection, position, n_items):
-        """Handles the selection-changed signal from the selection model."""
-        print("DEBUG: DialogueEditor._on_selection_changed")
+        """Handles selection changes in the dialogue tree.
+
+        Args:
+            selection (Gtk.SingleSelection): The selection model.
+            position (int): The position of the selected item.
+            n_items (int): The number of items in the model.
+        """
         selected_item = selection.get_selected_item()
         if selected_item:
             self.delete_button.set_sensitive(True)
@@ -245,8 +316,7 @@ class DialogueEditor(Adw.Bin):
             self.properties_stack.set_visible_child_name("placeholder")
 
     def _on_node_updated(self):
-        """Handles the node-updated signal from the dynamic node editor."""
-        print("DEBUG: DialogueEditor._on_node_updated")
+        """Callback for when a node's data is updated in the editor."""
         selected_item = self.selection.get_selected_item()
         if selected_item:
             node_gobject = selected_item.get_item()

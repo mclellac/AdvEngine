@@ -1,4 +1,9 @@
-"""The database editor for the AdvEngine application."""
+"""The database editor for the AdvEngine application.
+
+This module defines the DatabaseEditor, a container widget that uses a
+ViewStack to manage several individual database-style editors, such as the
+ItemEditor, AttributeEditor, and VerbEditor.
+"""
 
 import gi
 import os
@@ -14,7 +19,11 @@ from .verb_editor import VerbEditor
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_database.ui"))
 class DatabaseEditor(Gtk.Box):
-    """A container for the various database-style editors."""
+    """A container for the various database-style editors.
+
+    This widget acts as a central hub for managing core game data like items,
+    attributes, and verbs, presenting each in a separate tab.
+    """
 
     __gtype_name__ = "DatabaseEditor"
 
@@ -22,11 +31,15 @@ class DatabaseEditor(Gtk.Box):
     VIEW_NAME = "db_editor"
     ORDER = 13
 
-    view_stack = Gtk.Template.Child()
-    view_switcher = Gtk.Template.Child()
+    view_stack: Gtk.Stack = Gtk.Template.Child()
+    view_switcher: Adw.ViewSwitcher = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
-        """Initializes a new DatabaseEditor instance."""
+        """Initializes a new DatabaseEditor instance.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
         project_manager = kwargs.pop("project_manager")
         settings_manager = kwargs.pop("settings_manager")
         super().__init__(**kwargs)
