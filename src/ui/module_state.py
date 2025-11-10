@@ -7,7 +7,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
 
-from ..core.schemas.state import GlobalVariable, GlobalVariableGObject
+from ..core.schemas.global_state import GlobalVariable, GlobalVariableGObject
 from ..core.project_manager import ProjectManager
 
 

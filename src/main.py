@@ -164,7 +164,7 @@ class EditorWindow(Adw.ApplicationWindow):
             body=message,
         )
         dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.destroy())
+        dialog.connect("response", lambda d, r: d.close())
         dialog.present()
 
     def _on_play_clicked(self, button: Gtk.Button):
@@ -411,7 +411,7 @@ class AdvEngine(Adw.Application):
                         body="Project name and template are required.",
                     )
                     error_dialog.add_response("ok", "OK")
-                    error_dialog.connect("response", lambda dlg, resp: dlg.destroy())
+                    error_dialog.connect("response", lambda dlg, resp: dlg.close())
                     error_dialog.present()
                     return
 

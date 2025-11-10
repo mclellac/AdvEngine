@@ -57,3 +57,15 @@ def create_gobject_wrapper(dataclass_type):
     )
 
     return new_class
+
+
+class StringGObject(GObject.Object):
+    """A GObject wrapper for a simple string."""
+
+    __gtype_name__ = "StringGObject"
+    value = GObject.Property(type=str, default="")
+
+    def __init__(self, value):
+        """Initializes a new StringGObject instance."""
+        super().__init__()
+        self.value = value
