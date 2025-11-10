@@ -124,8 +124,7 @@ class DialogueEditor(Adw.Bin):
         factory.connect("bind", self._bind_list_item)
         factory.connect("unbind", self._unbind_list_item)
 
-        column = Gtk.ColumnViewColumn(title="Dialogue Flow", factory=factory)
-        self.dialogue_tree_view.append_column(column)
+        self.dialogue_tree_view.set_factory(factory)
         self.dialogue_tree_view.set_model(self.selection)
 
     def _connect_signals(self):
