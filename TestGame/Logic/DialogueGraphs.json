@@ -1,0 +1,36 @@
+[
+  {
+    "id": "default_dialogue",
+    "name": "Default Dialogue",
+    "nodes": [
+      {
+        "id": "dnode_0",
+        "node_type": "Dialogue",
+        "x": 0,
+        "y": 0,
+        "width": 150,
+        "height": 80,
+        "inputs": [],
+        "outputs": [
+          "dnode_1"
+        ],
+        "character_id": "Player",
+        "dialogue_text": "Hello there!"
+      },
+      {
+        "id": "dnode_1",
+        "node_type": "Dialogue",
+        "x": 0,
+        "y": 0,
+        "width": 150,
+        "height": 80,
+        "inputs": [
+          "dnode_0"
+        ],
+        "outputs": [],
+        "character_id": "char_01",
+        "dialogue_text": "New dialogue..."
+      }
+    ]
+  }
+]

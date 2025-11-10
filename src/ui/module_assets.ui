@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <template class="AssetEditor" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkBox" id="main_box">
+        <property name="orientation">horizontal</property>
+        <property name="spacing">10</property>
+        <property name="margin-top">10</property>
+        <property name="margin-bottom">10</property>
+        <property name="margin-start">10</property>
+        <property name="margin-end">10</property>
+        <child>
+          <object class="GtkBox" id="left_panel">
+            <property name="orientation">vertical</property>
+            <property name="spacing">10</property>
+            <property name="width-request">350</property>
+            <child>
+              <object class="GtkStack" id="main_stack">
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">grid</property>
+                    <property name="child">
+                      <object class="GtkScrolledWindow" id="scrolled_window">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="vscrollbar-policy">automatic</property>
+                        <property name="vexpand">true</property>
+                        <property name="child">
+                          <object class="GtkGridView" id="asset_grid_view">
+                            <property name="max-columns">3</property>
+                            <property name="min-columns">2</property>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">status</property>
+                    <property name="child">
+                      <object class="AdwStatusPage" id="status_page">
+                        <property name="title">No Assets</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="import_button">
+                <property name="label">Import Asset</property>
+                <property name="tooltip-text">Import a new image asset into the project</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="right_panel">
+            <property name="orientation">vertical</property>
+            <property name="spacing">10</property>
+            <property name="hexpand">true</property>
+            <child>
+              <object class="GtkPicture" id="preview_image">
+                <property name="content-fit">contain</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="animation_editor">
+                <property name="orientation">vertical</property>
+                <property name="spacing">10</property>
+                <property name="visible">false</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Animation Frames</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow" id="scrolled_frames">
+                    <property name="child">
+                      <object class="GtkListView" id="frame_list_view"/>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

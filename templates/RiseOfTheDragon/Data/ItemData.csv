@@ -1,0 +1,3 @@
+id,name,description,type,buy_price,sell_price
+cred_chip,"Credit Chip","A standard credit chip for universal transactions.",currency,1,1
+vid_phone,"Video Phone","A portable video phone. The latest tech.",item,500,250

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <template class="CharacterManager" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="AdwHeaderBar">
+        <child type="start">
+          <object class="GtkButton" id="add_button">
+            <property name="icon-name">list-add-symbolic</property>
+            <property name="tooltip-text">Add New Character</property>
+          </object>
+        </child>
+        <child type="end">
+          <object class="GtkButton" id="delete_button">
+            <property name="icon-name">edit-delete-symbolic</property>
+            <property name="tooltip-text">Delete Selected Character</property>
+            <property name="sensitive">false</property>
+          </object>
+        </child>
+        <property name="title-widget">
+          <object class="GtkSearchEntry" id="search_entry">
+            <property name="placeholder-text">Search Characters</property>
+            <property name="hexpand">true</property>
+          </object>
+        </property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkStack" id="stack">
+        <property name="vexpand">true</property>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">content</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <property name="hexpand">true</property>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="vexpand">true</property>
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="vscrollbar-policy">automatic</property>
+                        <property name="child">
+                          <object class="GtkColumnView" id="column_view"/>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <property name="width-request">256</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">&lt;b&gt;Portrait Preview&lt;/b&gt;</property>
+                        <property name="use-markup">true</property>
+                        <property name="halign">start</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkPicture" id="portrait_preview">
+                        <property name="content-fit">contain</property>
+                        <property name="height-request">256</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">empty</property>
+            <property name="child">
+              <object class="AdwStatusPage">
+                <property name="title">No Characters</property>
+                <property name="description">Create a new character to get started.</property>
+                <property name="icon-name">user-info-symbolic</property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

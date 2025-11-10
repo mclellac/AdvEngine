@@ -1,0 +1,8 @@
+id,display_name,dialogue_start_id,is_merchant,shop_id,portrait_asset_id,sprite_sheet_asset_id,animations
+player,"Roger Wilco",,False,,,{}
+trooper1,"Stormtrooper",,False,,,{}
+trooper2,"Stormtrooper",,False,,,{}
+darth,"Dark Lord",,False,,,{}
+zorblat,"Zorblat the Collector",,True,zorblats_shop,,{}
+sparky,"Sparky the Mechanic",,False,,,{}
+holly,"Holly the Hologram",,False,,,{}

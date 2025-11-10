@@ -1,0 +1,108 @@
+[
+  {
+    "id": "door_puzzle",
+    "name": "Door Puzzle",
+    "nodes": [
+      {
+        "id": "start",
+        "node_type": "Condition",
+        "condition_type": "HAS_ITEM",
+        "item_id": "keycard",
+        "amount": 1,
+        "x": 50,
+        "y": 50,
+        "width": 240,
+        "height": 160,
+        "inputs": [],
+        "outputs": ["open_door", "fail_message"]
+      },
+      {
+        "id": "open_door",
+        "node_type": "Action",
+        "action_command": "SET_VARIABLE",
+        "var_name": "door_open",
+        "value": "True",
+        "x": 350,
+        "y": 50,
+        "width": 240,
+        "height": 160,
+        "inputs": ["start"],
+        "outputs": []
+      },
+      {
+        "id": "fail_message",
+        "node_type": "Dialogue",
+        "character_id": "narrator",
+        "dialogue_text": "The door is locked. You need a keycard to open it.",
+        "x": 350,
+        "y": 250,
+        "width": 240,
+        "height": 160,
+        "inputs": ["start"],
+        "outputs": []
+      }
+    ]
+  },
+    {
+    "id": "repair_droid_quest",
+    "name": "Repair Droid Quest",
+    "nodes": [
+        {
+            "id": "start_quest",
+            "node_type": "Action",
+            "action_command": "START_QUEST",
+            "quest_id": "repair_droid",
+            "x": 50,
+            "y": 50,
+            "width": 240,
+            "height": 160,
+            "inputs": [],
+            "outputs": ["complete_objective"]
+        },
+        {
+            "id": "complete_objective",
+            "node_type": "Action",
+            "action_command": "COMPLETE_OBJECTIVE",
+            "quest_id": "repair_droid",
+            "objective_id": "give_part_to_sparky",
+            "x": 350,
+            "y": 50,
+            "width": 240,
+            "height": 160,
+            "inputs": ["start_quest"],
+            "outputs": []
+        }
+    ]
+    },
+    {
+        "id": "give_artifact_quest",
+        "name": "Give Artifact Quest",
+        "nodes": [
+            {
+                "id": "start_quest",
+                "node_type": "Action",
+                "action_command": "START_QUEST",
+                "quest_id": "find_artifact",
+                "x": 50,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": ["complete_objective"]
+            },
+            {
+                "id": "complete_objective",
+                "node_type": "Action",
+                "action_command": "COMPLETE_OBJECTIVE",
+                "quest_id": "find_artifact",
+                "objective_id": "give_artifact_to_zorblat",
+                "x": 350,
+                "y": 50,
+                "width": 240,
+                "height": 160,
+                "inputs": ["start_quest"],
+                "outputs": []
+            }
+        ]
+    }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "start",
+    "name": "Start",
+    "nodes": [
+      {
+        "id": "dialogue_1",
+        "node_type": "Dialogue",
+        "character_id": "player",
+        "dialogue_text": "Time for the morning briefing.",
+        "parent_id": null,
+        "children_ids": [],
+        "x": 100,
+        "y": 100,
+        "width": 240,
+        "height": 160
+      }
+    ]
+  },
+    {
+        "id": "mary_dialogue",
+        "name": "Mary Dialogue",
+        "nodes": [
+            {
+                "id": "mary_1",
+                "node_type": "Dialogue",
+                "character_id": "mary",
+                "dialogue_text": "I saw everything. It was horrible.",
+                "x": 100,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": ["player_response"]
+            },
+            {
+                "id": "player_response",
+                "node_type": "Dialogue",
+                "character_id": "player",
+                "dialogue_text": "Just tell me what you saw.",
+                "x": 400,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": ["mary_1"],
+                "outputs": ["mary_2"]
+            },
+            {
+                "id": "mary_2",
+                "node_type": "Dialogue",
+                "character_id": "mary",
+                "dialogue_text": "It was Franky. I saw him.",
+                "x": 100,
+                "y": 300,
+                "width": 240,
+                "height": 160,
+                "inputs": ["player_response"],
+                "outputs": []
+            }
+        ]
+    },
+    {
+        "id": "franky_dialogue",
+        "name": "Franky Dialogue",
+        "nodes": [
+            {
+                "id": "franky_1",
+                "node_type": "Dialogue",
+                "character_id": "franky",
+                "dialogue_text": "I didn't do it. You can't prove anything.",
+                "x": 100,
+                "y": 100,
+                "width": 240,
+                "height": 160,
+                "inputs": [],
+                "outputs": []
+            }
+        ]
+    }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "main_case",
+    "name": "The Main Case",
+    "objectives": [
+      {
+        "id": "interview_witness",
+        "name": "Interview the witness",
+        "completed": false
+      },
+      {
+        "id": "collect_evidence",
+        "name": "Collect evidence from the crime scene",
+        "completed": false
+      },
+        {
+            "id": "get_warrant",
+            "name": "Get a warrant for the suspect's arrest",
+            "completed": false
+        },
+        {
+            "id": "arrest_suspect",
+            "name": "Arrest the suspect",
+            "completed": false
+        }
+    ]
+  }
+]

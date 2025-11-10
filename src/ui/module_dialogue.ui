@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <template class="DialogueEditor" parent="AdwBin">
+    <child>
+      <object class="AdwOverlaySplitView">
+        <property name="sidebar">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+        <child>
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Dialogue Editor</property>
+                <property name="subtitle">Tree-based conversation editor</property>
+              </object>
+            </property>
+          </object>
+        </child>
+            <child>
+              <object class="GtkBox" id="toolbar">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">5</property>
+                <child>
+                  <object class="GtkButton" id="add_dialogue_button">
+                    <property name="label">Add Dialogue</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="add_action_button">
+                    <property name="label">Add Action</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="delete_button">
+                    <property name="label">Delete</property>
+                    <property name="sensitive">false</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="child">
+                  <object class="GtkListView" id="dialogue_tree_view"/>
+                </property>
+              </object>
+            </child>
+          </object>
+        </property>
+        <property name="content">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="AdwHeaderBar">
+                <property name="title-widget">
+                  <object class="AdwWindowTitle">
+                    <property name="title">Properties</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStack" id="properties_stack">
+                <property name="transition-type">slide-left-right</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">placeholder</property>
+                    <property name="child">
+                      <object class="AdwStatusPage">
+                        <property name="title">Dialogue Editor</property>
+                        <property name="description">This editor is for creating and managing complex, branching conversations using a tree-like structure. For simple, one-off lines of dialogue within a larger event script, use the Dialogue Node in the Logic Editor.</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">editor</property>
+                    <property name="child">
+                      <object class="GtkBox" id="dialogue_node_editor_placeholder"/>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </template>
+</interface>

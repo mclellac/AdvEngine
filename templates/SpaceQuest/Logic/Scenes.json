@@ -1,0 +1,31 @@
+[
+  {
+    "id": "scene_1",
+    "name": "Arcada - Janitor's Closet",
+    "background_image": "",
+    "hotspots": []
+  },
+  {
+    "id": "scene_2",
+    "name": "Arcada - Hallway",
+    "background_image": "",
+    "hotspots": [
+      {
+        "id": "door",
+        "name": "Door",
+        "x": 100,
+        "y": 100,
+        "width": 100,
+        "height": 200
+      },
+      {
+        "id": "keycard_reader",
+        "name": "Keycard Reader",
+        "x": 220,
+        "y": 180,
+        "width": 20,
+        "height": 40
+      }
+    ]
+  }
+]

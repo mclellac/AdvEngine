@@ -1,0 +1,37 @@
+[
+  {
+    "id": "score",
+    "name": "Score",
+    "type": "int",
+    "initial_value": 0,
+    "category": "Default"
+  },
+    {
+        "id": "interviewed_mary",
+        "name": "Interviewed Mary",
+        "type": "bool",
+        "initial_value": false,
+        "category": "Quest"
+    },
+    {
+        "id": "collected_evidence",
+        "name": "Collected Evidence",
+        "type": "bool",
+        "initial_value": false,
+        "category": "Quest"
+    },
+    {
+        "id": "has_warrant",
+        "name": "Has Warrant",
+        "type": "bool",
+        "initial_value": false,
+        "category": "Quest"
+    },
+    {
+        "id": "arrested_franky",
+        "name": "Arrested Franky",
+        "type": "bool",
+        "initial_value": false,
+        "category": "Quest"
+    }
+]

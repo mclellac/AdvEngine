@@ -1,0 +1,34 @@
+[
+  {
+    "id": "repair_droid",
+    "name": "Repair the Droid",
+    "objectives": [
+      {
+        "id": "find_droid_part",
+        "name": "Find the broken droid part",
+        "completed": false
+      },
+      {
+        "id": "give_part_to_sparky",
+        "name": "Give the droid part to Sparky",
+        "completed": false
+      }
+    ]
+  },
+  {
+    "id": "find_artifact",
+    "name": "Find the Alien Artifact",
+    "objectives": [
+      {
+        "id": "get_artifact",
+        "name": "Find the alien artifact",
+        "completed": false
+      },
+      {
+        "id": "give_artifact_to_zorblat",
+        "name": "Give the alien artifact to Zorblat",
+        "completed": false
+      }
+    ]
+  }
+]

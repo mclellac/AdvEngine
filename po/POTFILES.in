@@ -1,0 +1,8 @@
+# List of source files containing translatable strings.
+# Please keep this file sorted alphabetically.
+data/com.github.mclellac.AdvEngine.desktop.in
+data/com.github.mclellac.AdvEngine.metainfo.xml.in
+data/com.github.mclellac.AdvEngine.gschema.xml
+src/main.py
+src/window.py
+src/window.ui

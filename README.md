@@ -1,35 +1,76 @@
 # AdvEngine
 
-AdvEngine is a data and configuration manager used to create 2.5D cyberpunk adventure games that target Unreal Engine 5.6. It provides a modern, cross-platform UI for designing and exporting structured data files for the target game engine to consume at runtime.
+AdvEngine is a data and configuration manager for creating 2.5D point-and-click adventure games, in the style of classic Sierra On-Line titles, that target Unreal Engine 5.6. It provides a modern, cross-platform UI for designing game logic, managing assets, and exporting structured data files for the target game engine to consume at runtime.
+
+## Getting Started
+
+When you first launch AdvEngine, you'll be greeted with the Welcome screen. To start creating your game, click the "New Project" button. You will be prompted to give your project a name and choose a **Project Template**. These templates provide a complete, pre-configured starting point with characters, items, and logic to help you get started quickly.
+
+For a detailed walkthrough, see the **[Tutorial](./docs/tutorials/01_locked_room.md)**.
 
 ## Features
 
-*   **Scene Editor:** Design your game world by creating scenes, defining walk meshes, placing hotspots, and setting up camera safe areas.
-*   **Logic Editor:** A powerful node-graph editor for creating puzzle logic, dialogue trees, and quest branching.
-*   **Asset Manager:** Import and manage game assets like sprites and animations.
-*   **Database Editor:** Easily edit game data such as items, character attributes, NPCs, and shops.
-*   **Audio Manager:** Assign background music, ambient sounds, and localized sound effects.
+*   **Project Templates:** Start your project from a pre-configured template based on classic Sierra On-Line adventure games, including *Space Quest*, *Police Quest*, *Hero's Quest*, and more. Each template includes a starting character, items, scenes, and dialogue.
+*   **Scene Editor:** A canvas-based editor to design game worlds by creating scenes, setting background images, placing interactive hotspots, and managing their Z-order.
+*   **Logic Editor:** A powerful node-graph editor for creating puzzle logic and branching flows using conditions and actions.
+*   **Interaction Editor:** A dedicated editor to define complex `Verb + Item` and `Item + Item` interactions that trigger logic graphs.
+*   **Dialogue Editor:** A tree-based editor for writing and structuring branching character dialogues.
+*   **Asset Manager:** Import and manage game assets like sprites and animations, with a built-in preview panel.
+*   **Database Editors:** A suite of modern, spreadsheet-style editors for managing game data, with full inline editing and search capabilities:
+    *   Items
+    *   Character Attributes
+    *   Verbs
+    *   Characters (with portrait previews)
+*   **Global State Manager:** Define and manage global variables that track the game's state throughout the player's journey.
+*   **Quest Editor:** A dedicated editor for creating and managing multi-step quests and their objectives.
+*   **Audio Editor:** Manage and preview background music and sound effects.
+*   **UI Builder & Font Manager:** Tools for designing the in-game UI and managing fonts.
+*   **Global Search:** A project-wide search feature to quickly find any asset, logic node, or database entry.
+*   **Modern UI:** A clean, GNOME HIG-compliant user interface built with Libadwaita for a polished and consistent cross-platform experience.
+*   **Customizable Preferences:** A robust preferences window to manage your theme, editor settings, and external tool paths.
 
-## Installation
+## Building and Running
 
-To run AdvEngine, you need Python 3.10+ and GTK4.
+AdvEngine uses the Meson build system.
 
-**System Dependencies:**
+### 1. System Dependencies
 
+First, install the necessary system libraries for your platform.
+
+For **Debian/Ubuntu**:
 ```bash
-sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-gtk-4.0 gir1.2-adw-1
+sudo apt-get install -y gettext libglib2.0-dev desktop-file-utils xvfb \\
+python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1 libcairo2-dev \\
+pkg-config python3-dev libgirepository1.0-dev gir1.2-gst-plugins-base-1.0 \\
+gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 ```
 
-**Python Dependencies:**
+### 2. Python Dependencies
 
+Install Meson and Ninja:
 ```bash
-pip install PyGObject
+pip install meson ninja
 ```
 
-## Launching
+### 3. Compile and Install
 
-To launch the application, run the following command from the root of the project:
-
+Configure, compile, and install the application into a local directory:
 ```bash
-python3 -m adv_engine.src.main
+meson setup build --prefix=/tmp/advengine-install
+meson compile -C build
+meson install -C build
 ```
+
+### 4. Launching
+
+Run the application from the installation directory:
+```bash
+/tmp/advengine-install/bin/advengine
+```
+
+## Documentation
+
+Comprehensive documentation is available in the `/docs` directory, including:
+- A **[User Guide](./docs/guide/introduction.md)** with a getting-started guide and an interface overview.
+- An exhaustive **[Editor Reference](./docs/reference/)** detailing every editor.
+- A **[Tutorial](./docs/tutorials/01_locked_room.md)** that walks you through creating a complete puzzle.

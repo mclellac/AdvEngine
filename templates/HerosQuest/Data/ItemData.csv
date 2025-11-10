@@ -1,0 +1,3 @@
+id,name,description,type,buy_price,sell_price
+gold,"Gold Coins","The currency of the realm.",currency,1,1
+sword,"Broadsword","A trusty, if basic, broadsword.",item,50,25

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <template class="EditorWindow" parent="AdwApplicationWindow">
+    <property name="default-width">1280</property>
+    <property name="default-height">800</property>
+    <property name="title">AdvEngine</property>
+    <property name="content">
+      <object class="AdwToastOverlay" id="toast_overlay">
+        <property name="child">
+          <object class="AdwToolbarView" id="toolbar_view">
+            <child type="top">
+              <object class="AdwHeaderBar" id="header_bar">
+                <child type="start">
+                  <object class="GtkToggleButton" id="toggle_button">
+                    <property name="icon-name">sidebar-show-symbolic</property>
+                    <property name="tooltip-text">Toggle Sidebar</property>
+                  </object>
+                </child>
+                <child type="start">
+                  <object class="GtkButton" id="save_button">
+                    <property name="label">Save</property>
+                    <property name="tooltip-text">Save project (Ctrl+S)</property>
+                  </object>
+                </child>
+                <child type="start">
+                  <object class="GtkButton" id="play_button">
+                    <property name="label">Play</property>
+                    <property name="tooltip-text">Launch game (Ctrl+P)</property>
+                  </object>
+                </child>
+                <child type="start">
+                  <object class="GtkButton" id="new_project_button">
+                    <property name="label">New Project</property>
+                    <property name="tooltip-text">Create a new project</property>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkMenuButton" id="menu_button">
+                    <property name="icon-name">open-menu-symbolic</property>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkSearchEntry" id="search_entry">
+                    <property name="placeholder-text">Search Project</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <property name="content">
+              <object class="AdwOverlaySplitView" id="split_view">
+                <property name="content">
+                  <object class="AdwViewStack" id="content_stack"/>
+                </property>
+                <property name="sidebar">
+                  <object class="GtkScrolledWindow" id="sidebar_scroll">
+                    <property name="child">
+                      <object class="GtkListBox" id="sidebar_list">
+                        <property name="selection-mode">single</property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>

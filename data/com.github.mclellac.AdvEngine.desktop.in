@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=advengine
+Exec=advengine
+Icon=com.github.mclellac.AdvEngine
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=GTK;
+StartupNotify=true
+DBusActivatable=true

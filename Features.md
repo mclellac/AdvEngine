@@ -1,56 +1,76 @@
-# AdvEngine Feature Roadmap
+# AdvEngine Feature Checklist
 
-This document outlines planned features to expand the capabilities of AdvEngine, with a focus on streamlining the development of classic Sierra-style point-and-click adventure games.
+This document tracks the status of major features and refactoring efforts.
 
-## Core Systems & Gameplay
+## UI Refactoring (GtkBuilder XML)
 
-- [ ] **Global Game State Manager**
-    - A dedicated UI to create, edit, and delete global game variables (booleans, integers, strings).
-    - Ability to set initial values and group variables by category (e.g., "Chapter 1 Quest Flags", "Player Stats").
-    - Provides a live-debug view to watch variable changes when the game is running.
+The primary goal is to move all UI layout definitions from procedural Python code to declarative `.ui` files.
 
-- [ ] **Advanced Dialogue & Cutscene System**
-    - A dedicated tree-based editor for writing branching dialogue.
-    - Support for displaying character portraits next to dialogue text.
-    - Ability to embed simple commands within dialogue nodes (e.g., `give_item key_01`, `set_variable door_unlocked true`).
-    - A simple timeline or script-based tool for creating in-game cutscenes (e.g., `CHARACTER walkto 100,200`, `PLAY_ANIMATION idle_sad`, `WAIT 2.0`, `SAY "I can't believe it's gone."`).
+- [x] **Main Application Window (`EditorWindow`)**
+    - [x] Create `main_window.ui`
+    - [x] Refactor `main.py` to load `main_window.ui`
+- [ ] **Scene Editor (`module_scene.py`)**
+    - [ ] Create `module_scene.ui`
+    - [ ] Refactor `module_scene.py` to load `module_scene.ui`
+- [ ] **Logic Editor (`module_logic.py`)**
+    - [ ] Create `module_logic.ui`
+    - [ ] Refactor `module_logic.py` to load `module_logic.ui`
+- [ ] **Dialogue Editor (`module_dialogue.py`)**
+    - [ ] Create `module_dialogue.ui`
+    - [ ] Refactor `module_dialogue.py` to load `module_dialogue.ui`
+- [ ] **Interaction Editor (`module_interaction.py`)**
+    - [ ] Create `module_interaction.ui`
+    - [ ] Refactor `module_interaction.py` to load `module_interaction.ui`
+- [ ] **Quest Editor (`module_quest.py`)**
+    - [ ] Create `module_quest.ui`
+    - [ ] Refactor `module_quest.py` to load `module_quest.ui`
+- [ ] **Asset Manager (`module_assets.py`)**
+    - [ ] Create `module_assets.ui`
+    - [ ] Refactor `module_assets.py` to load `module_assets.ui`
+- [ ] **Database Editor (`module_database.py`)**
+    - [ ] Create `module_database.ui`
+    - [ ] Refactor `module_database.py` to load `module_database.ui`
+- [ ] **Character Editor (`module_character.py`)**
+    - [ ] Create `module_character.ui`
+    - [ ] Refactor `module_character.py` to load `module_character.ui`
+- [ ] **Global State Editor (`module_state.py`)**
+    - [ ] Create `module_state.ui`
+    - [ ] Refactor `module_state.py` to load `module_state.ui`
+- [ ] **Item Editor (`item_editor.py`)**
+    - [ ] Create `item_editor.ui`
+    - [ ] Refactor `item_editor.py` to load `item_editor.ui`
+- [ ] **Attribute Editor (`attribute_editor.py`)**
+    - [ ] Create `attribute_editor.ui`
+    - [ ] Refactor `attribute_editor.py` to load `attribute_editor.ui`
+- [ ] **Verb Editor (`verb_editor.py`)**
+    - [ ] Create `verb_editor.ui`
+    - [ ] Refactor `verb_editor.py` to load `verb_editor.ui`
+- [x] **Welcome Window (`welcome.py`)**
+    - [x] Create `welcome.ui`
+    - [x] Refactor `welcome.py` to load `welcome.ui`
+- [x] **Preferences Dialog (`preferences.py`)**
+    - [ ] Create `preferences.ui`
+    - [x] Refactor `preferences.py` to load `preferences.ui`
+- [x] **Shortcuts Dialog (`shortcuts.py`)**
+    - [x] Create `shortcuts.ui`
+    - [x] Refactor `shortcuts.py` to load `shortcuts.ui`
 
-- [ ] **Complex Inventory & Item Interactions**
-    - A dedicated interface for defining `Verb + Item` or `Item + Item` interactions.
-    - Moves beyond the generic `InteractionMatrix` to a more intuitive system (e.g., a matrix view with verbs as columns and items as rows).
-    - Support for item combination logic (`COMBINE item_a WITH item_b TO CREATE item_c`).
+## Core Features
 
-- [ ] **Quest & Objective Tracker**
-    - A simple system to define high-level quests or tasks (e.g., "Find a way into the abandoned warehouse").
-    - Ability to link quest steps to the completion of specific logic graph actions or variable changes.
-    - An in-game UI element to show the player their current objectives (exportable).
-
-## Content & Asset Management
-
-- [ ] **Character Manager**
-    - A central place to define player characters (PCs) and non-player characters (NPCs).
-    - Assign sprite sheets for different animations (e.g., walk cycles, talk animations, idle loops).
-    - Define character properties like walk speed, dialogue color, and default inventory.
-
-- [ ] **Point-and-Click UI Builder**
-    - A visual editor to design the main in-game user interface.
-    - Support for classic Sierra-style verb bars or verb coins (Walk, Look, Talk, Use).
-    - Define the layout and appearance of the inventory window, dialogue boxes, and menus.
-    - Anchor points and scaling rules for modern widescreen resolutions.
-
-- [ ] **Font Management**
-    - A system to import and manage bitmap fonts for in-game text, preserving the retro aesthetic.
-    - Ability to assign different fonts to UI elements like dialogue, descriptions, and menu buttons.
-
-## Development & Debugging Tools
-
-- [ ] **Integrated Game Launcher & Debugger**
-    - A "Play" button in the AdvEngine toolbar that automatically exports the latest data and runs the Unreal Engine project.
-    - An "Interaction Log" panel that streams real-time data from the running game back into the tool (e.g., `[GAME] Player clicked on Hotspot 'Door'`, `[LOGIC] Condition 'player_has_key' is FALSE`).
-
-- [ ] **Localization Support**
-    - A utility to export all user-facing text (dialogue, item names, UI labels) to a CSV or PO file for easy translation.
-    - A corresponding import function to load translated text back into the project.
-
-- [ ] **Project Templates**
-    - Ability to create new projects from a template (e.g., "Sierra Style", "Modern Minimalist") that comes with pre-configured UI, verbs, and example structures.
+- [x] Project Creation, Loading, Saving
+- [x] Scene Editor with Hotspot manipulation
+- [x] Node-based Logic Editor
+- [x] Tree-based Dialogue Editor
+- [ ] Asset Manager (Images, Audio, Fonts)
+- [ ] Character Manager
+- [ ] Quest System
+- [ ] Interaction System (Verb + Item, Item + Item)
+- [ ] Global State Management
+- [ ] Database Editors (Items, Attributes, Verbs)
+- [ ] Localization Support (Import/Export)
+- [ ] Application-wide Search
+- [x] Unreal Engine Integration (Play button)
+- [x] Settings/Preferences Management
+- [x] Keyboard Shortcuts
+- [x] Recent Projects on Welcome Screen
+- [x] Project Templates

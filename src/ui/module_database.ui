@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <template class="DatabaseEditor" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="AdwHeaderBar" id="header_bar">
+        <property name="title-widget">
+          <object class="AdwViewSwitcher" id="view_switcher"/>
+        </property>
+      </object>
+    </child>
+    <child>
+      <object class="AdwViewStack" id="view_stack"/>
+    </child>
+  </template>
+</interface>

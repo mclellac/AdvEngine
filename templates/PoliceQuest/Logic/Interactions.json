@@ -1,0 +1,34 @@
+[
+    {
+        "id": "interaction_1",
+        "verb_id": "talk_to",
+        "primary_item_id": "",
+        "secondary_item_id": "",
+        "target_hotspot_id": "mary_hotspot",
+        "logic_graph_id": "mary_dialogue"
+    },
+    {
+        "id": "interaction_2",
+        "verb_id": "use",
+        "primary_item_id": "forensics_kit",
+        "secondary_item_id": "",
+        "target_hotspot_id": "crime_scene",
+        "logic_graph_id": "collect_evidence"
+    },
+    {
+        "id": "interaction_3",
+        "verb_id": "talk_to",
+        "primary_item_id": "",
+        "secondary_item_id": "",
+        "target_hotspot_id": "franky_hotspot",
+        "logic_graph_id": "franky_dialogue"
+    },
+    {
+        "id": "interaction_4",
+        "verb_id": "use",
+        "primary_item_id": "warrant",
+        "secondary_item_id": "",
+        "target_hotspot_id": "franky_hotspot",
+        "logic_graph_id": "arrest_franky"
+    }
+]
