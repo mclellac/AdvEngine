@@ -189,7 +189,7 @@ class AssetEditor(Gtk.Box):
     def _on_import_asset(self, button):
         """Handles the clicked signal from the import button."""
         print("DEBUG: AssetEditor._on_import_asset")
-        dialog = Adw.FileDialog.new()
+        dialog = Gtk.FileDialog.new()
         dialog.set_title("Import Asset")
         dialog.set_modal(True)
 

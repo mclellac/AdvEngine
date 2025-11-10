@@ -35,7 +35,6 @@ from .schemas import (
     Objective,
     UILayout,
     UIElement,
-    Font,
     SearchResult,
 )
 from .settings_manager import SettingsManager
@@ -156,13 +155,6 @@ class ProjectManager:
                 self._load_json,
                 self._save_json,
                 self._ui_layout_object_hook,
-            ),
-            "fonts": (
-                "Data/Fonts.json",
-                Font,
-                self._load_json,
-                self._save_json,
-                lambda data: Font(**data),
             ),
         }
 

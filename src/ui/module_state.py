@@ -80,7 +80,7 @@ class GlobalStateEditor(Gtk.Box):
             "name": {"title": "Name", "expand": True, "type": "text"},
             "category": {"title": "Category", "expand": True, "type": "text"},
             "type": {"title": "Type", "expand": False, "type": "combo"},
-            "initial_value_str": {
+            "initial_value": {
                 "title": "Initial Value",
                 "expand": True,
                 "type": "text",
@@ -213,7 +213,7 @@ class GlobalStateEditor(Gtk.Box):
         for i in range(self.filter_model.get_n_items()):
             if self.filter_model.get_item(i) == gobject:
                 self.selection.set_selected(i)
-                self.column_view.scroll_to(i, Gtk.ListScrollFlags.NONE, None, None)
+                self.column_view.scroll_to(i, None, False, 0.0, 0.0)
                 break
 
     def _on_delete_clicked(self, button):
