@@ -2,6 +2,10 @@
 
 AdvEngine is a data and configuration manager for creating 2.5D point-and-click adventure games, in the style of classic Sierra On-Line titles, that target Unreal Engine 5.6. It provides a modern, cross-platform UI for designing game logic, managing assets, and exporting structured data files for the target game engine to consume at runtime.
 
+## Current Status
+
+**This project is in active development.** Many core features are functional, but some are still under construction or exist as placeholders. Please consult the [TODO.md](./TODO.md) file for a detailed list of planned features and bug fixes.
+
 ## Getting Started
 
 When you first launch AdvEngine, you'll be greeted with the Welcome screen. To start creating your game, click the "New Project" button. You will be prompted to give your project a name and choose a **Project Template**. These templates provide a complete, pre-configured starting point with characters, items, and logic to help you get started quickly.
@@ -10,24 +14,16 @@ For a detailed walkthrough, see the **[Tutorial](./docs/tutorials/01_locked_room
 
 ## Features
 
-*   **Project Templates:** Start your project from a pre-configured template based on classic Sierra On-Line adventure games, including *Space Quest*, *Police Quest*, *Hero's Quest*, and more. Each template includes a starting character, items, scenes, and dialogue.
-*   **Scene Editor:** A canvas-based editor to design game worlds by creating scenes, setting background images, placing interactive hotspots, and managing their Z-order.
-*   **Logic Editor:** A powerful node-graph editor for creating puzzle logic and branching flows using conditions and actions.
+*   **Project Templates:** Start your project from a pre-configured template based on classic Sierra On-Line adventure games, including *Space Quest*, *Police Quest*, *Hero's Quest*, and more.
+*   **Scene Editor:** A canvas-based editor to design game worlds by creating scenes, setting background images, and placing interactive hotspots.
+*   **Logic Editor:** A powerful node-graph editor for creating puzzle logic and branching flows.
 *   **Interaction Editor:** A dedicated editor to define complex `Verb + Item` and `Item + Item` interactions that trigger logic graphs.
 *   **Dialogue Editor:** A tree-based editor for writing and structuring branching character dialogues.
-*   **Asset Manager:** Import and manage game assets like sprites and animations, with a built-in preview panel.
-*   **Database Editors:** A suite of modern, spreadsheet-style editors for managing game data, with full inline editing and search capabilities:
-    *   Items
-    *   Character Attributes
-    *   Verbs
-    *   Characters (with portrait previews)
-*   **Global State Manager:** Define and manage global variables that track the game's state throughout the player's journey.
-*   **Quest Editor:** A dedicated editor for creating and managing multi-step quests and their objectives.
-*   **Audio Editor:** Manage and preview background music and sound effects.
-*   **UI Builder & Font Manager:** Tools for designing the in-game UI and managing fonts.
+*   **Asset Manager:** Import and manage game assets. Currently supports images, with audio and font management planned for a future release.
+*   **Database Editors:** A suite of modern, spreadsheet-style editors for managing game data, including Items, Attributes, Verbs, and Characters.
 *   **Global Search:** A project-wide search feature to quickly find any asset, logic node, or database entry.
-*   **Modern UI:** A clean, GNOME HIG-compliant user interface built with Libadwaita for a polished and consistent cross-platform experience.
-*   **Customizable Preferences:** A robust preferences window to manage your theme, editor settings, and external tool paths.
+*   **Modern UI:** A clean, GNOME HIG-compliant user interface built with Libadwaita.
+*   **Customizable Preferences:** A robust preferences window to manage your theme and editor settings.
 
 ## Building and Running
 

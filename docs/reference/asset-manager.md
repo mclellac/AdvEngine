@@ -1,3 +1,5 @@
+> **Note:** This document describes the planned functionality of the Asset Manager. As of the current version, only the **Images** section is functional. The Audio and Fonts sections are not yet implemented.
+
 # Editor Reference: Asset Manager
 
 The Asset Manager is the central hub for importing and organizing all the visual assets for your game, such as character sprite sheets, item icons, and background images.

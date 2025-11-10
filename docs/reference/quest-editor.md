@@ -1,3 +1,5 @@
+> **Note:** This document describes the planned functionality of the Quest Editor. As of the current version, this feature is not yet implemented and the editor is a non-functional placeholder.
+
 # Editor Reference: Quest Editor
 
 The Quest Editor is a dedicated tool for defining and managing structured quests for the player to complete. It allows you to create high-level objectives and break them down into smaller, sequential steps.
