@@ -6,7 +6,7 @@ import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Gdk, Adw, GdkPixbuf
-from ..core.schemas.scene import SceneGObject, Hotspot, HotspotGObject
+from ..core.schemas.scene import Scene, SceneGObject, Hotspot, HotspotGObject
 from ..core.project_manager import ProjectManager
 
 
@@ -211,7 +211,7 @@ class SceneEditor(Gtk.Box):
             if response_id == "create":
                 name = entry.get_text()
                 if name:
-                    new_scene = {"id": name.lower(), "name": name, "hotspots": []}
+                    new_scene = Scene(id=name.lower(), name=name)
                     self.project_manager.add_data_item("scenes", new_scene)
                     self._update_scene_list()
                     self._update_visibility()

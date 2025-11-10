@@ -159,13 +159,13 @@ class GlobalStateEditor(Gtk.Box):
 
     def _on_value_changed(self, widget, var_gobject: GlobalVariableGObject):
         """Handles the value-changed signal from a cell."""
-        self.project_manager.update_global_variable(var_gobject.variable, var_gobject)
+        self.project_manager.set_dirty(True)
 
     def _on_type_changed(self, dropdown, pspec, var_gobject: GlobalVariableGObject):
         """Handles the selected signal from the type dropdown."""
         selected_str = dropdown.get_selected_item().get_string()
         var_gobject.set_property("type", selected_str)
-        self.project_manager.update_global_variable(var_gobject.variable, var_gobject)
+        self.project_manager.set_dirty(True)
 
     def _on_search_changed(self, search_entry):
         """Handles the search-changed signal from the search entry."""
