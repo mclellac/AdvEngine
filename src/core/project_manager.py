@@ -165,6 +165,10 @@ class ProjectManager:
         and populates the `self.data` attribute with the loaded data. It is
         called once when a project is opened.
         """
+        # Clear existing data to ensure a clean load
+        for key in self._data_files:
+            getattr(self.data, key).clear()
+
         for key, config in self._data_files.items():
             loader = config[2]
             target_list = getattr(self.data, key)
@@ -322,7 +326,9 @@ class ProjectManager:
                             row[key] = value.lower() in ["true", "1"]
                         elif field_type == dict:
                             row[key] = json.loads(value) if value else {}
-                    target_list.append(dataclass_type(**row))
+                    new_item = dataclass_type(**row)
+                    target_list.append(new_item)
+                    logging.debug(f"  Created object: {new_item}")
                     count += 1
                 logging.debug(f"Loaded {count} items from {filename}")
         except FileNotFoundError:
@@ -356,7 +362,9 @@ class ProjectManager:
                 count = 0
                 if object_hook:
                     for item_data in data:
-                        target_list.append(object_hook(item_data))
+                        new_item = object_hook(item_data)
+                        target_list.append(new_item)
+                        logging.debug(f"  Created object: {new_item}")
                         count += 1
                 else:
                     target_list.extend(data)

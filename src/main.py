@@ -12,6 +12,7 @@ import os
 import logging
 import importlib
 import inspect
+import argparse
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -62,6 +63,7 @@ class EditorWindow(Adw.ApplicationWindow):
         from .ui import search_results
 
         super().__init__(**kwargs)
+        logging.debug("EditorWindow.__init__: Initializing main editor window.")
         self.project_manager = project_manager
         self.base_title = "AdvEngine"
         self.set_title(self.base_title)
@@ -148,6 +150,9 @@ class EditorWindow(Adw.ApplicationWindow):
         """
         if row:
             view_name = row.get_name()
+            logging.debug(
+                f"EditorWindow.on_sidebar_activated: Switching to view '{view_name}'."
+            )
             self.content_stack.set_visible_child_name(view_name)
 
     def discover_and_add_editors(self):
@@ -157,6 +162,7 @@ class EditorWindow(Adw.ApplicationWindow):
         an editor class, and then adds each discovered editor to the main
         window.
         """
+        logging.debug("EditorWindow.discover_and_add_editors: Starting editor discovery.")
         editors = []
         discovered_view_names = set()
         ui_dir = os.path.join(os.path.dirname(__file__), "ui")
@@ -164,10 +170,12 @@ class EditorWindow(Adw.ApplicationWindow):
             if filename.endswith(".py") and not filename.startswith("__"):
                 module_name = f".ui.{filename[:-3]}"
                 try:
+                    logging.debug(f"  Attempting to import module: {module_name}")
                     module = importlib.import_module(module_name, package="advengine")
                     for name, obj in inspect.getmembers(module):
                         if inspect.isclass(obj) and hasattr(obj, "EDITOR_NAME"):
                             if obj.VIEW_NAME not in discovered_view_names:
+                                logging.debug(f"    Found editor class: {name}")
                                 editors.append(obj)
                                 discovered_view_names.add(obj.VIEW_NAME)
                 except Exception as e:
@@ -521,7 +529,6 @@ class AdvEngine(Adw.Application):
         """
         if project_manager:
             self.project_manager = project_manager
-            self.project_manager.load_project()
         else:
             self.project_manager = ProjectManager(project_path)
             self.project_manager.load_project()
@@ -600,11 +607,21 @@ def main(version: str = "0.1.0") -> int:
     Returns:
         int: The exit code of the application.
     """
+    parser = argparse.ArgumentParser(description="AdvEngine Game Editor")
+    parser.add_argument(
+        "--debug", action="store_true", help="Enable debug logging mode."
+    )
+    args, Gtk_args = parser.parse_known_args()
+
+    log_level = logging.DEBUG if args.debug else logging.ERROR
+    logging.basicConfig(level=log_level, format="%(levelname)s:%(name)s: %(message)s")
+    logging.debug("Debug mode enabled.")
+
     app = AdvEngine(
         application_id="com.github.mclellac.AdvEngine",
         flags=Gio.ApplicationFlags.FLAGS_NONE,
     )
-    return app.run(sys.argv)
+    return app.run([sys.argv[0]] + Gtk_args)
 
 
 if __name__ == "__main__":
