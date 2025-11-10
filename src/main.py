@@ -118,7 +118,7 @@ class EditorWindow(Adw.ApplicationWindow):
             if filename.endswith(".py") and not filename.startswith("__"):
                 module_name = f".ui.{filename[:-3]}"
                 try:
-                    module = importlib.import_module(module_name, package="src")
+                    module = importlib.import_module(module_name, package="advengine")
                     for name, obj in inspect.getmembers(module):
                         if inspect.isclass(obj) and hasattr(obj, "EDITOR_NAME"):
                             if obj.VIEW_NAME not in discovered_view_names:
