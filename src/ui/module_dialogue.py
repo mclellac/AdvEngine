@@ -6,7 +6,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GObject, Gio
-from ..core.data_schemas import DialogueNode, ActionNode, LogicGraph
+from ..core.schemas.logic import DialogueNode, ActionNode, LogicGraph
 from .module_logic import DynamicNodeEditor
 
 

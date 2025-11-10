@@ -6,7 +6,7 @@ import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
-from ..core.data_schemas import Attribute, AttributeGObject
+from ..core.schemas.attribute import Attribute, AttributeGObject
 from ..core.project_manager import ProjectManager
 
 

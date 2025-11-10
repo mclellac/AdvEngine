@@ -8,12 +8,12 @@ from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf, GLib
 import json
 import os
 import re
-from ..core.data_schemas import (
-    LogicNode,
-    DialogueNode,
-    ConditionNode,
+from ..core.schemas.logic import (
     ActionNode,
+    ConditionNode,
+    DialogueNode,
     LogicGraph,
+    LogicNode,
 )
 from ..core.ue_exporter import get_command_definitions
 

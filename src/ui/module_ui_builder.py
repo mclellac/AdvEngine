@@ -3,7 +3,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw
-from ..core.data_schemas import UILayout, UIElement, UILayoutGObject
+from ..core.schemas.ui_layout import UILayout, UIElement, UILayoutGObject
 
 
 class UIBuilder(Adw.Bin):
