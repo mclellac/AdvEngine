@@ -6,7 +6,7 @@ import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
-from ..core.data_schemas import Quest, QuestGObject, Objective, ObjectiveGObject
+from ..core.schemas.quest import Quest, QuestGObject, Objective, ObjectiveGObject
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_quest.ui"))

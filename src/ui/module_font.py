@@ -4,7 +4,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, Pango
-from ..core.data_schemas import Font, FontGObject
+from ..core.schemas.font import Font, FontGObject
 
 
 class FontManager(Adw.Bin):

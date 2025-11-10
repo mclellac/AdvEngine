@@ -6,15 +6,12 @@ import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GObject
-from ..core.data_schemas import (
-    Interaction,
-    InteractionGObject,
-    Item,
-    Verb,
-    Hotspot,
-    LogicGraph,
-    StringGObject,
-)
+from ..core.schemas.gobject_factory import StringGObject
+from ..core.schemas.interaction import Interaction, InteractionGObject
+from ..core.schemas.item import Item
+from ..core.schemas.logic import LogicGraph
+from ..core.schemas.scene import Hotspot
+from ..core.schemas.verb import Verb
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_interaction.ui"))

@@ -7,7 +7,8 @@ import shutil
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, GObject, Adw, Gdk
-from ..core.data_schemas import Asset, Animation, StringGObject, AssetGObject
+from ..core.schemas.asset import Asset, Animation, AssetGObject
+from ..core.schemas.gobject_factory import StringGObject
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_assets.ui"))
