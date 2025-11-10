@@ -1,4 +1,8 @@
-"""The character editor for the AdvEngine application."""
+"""The character editor for the AdvEngine application.
+
+This module defines the CharacterManager, a widget for creating, editing, and
+deleting all in-game characters using a spreadsheet-style interface.
+"""
 
 import os
 import gi
@@ -15,7 +19,20 @@ from ..core.project_manager import ProjectManager
     filename=os.path.join(os.path.dirname(__file__), "module_character.ui")
 )
 class CharacterManager(Gtk.Box):
-    """A widget for editing characters in a project."""
+    """A widget for editing characters in a project.
+
+    This editor provides a Gtk.ColumnView for inline editing of character
+    properties, including their ID, name, merchant status, and portrait asset.
+    It also includes search and delete functionality.
+
+    Attributes:
+        project_manager (ProjectManager): The main project manager instance.
+        settings_manager: The main settings manager instance.
+        model (Gio.ListStore): The data store for all characters.
+        filter_model (Gtk.FilterListModel): The filter model for search.
+        selection (Gtk.SingleSelection): The selection model for the
+            column view.
+    """
 
     __gtype_name__ = "CharacterManager"
 
@@ -23,24 +40,25 @@ class CharacterManager(Gtk.Box):
     VIEW_NAME = "character_manager"
     ORDER = 8
 
-    add_button = Gtk.Template.Child()
-    delete_button = Gtk.Template.Child()
-    search_entry = Gtk.Template.Child()
-    column_view = Gtk.Template.Child()
-    portrait_preview = Gtk.Template.Child()
-    stack = Gtk.Template.Child()
+    add_button: Gtk.Button = Gtk.Template.Child()
+    delete_button: Gtk.Button = Gtk.Template.Child()
+    search_entry: Gtk.SearchEntry = Gtk.Template.Child()
+    column_view: Gtk.ColumnView = Gtk.Template.Child()
+    portrait_preview: Gtk.Picture = Gtk.Template.Child()
+    stack: Gtk.Stack = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
-        """Initializes a new CharacterManager instance."""
+        """Initializes a new CharacterManager instance.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
         project_manager = kwargs.pop("project_manager")
         settings_manager = kwargs.pop("settings_manager")
 
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
-        print(
-            f"DEBUG: CharacterManager.__init__: {len(self.project_manager.data.characters)} characters in project data."
-        )
         self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self.model = self._setup_model()
@@ -54,18 +72,13 @@ class CharacterManager(Gtk.Box):
 
     def project_loaded(self):
         """Callback for when the project is loaded."""
-        print("DEBUG: CharacterManager.project_loaded: Received project loaded signal.")
         self.refresh_model()
 
     def refresh_model(self):
         """Clears and repopulates the model from the project manager."""
-        print("DEBUG: CharacterManager.refresh_model: Refreshing character data.")
         self.model.remove_all()
         for character in self.project_manager.data.characters:
             self.model.append(CharacterGObject(character))
-        print(
-            f"DEBUG: CharacterManager.refresh_model: Model now contains {self.model.get_n_items()} characters."
-        )
         self._update_visibility()
 
     def _connect_signals(self):
@@ -75,10 +88,11 @@ class CharacterManager(Gtk.Box):
         self.search_entry.connect("search-changed", self._on_search_changed)
 
     def _setup_model(self):
-        """Sets up the data model for the editor."""
-        print(
-            f"DEBUG: CharacterManager._setup_model: Populating model with {len(self.project_manager.data.characters)} characters."
-        )
+        """Sets up the data model for the editor.
+
+        Returns:
+            Gio.ListStore: The new list store.
+        """
         model = Gio.ListStore(item_type=CharacterGObject)
         for character in self.project_manager.data.characters:
             model.append(CharacterGObject(character))
@@ -86,24 +100,36 @@ class CharacterManager(Gtk.Box):
         return model
 
     def _setup_filter_model(self):
-        """Sets up the filter model for the editor."""
+        """Sets up the filter model for search functionality.
+
+        Returns:
+            Gtk.FilterListModel: The new filter list model.
+        """
         filter_model = Gtk.FilterListModel(model=self.model)
         self.filter = Gtk.CustomFilter.new(self._filter_func, self.search_entry)
         filter_model.set_filter(self.filter)
         return filter_model
 
     def _setup_selection_model(self):
-        """Sets up the selection model for the editor."""
+        """Sets up the selection model for the column view.
+
+        Returns:
+            Gtk.SingleSelection: The new single selection model.
+        """
         selection = Gtk.SingleSelection(model=self.filter_model)
         selection.connect("selection-changed", self._on_selection_changed)
         return selection
 
     def _setup_column_view(self):
-        """Sets up the column view for the editor."""
+        """Sets up the columns for the Gtk.ColumnView."""
         self._create_columns(self.column_view)
 
     def _create_columns(self, column_view):
-        """Creates and appends all columns to the ColumnView."""
+        """Creates and appends all columns to the ColumnView.
+
+        Args:
+            column_view (Gtk.ColumnView): The view to add columns to.
+        """
         columns_def = {
             "id": {"title": "ID", "expand": True, "type": "text"},
             "display_name": {"title": "Display Name", "expand": True, "type": "text"},
@@ -125,7 +151,15 @@ class CharacterManager(Gtk.Box):
             column_view.append_column(column)
 
     def _setup_cell(self, factory, list_item, cell_type):
-        """Sets up a cell in the column view."""
+        """Sets up a cell widget for the column view.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to set up.
+            cell_type (str): The type of widget to create ('text', 'switch',
+                'combo').
+        """
         if cell_type == "switch":
             widget = Gtk.Switch(valign=Gtk.Align.CENTER)
         elif cell_type == "combo":
@@ -140,7 +174,15 @@ class CharacterManager(Gtk.Box):
         list_item.set_child(widget)
 
     def _bind_cell(self, factory, list_item, column_id, cell_type):
-        """Binds a cell to the data model."""
+        """Binds a cell widget to the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to bind.
+            column_id (str): The ID of the column to bind to.
+            cell_type (str): The type of the cell widget.
+        """
         char_gobject = list_item.get_item()
         widget = list_item.get_child()
         list_item.bindings = []
@@ -179,7 +221,13 @@ class CharacterManager(Gtk.Box):
         list_item.handler_id = handler_id
 
     def _unbind_cell(self, factory, list_item):
-        """Unbinds a cell from the data model."""
+        """Unbinds a cell widget from the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to unbind.
+        """
         if hasattr(list_item, "bindings"):
             for binding in list_item.bindings:
                 binding.unbind()
@@ -189,7 +237,15 @@ class CharacterManager(Gtk.Box):
             del list_item.handler_id
 
     def _on_combo_changed(self, combo, _, char_gobject, column_id):
-        """Handles the changed signal from a combo box cell."""
+        """Handles the changed signal from a combo box cell.
+
+        Args:
+            combo (Gtk.DropDown): The dropdown that emitted the signal.
+            _: Unused parameter.
+            char_gobject (CharacterGObject): The GObject wrapper for the
+                character.
+            column_id (str): The ID of the column that changed.
+        """
         selected_str = (
             combo.get_selected_item().get_string()
             if combo.get_selected_item()
@@ -200,7 +256,7 @@ class CharacterManager(Gtk.Box):
         self._update_preview()
 
     def _update_preview(self):
-        """Updates the portrait preview."""
+        """Updates the portrait preview image based on the current selection."""
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             self.portrait_preview.set_filename(None)
@@ -227,11 +283,24 @@ class CharacterManager(Gtk.Box):
             self.portrait_preview.set_filename(None)
 
     def _on_search_changed(self, search_entry):
-        """Handles the search-changed signal from the search entry."""
+        """Handles the search-changed signal from the search entry.
+
+        Args:
+            search_entry (Gtk.SearchEntry): The search entry that emitted the
+                signal.
+        """
         self.filter.changed(Gtk.FilterChange.DIFFERENT)
 
     def _filter_func(self, item, search_entry):
-        """Filters items based on the search query."""
+        """Filters items based on the search query.
+
+        Args:
+            item (CharacterGObject): The item to filter.
+            search_entry (Gtk.SearchEntry): The search entry.
+
+        Returns:
+            bool: True if the item should be visible, False otherwise.
+        """
         search_text = search_entry.get_text().lower()
         if not search_text:
             return True
@@ -247,7 +316,11 @@ class CharacterManager(Gtk.Box):
             self.stack.set_visible_child_name("empty")
 
     def _on_add_clicked(self, button):
-        """Handles the clicked signal from the add button."""
+        """Handles the clicked signal from the add button.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         new_id_base = "new_char"
         new_id = new_id_base
         count = 1
@@ -275,7 +348,11 @@ class CharacterManager(Gtk.Box):
                 break
 
     def _on_delete_clicked(self, button):
-        """Handles the clicked signal from the delete button."""
+        """Handles the clicked signal from the delete button.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -293,16 +370,29 @@ class CharacterManager(Gtk.Box):
         dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, char_gobject):
-        """Handles the response from the delete confirmation dialog."""
+        """Handles the response from the delete confirmation dialog.
+
+        Args:
+            dialog (Adw.MessageDialog): The dialog that emitted the signal.
+            response (str): The response ID.
+            char_gobject (CharacterGObject): The character to delete.
+        """
         if response == "delete":
-            if self.project_manager.remove_data_item("characters", char_gobject.character):
+            char_data = char_gobject.character
+            if self.project_manager.remove_data_item("characters", char_data):
                 is_found, pos = self.model.find(char_gobject)
                 if is_found:
                     self.model.remove(pos)
         dialog.close()
 
     def _on_selection_changed(self, selection_model, position, n_items):
-        """Handles the selection-changed signal from the selection model."""
+        """Handles the selection-changed signal from the selection model.
+
+        Args:
+            selection_model (Gtk.SingleSelection): The selection model.
+            position (int): The position of the selected item.
+            n_items (int): The number of items in the model.
+        """
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
         self.delete_button.set_sensitive(is_selected)
         self._update_preview()

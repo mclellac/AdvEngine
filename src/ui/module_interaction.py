@@ -1,4 +1,8 @@
-"""The interaction editor for the AdvEngine application."""
+"""The interaction editor for the AdvEngine application.
+
+This module defines the InteractionEditor, a widget for defining the outcomes
+of player actions, such as combining items or using an item on a hotspot.
+"""
 
 import gi
 import os
@@ -16,7 +20,20 @@ from ..core.schemas.verb import Verb
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "module_interaction.ui"))
 class InteractionEditor(Gtk.Box):
-    """A widget for editing interactions."""
+    """A widget for editing verb and item interactions.
+
+    This editor provides a spreadsheet-like interface for creating and managing
+    all game interactions. Each interaction links a verb, items, and/or
+    hotspots to a specific logic graph that will be executed when the
+    interaction occurs.
+
+    Attributes:
+        project_manager: The main project manager instance.
+        settings_manager: The main settings manager instance.
+        model (Gio.ListStore): The data store for all interactions.
+        selection (Gtk.SingleSelection): The selection model for the
+            column view.
+    """
 
     __gtype_name__ = "InteractionEditor"
 
@@ -24,15 +41,20 @@ class InteractionEditor(Gtk.Box):
     VIEW_NAME = "interaction_editor"
     ORDER = 2
 
-    add_button = Gtk.Template.Child()
-    delete_button = Gtk.Template.Child()
-    column_view = Gtk.Template.Child()
-    status_page = Gtk.Template.Child()
-    scrolled_window = Gtk.Template.Child()
+    add_button: Gtk.Button = Gtk.Template.Child()
+    delete_button: Gtk.Button = Gtk.Template.Child()
+    column_view: Gtk.ColumnView = Gtk.Template.Child()
+    status_page: Adw.StatusPage = Gtk.Template.Child()
+    scrolled_window: Gtk.ScrolledWindow = Gtk.Template.Child()
 
     def __init__(self, project_manager, settings_manager, **kwargs):
-        """Initializes a new InteractionEditor instance."""
-        print("DEBUG: InteractionEditor.__init__")
+        """Initializes a new InteractionEditor instance.
+
+        Args:
+            project_manager: The project manager instance.
+            settings_manager: The settings manager instance.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
@@ -46,47 +68,36 @@ class InteractionEditor(Gtk.Box):
         self._update_visibility()
 
     def project_loaded(self):
-        """Callback for when the project is loaded."""
-        print(
-            "DEBUG: InteractionEditor.project_loaded: Received project loaded signal."
-        )
+        """Callback executed when a project is finished loading."""
         self.refresh_model()
 
     def _setup_model(self):
-        """Sets up the data model and selection."""
+        """Sets up the data model and selection model."""
         self.model = Gio.ListStore(item_type=InteractionGObject)
         self.selection = Gtk.SingleSelection(model=self.model)
         self.column_view.set_model(self.selection)
 
     def _connect_signals(self):
-        """Connects widget signals to handlers."""
+        """Connects widget signals to their corresponding handlers."""
         self.add_button.connect("clicked", self._on_add_clicked)
         self.delete_button.connect("clicked", self._on_delete_clicked)
         self.selection.connect("selection-changed", self._on_selection_changed)
 
     def _update_visibility(self):
-        """Updates the visibility of the column view and status page."""
+        """Updates the visibility of the column view vs. the status page."""
         has_interactions = self.model.get_n_items() > 0
-        print(
-            f"DEBUG: InteractionEditor._update_visibility: has_interactions={has_interactions}"
-        )
         self.scrolled_window.set_visible(has_interactions)
         self.status_page.set_visible(not has_interactions)
 
     def refresh_model(self):
-        """Refreshes the data model."""
-        interaction_count = len(self.project_manager.data.interactions)
-        print(
-            f"DEBUG: InteractionEditor.refresh_model: Found {interaction_count} interactions in project data."
-        )
+        """Refreshes the data model from the project manager."""
         self.model.remove_all()
         for interaction in self.project_manager.data.interactions:
             self.model.append(InteractionGObject(interaction))
         self._update_visibility()
 
     def _create_columns(self):
-        """Creates the columns for the column view."""
-        print("DEBUG: InteractionEditor._create_columns")
+        """Creates and configures the columns for the column view."""
         columns = {
             "verb_id": "Verb",
             "primary_item_id": "Primary Item",
@@ -103,12 +114,26 @@ class InteractionEditor(Gtk.Box):
             self.column_view.append_column(column)
 
     def _setup_cell(self, factory, list_item, column_id):
-        """Sets up a cell in the column view."""
+        """Sets up a cell widget for the column view.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to set up.
+            column_id (str): The ID of the column being set up.
+        """
         dropdown = Gtk.DropDown()
         list_item.set_child(dropdown)
 
     def _bind_cell(self, factory, list_item, column_id):
-        """Binds a cell to the data model."""
+        """Binds a cell widget to the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to bind.
+            column_id (str): The ID of the column to bind to.
+        """
         interaction_gobject = list_item.get_item()
         dropdown = list_item.get_child()
 
@@ -150,21 +175,38 @@ class InteractionEditor(Gtk.Box):
         list_item.handler_id = handler_id
 
     def _unbind_cell(self, factory, list_item):
-        """Unbinds a cell from the data model."""
+        """Unbinds a cell widget from the data model.
+
+        Args:
+            factory (Gtk.SignalListItemFactory): The factory that emitted the
+                signal.
+            list_item (Gtk.ListItem): The list item to unbind.
+        """
         if hasattr(list_item, "handler_id"):
             list_item.get_child().disconnect(list_item.handler_id)
             del list_item.handler_id
 
     def _on_dropdown_changed(self, dropdown, _, interaction_gobject, column_id):
-        """Handles the changed signal from a dropdown."""
+        """Handles the changed signal from a dropdown in the column view.
+
+        Args:
+            dropdown (Gtk.DropDown): The dropdown that emitted the signal.
+            _: Unused parameter.
+            interaction_gobject (InteractionGObject): The GObject wrapper for the
+                interaction.
+            column_id (str): The ID of the column that changed.
+        """
         selected_item = dropdown.get_selected_item()
         new_value = selected_item.get_string() if selected_item else ""
         setattr(interaction_gobject.interaction, column_id, new_value)
         self.project_manager.set_dirty(True)
 
     def _on_add_clicked(self, button):
-        """Handles the clicked signal from the add button."""
-        print("DEBUG: InteractionEditor._on_add_clicked")
+        """Handles the 'Add' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         new_id = f"interaction_{len(self.project_manager.data.interactions)}"
         new_interaction = Interaction(
             id=new_id, verb_id="", primary_item_id="", logic_graph_id=""
@@ -175,8 +217,11 @@ class InteractionEditor(Gtk.Box):
         self._update_visibility()
 
     def _on_delete_clicked(self, button):
-        """Handles the clicked signal from the delete button."""
-        print("DEBUG: InteractionEditor._on_delete_clicked")
+        """Handles the 'Delete' button click event.
+
+        Args:
+            button (Gtk.Button): The button that was clicked.
+        """
         selected_item = self.selection.get_selected_item()
         if not selected_item:
             return
@@ -194,19 +239,28 @@ class InteractionEditor(Gtk.Box):
         dialog.present()
 
     def _on_delete_dialog_response(self, dialog, response, interaction_gobject):
-        """Handles the response from the delete confirmation dialog."""
-        print(
-            f"DEBUG: InteractionEditor._on_delete_dialog_response: response={response}"
-        )
+        """Handles the response from the delete confirmation dialog.
+
+        Args:
+            dialog (Adw.MessageDialog): The dialog that emitted the signal.
+            response (str): The response ID.
+            interaction_gobject (InteractionGObject): The interaction to delete.
+        """
         if response == "delete":
-            self.project_manager.remove_data_item("interactions", interaction_gobject.interaction)
-            self.refresh_model()
+            interaction_data = interaction_gobject.interaction
+            if self.project_manager.remove_data_item("interactions", interaction_data):
+                is_found, pos = self.model.find(interaction_gobject)
+                if is_found:
+                    self.model.remove(pos)
         dialog.close()
 
     def _on_selection_changed(self, selection_model, position, n_items):
-        """Handles the selection-changed signal from the selection model."""
+        """Handles the selection-changed signal from the selection model.
+
+        Args:
+            selection_model (Gtk.SingleSelection): The selection model.
+            position (int): The position of the selected item.
+            n_items (int): The number of items in the model.
+        """
         is_selected = selection_model.get_selected() != Gtk.INVALID_LIST_POSITION
-        print(
-            f"DEBUG: InteractionEditor._on_selection_changed: is_selected={is_selected}"
-        )
         self.delete_button.set_sensitive(is_selected)

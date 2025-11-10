@@ -10,7 +10,16 @@ from .gobject_factory import create_gobject_wrapper
 
 @dataclass
 class Hotspot:
-    """Represents a clickable area in a scene."""
+    """Represents a clickable area or region of interest within a Scene.
+
+    Attributes:
+        id (str): The unique identifier for the hotspot.
+        name (str): The display name of the hotspot.
+        x (int): The x-coordinate of the top-left corner of the hotspot.
+        y (int): The y-coordinate of the top-left corner of the hotspot.
+        width (int): The width of the hotspot.
+        height (int): The height of the hotspot.
+    """
 
     id: str
     name: str
@@ -25,7 +34,15 @@ HotspotGObject = create_gobject_wrapper(Hotspot)
 
 @dataclass
 class Scene:
-    """Represents a single scene in the game."""
+    """Represents a single location or screen in the game.
+
+    Attributes:
+        id (str): The unique identifier for the scene.
+        name (str): The display name of the scene.
+        background_image (Optional[str]): The asset ID for the scene's
+            background image.
+        hotspots (List[Hotspot]): A list of hotspots within the scene.
+    """
 
     id: str
     name: str

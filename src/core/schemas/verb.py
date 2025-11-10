@@ -9,7 +9,15 @@ from .gobject_factory import create_gobject_wrapper
 
 @dataclass
 class Verb:
-    """Represents a verb that the player can use."""
+    """Represents a verb that the player can use to interact with the world.
+
+    Verbs are the foundation of the game's interaction system, forming the
+    classic "Verb + Item" or "Verb + Hotspot" structure.
+
+    Attributes:
+        id (str): The unique identifier for the verb (e.g., "use", "look_at").
+        name (str): The display name of the verb (e.g., "Use", "Look At").
+    """
 
     id: str
     name: str
