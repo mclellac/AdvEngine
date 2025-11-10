@@ -2,6 +2,18 @@
 
 This document outlines the guidelines and standards for AI agents working on the AdvEngine project. Adherence to these protocols is crucial for maintaining code quality, consistency, and alignment with the project's goals.
 
+## 0. Mandatory Design and Coding Standards
+
+**ATTENTION: ALL AGENTS MUST READ AND FOLLOW THE CODING AND DESIGN STANDARDS SET OUT IN `docs/design`.**
+
+This is not a suggestion. The application **MUST** follow the documentation. Before making any changes, you are required to read the following documents in their entirety:
+
+1.  [`docs/design/01_application_architecture.md`](./docs/design/01_application_architecture.md)
+2.  [`docs/design/02_coding_standards.md`](./docs/design/02_coding_standards.md)
+3.  [`docs/design/03_logic_editor_design.md`](./docs/design/03_logic_editor_design.md)
+
+Failure to adhere to these standards will result in the rejection of your work. You are expected to understand and apply these principles in all of your contributions.
+
 ## 1. Core Principles
 
 - **User-Centric Design**: The primary goal is to create a powerful, intuitive, and stable tool for game developers. All technical decisions should ultimately serve this goal. The user's frustration with bugs and inconsistent UI is a top priority to resolve.
