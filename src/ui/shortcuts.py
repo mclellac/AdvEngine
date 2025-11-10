@@ -40,7 +40,7 @@ class ShortcutsDialog(Gtk.ShortcutsWindow):
         self._add_shortcut(general_group, "<Primary>S", "Save Project")
         self._add_shortcut(general_group, "<Primary>P", "Launch Game")
         self._add_shortcut(general_group, "<Primary>N", "New Project")
-        self._add_shortcut(general_group, "<Primary>,", "Preferences")
+        self._add_shortcut(general_group, "<Primary>comma", "Preferences")
 
         nav_group = Gtk.ShortcutsGroup(title="Navigation")
         main_section.append(nav_group)
