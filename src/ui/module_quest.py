@@ -210,7 +210,8 @@ class QuestEditor(Adw.Bin):
     def _on_add_quest(self, button):
         """Handles the clicked signal from the add quest button."""
         new_id = f"quest_{len(self.project_manager.data.quests)}"
-        new_quest = self.project_manager.add_quest(id=new_id, name="New Quest")
+        new_quest = Quest(id=new_id, name="New Quest")
+        self.project_manager.add_data_item("quests", new_quest)
         self.model.append(QuestGObject(new_quest))
         self._update_visibility()
 
@@ -237,7 +238,7 @@ class QuestEditor(Adw.Bin):
     def _on_delete_quest_dialog_response(self, dialog, response, quest_gobject):
         """Handles the response from the delete quest dialog."""
         if response == "delete":
-            self.project_manager.remove_quest(quest_gobject.quest.id)
+            self.project_manager.remove_data_item("quests", quest_gobject.quest)
             is_found, pos = self.model.find(quest_gobject)
             if is_found:
                 self.model.remove(pos)
@@ -247,11 +248,10 @@ class QuestEditor(Adw.Bin):
     def _on_add_objective(self, button, quest):
         """Handles the clicked signal from the add objective button."""
         new_id = f"objective_{len(quest.objectives)}"
-        new_objective = self.project_manager.add_objective_to_quest(
-            quest.id, new_id, "New Objective"
-        )
-        if new_objective:
-            self.objective_model.append(ObjectiveGObject(new_objective))
+        new_objective = Objective(id=new_id, name="New Objective")
+        quest.objectives.append(new_objective)
+        self.project_manager.set_dirty(True)
+        self.objective_model.append(ObjectiveGObject(new_objective))
 
     def _on_delete_objective(self, button, quest):
         """Handles the clicked signal from the delete objective button."""
@@ -279,9 +279,8 @@ class QuestEditor(Adw.Bin):
     ):
         """Handles the response from the delete objective dialog."""
         if response == "delete":
-            self.project_manager.remove_objective_from_quest(
-                quest.id, objective_gobject.objective.id
-            )
+            quest.objectives.remove(objective_gobject.objective)
+            self.project_manager.set_dirty(True)
             is_found, pos = self.objective_model.find(objective_gobject)
             if is_found:
                 self.objective_model.remove(pos)

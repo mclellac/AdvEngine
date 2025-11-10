@@ -166,8 +166,8 @@ class InteractionEditor(Gtk.Box):
         new_interaction = Interaction(
             id=new_id, verb_id="", primary_item_id="", logic_graph_id=""
         )
-        self.project_manager.add_interaction(new_interaction)
-        self._refresh_model()
+        self.project_manager.add_data_item("interactions", new_interaction)
+        self.refresh_model()
         self.selection.set_selected(self.model.get_n_items() - 1)
         self._update_visibility()
 
@@ -196,8 +196,8 @@ class InteractionEditor(Gtk.Box):
             f"DEBUG: InteractionEditor._on_delete_dialog_response: response={response}"
         )
         if response == "delete":
-            self.project_manager.remove_interaction(interaction_gobject.interaction)
-            self._refresh_model()
+            self.project_manager.remove_data_item("interactions", interaction_gobject.interaction)
+            self.refresh_model()
         dialog.destroy()
 
     def _on_selection_changed(self, selection_model, position, n_items):

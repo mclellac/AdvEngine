@@ -12,7 +12,7 @@ from .item import Item
 from .logic import LogicGraph
 from .quest import Quest
 from .scene import Scene
-from .ui import UILayout, Font
+from .ui import UILayout
 from .verb import Verb
 
 
@@ -33,4 +33,3 @@ class ProjectData:
     interactions: List[Interaction] = field(default_factory=list)
     quests: List[Quest] = field(default_factory=list)
     ui_layouts: List[UILayout] = field(default_factory=list)
-    fonts: List[Font] = field(default_factory=list)

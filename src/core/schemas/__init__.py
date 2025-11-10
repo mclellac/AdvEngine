@@ -9,7 +9,7 @@ from .asset import Asset, AssetGObject, Animation, Audio, AudioGObject
 from .global_state import GlobalVariable, GlobalVariableGObject
 from .verb import Verb, VerbGObject
 from .interaction import Interaction, InteractionGObject
-from .ui import Font, FontGObject, UIElement, UILayout, UILayoutGObject
+from .ui import UIElement, UILayout, UILayoutGObject
 from .quest import Quest, QuestGObject, Objective, ObjectiveGObject
 from .search import SearchResult, SearchResultGObject
 from .project_data import ProjectData

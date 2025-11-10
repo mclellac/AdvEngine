@@ -9,18 +9,6 @@ from .gobject_factory import create_gobject_wrapper
 
 
 @dataclass
-class Font:
-    """Represents a font."""
-
-    id: str
-    name: str
-    file_path: str
-
-
-FontGObject = create_gobject_wrapper(Font)
-
-
-@dataclass
 class UIElement:
     """Represents a single element in a UI layout."""
 
