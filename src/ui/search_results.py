@@ -6,7 +6,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GObject, Gio, Adw
 
-from ..core.data_schemas import SearchResult, SearchResultGObject
+from ..core.schemas.search import SearchResult, SearchResultGObject
 
 
 class SearchResultsView(Adw.Bin):

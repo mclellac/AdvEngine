@@ -305,7 +305,7 @@ class AdvEngine(Adw.Application):
 
     def on_export_localization(self, action: Gio.SimpleAction, param: None):
         """Handles the export-localization action."""
-        dialog = Adw.FileDialog.new()
+        dialog = Gtk.FileDialog.new()
         dialog.set_title("Export Localization")
         dialog.save(self.win, None, self.on_export_localization_response)
 
@@ -319,7 +319,7 @@ class AdvEngine(Adw.Application):
 
     def on_import_localization(self, action: Gio.SimpleAction, param: None):
         """Handles the import-localization action."""
-        dialog = Adw.FileDialog.new()
+        dialog = Gtk.FileDialog.new()
         dialog.set_title("Import Localization")
         dialog.open(self.win, None, self.on_import_localization_response)
 
@@ -333,7 +333,7 @@ class AdvEngine(Adw.Application):
 
     def on_open_project_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the open-project action."""
-        dialog = Adw.FileDialog.new()
+        dialog = Gtk.FileDialog.new()
         dialog.set_title("Open Project")
         dialog.select_folder(self.win, None, self.on_open_project_response)
 
@@ -415,7 +415,7 @@ class AdvEngine(Adw.Application):
                     error_dialog.present()
                     return
 
-                file_dialog = Adw.FileDialog.new()
+                file_dialog = Gtk.FileDialog.new()
                 file_dialog.set_title("Select Project Location")
                 file_dialog.select_folder(
                     self.win, None, self.on_new_project_folder_selected, name, template
