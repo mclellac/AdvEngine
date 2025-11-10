@@ -7,53 +7,18 @@ This document tracks the status of major features and refactoring efforts.
 The primary goal is to move all UI layout definitions from procedural Python code to declarative `.ui` files.
 
 - [x] **Main Application Window (`EditorWindow`)**
-    - [x] Create `main_window.ui`
-    - [x] Refactor `main.py` to load `main_window.ui`
-- [ ] **Scene Editor (`module_scene.py`)**
-    - [ ] Create `module_scene.ui`
-    - [ ] Refactor `module_scene.py` to load `module_scene.ui`
-- [ ] **Logic Editor (`module_logic.py`)**
-    - [ ] Create `module_logic.ui`
-    - [ ] Refactor `module_logic.py` to load `module_logic.ui`
-- [ ] **Dialogue Editor (`module_dialogue.py`)**
-    - [ ] Create `module_dialogue.ui`
-    - [ ] Refactor `module_dialogue.py` to load `module_dialogue.ui`
-- [ ] **Interaction Editor (`module_interaction.py`)**
-    - [ ] Create `module_interaction.ui`
-    - [ ] Refactor `module_interaction.py` to load `module_interaction.ui`
+- [x] **Scene Editor (`module_scene.py`)**
+- [x] **Logic Editor (`module_logic.py`)**
+- [x] **Dialogue Editor (`module_dialogue.py`)**
+- [x] **Interaction Editor (`module_interaction.py`)**
 - [ ] **Quest Editor (`module_quest.py`)**
-    - [ ] Create `module_quest.ui`
-    - [ ] Refactor `module_quest.py` to load `module_quest.ui`
-- [ ] **Asset Manager (`module_assets.py`)**
-    - [ ] Create `module_assets.ui`
-    - [ ] Refactor `module_assets.py` to load `module_assets.ui`
-- [ ] **Database Editor (`module_database.py`)**
-    - [ ] Create `module_database.ui`
-    - [ ] Refactor `module_database.py` to load `module_database.ui`
-- [ ] **Character Editor (`module_character.py`)**
-    - [ ] Create `module_character.ui`
-    - [ ] Refactor `module_character.py` to load `module_character.ui`
+- [x] **Asset Manager (`module_assets.py`)**
+- [x] **Database Editor (`module_database.py`)**
+- [x] **Character Editor (`module_character.py`)**
 - [ ] **Global State Editor (`module_state.py`)**
-    - [ ] Create `module_state.ui`
-    - [ ] Refactor `module_state.py` to load `module_state.ui`
-- [ ] **Item Editor (`item_editor.py`)**
-    - [ ] Create `item_editor.ui`
-    - [ ] Refactor `item_editor.py` to load `item_editor.ui`
-- [ ] **Attribute Editor (`attribute_editor.py`)**
-    - [ ] Create `attribute_editor.ui`
-    - [ ] Refactor `attribute_editor.py` to load `attribute_editor.ui`
-- [ ] **Verb Editor (`verb_editor.py`)**
-    - [ ] Create `verb_editor.ui`
-    - [ ] Refactor `verb_editor.py` to load `verb_editor.ui`
 - [x] **Welcome Window (`welcome.py`)**
-    - [x] Create `welcome.ui`
-    - [x] Refactor `welcome.py` to load `welcome.ui`
 - [x] **Preferences Dialog (`preferences.py`)**
-    - [ ] Create `preferences.ui`
-    - [x] Refactor `preferences.py` to load `preferences.ui`
 - [x] **Shortcuts Dialog (`shortcuts.py`)**
-    - [x] Create `shortcuts.ui`
-    - [x] Refactor `shortcuts.py` to load `shortcuts.ui`
 
 ## Core Features
 
@@ -61,14 +26,14 @@ The primary goal is to move all UI layout definitions from procedural Python cod
 - [x] Scene Editor with Hotspot manipulation
 - [x] Node-based Logic Editor
 - [x] Tree-based Dialogue Editor
-- [ ] Asset Manager (Images, Audio, Fonts)
-- [ ] Character Manager
-- [ ] Quest System
-- [ ] Interaction System (Verb + Item, Item + Item)
-- [ ] Global State Management
-- [ ] Database Editors (Items, Attributes, Verbs)
-- [ ] Localization Support (Import/Export)
-- [ ] Application-wide Search
+- [ ] **Asset Manager (Images: Implemented, Audio/Fonts: Not Implemented)**
+- [x] Character Manager
+- [ ] **Quest System (Not Implemented)**
+- [x] Interaction System (Verb + Item, Item + Item)
+- [ ] **Global State Management (Not Implemented)**
+- [x] Database Editors (Items, Attributes, Verbs)
+- [x] Localization Support (Import/Export)
+- [x] Application-wide Search
 - [x] Unreal Engine Integration (Play button)
 - [x] Settings/Preferences Management
 - [x] Keyboard Shortcuts
