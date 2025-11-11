@@ -58,20 +58,25 @@ class InteractionEditor(Gtk.Box):
         super().__init__(**kwargs)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
+
+        # Initialize model and selection early to prevent signal connection errors
+        self.model = Gio.ListStore(item_type=InteractionGObject)
+        self.selection = Gtk.SingleSelection(model=self.model)
+
         self.project_manager.register_project_loaded_callback(self.project_loaded)
 
         self._create_columns()
         self._connect_signals()
+        self._on_selection_changed(self.selection, 0, 0) # Set initial state
 
     def project_loaded(self):
         """Callback executed when a project is finished loading."""
         self._setup_model()
+        self.refresh_model()
         self._update_visibility()
 
     def _setup_model(self):
         """Sets up the data model and selection model."""
-        self.model = Gio.ListStore(item_type=InteractionGObject)
-        self.selection = Gtk.SingleSelection(model=self.model)
         self.column_view.set_model(self.selection)
 
     def _connect_signals(self):
