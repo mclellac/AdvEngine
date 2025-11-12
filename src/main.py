@@ -538,7 +538,7 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog()
+        dialog = NewProjectDialog(transient_for=self.win)
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -559,7 +559,6 @@ class AdvEngine(Adw.Application):
                 )
 
         dialog.connect("response", on_response)
-        dialog.set_transient_for(self.win)
         dialog.present()
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
