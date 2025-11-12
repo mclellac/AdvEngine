@@ -14,10 +14,13 @@ class NewProjectDialog(Adw.Dialog):
 
     project_name_entry = Gtk.Template.Child()
     template_combo = Gtk.Template.Child()
+    create_button = Gtk.Template.Child()
+    cancel_button = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.connect("response", self.on_response)
+        self.create_button.connect("clicked", self.on_create_clicked)
+        self.cancel_button.connect("clicked", self.on_cancel_clicked)
         self._populate_templates()
 
     def _populate_templates(self):
@@ -26,9 +29,11 @@ class NewProjectDialog(Adw.Dialog):
         if templates:
             self.template_combo.set_selected(0)
 
-    def on_response(self, dialog, response_id):
-        # This will be handled by the caller in main.py
-        pass
+    def on_cancel_clicked(self, button):
+        self.close()
+
+    def on_create_clicked(self, button):
+        self.response("create")
 
     def get_project_name(self):
         return self.project_name_entry.get_text()
