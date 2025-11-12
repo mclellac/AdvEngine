@@ -4,32 +4,48 @@
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwDialog">
     <property name="title">Create a New Project</property>
-    <property name="extra-child">
-        <object class="GtkBox">
-            <property name="orientation">vertical</property>
+    <property name="content">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        <child>
+          <object class="AdwPreferencesGroup">
             <child>
-                <object class="AdwPreferencesPage">
-                    <child>
-                        <object class="AdwPreferencesGroup">
-                            <child>
-                                <object class="AdwEntryRow" id="project_name_entry">
-                                    <property name="title">Project Name</property>
-                                </object>
-                            </child>
-                            <child>
-                                <object class="AdwComboRow" id="template_combo">
-                                    <property name="title">Template</property>
-                                </object>
-                            </child>
-                        </object>
-                    </child>
-                </object>
+              <object class="AdwEntryRow" id="project_name_entry">
+                <property name="title">Project Name</property>
+              </object>
             </child>
-        </object>
+            <child>
+              <object class="AdwComboRow" id="template_combo">
+                <property name="title">Template</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
     </property>
-    <responses>
-      <response id="cancel" appearance="destructive">_Cancel</response>
-      <response id="create" appearance="suggested">_Create</response>
-    </responses>
+    <child type="titlebar">
+      <object class="AdwHeaderBar">
+        <child type="start">
+          <object class="GtkButton" id="cancel_button">
+            <property name="label">_Cancel</property>
+            <property name="use-underline">true</property>
+          </object>
+        </child>
+        <child type="end">
+          <object class="GtkButton" id="create_button">
+            <property name="label">_Create</property>
+            <property name="use-underline">true</property>
+            <style>
+              <class name="suggested-action"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>
