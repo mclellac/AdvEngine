@@ -9,7 +9,7 @@ from ..core.project_manager import ProjectManager
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "new_project_dialog.ui"))
-class NewProjectDialog(Adw.AlertDialog):
+class NewProjectDialog(Adw.Dialog):
     __gtype_name__ = "NewProjectDialog"
 
     project_name_entry = Gtk.Template.Child()
