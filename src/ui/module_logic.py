@@ -9,9 +9,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GdkPixbuf, GLib
-import json
-import os
+from gi.repository import Gtk, Gdk, Adw, Gio, PangoCairo, Pango, GLib
 import re
 from ..core.schemas.logic import (
     ActionNode,
@@ -43,17 +41,24 @@ class MiniMap(Gtk.DrawingArea):
         logic_editor_canvas: A reference to the main LogicEditor canvas.
     """
 
-    def __init__(self, logic_editor_canvas, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes a new MiniMap instance.
 
         Args:
-            logic_editor_canvas: The LogicEditor canvas to display.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.logic_editor_canvas = logic_editor_canvas
+        self.logic_editor_canvas = None
         self.set_draw_func(self.on_draw, None)
         self.set_size_request(200, 150)
+
+    def set_canvas(self, canvas):
+        """Sets the canvas for the minimap.
+
+        Args:
+            canvas (LogicEditor): The logic editor canvas.
+        """
+        self.logic_editor_canvas = canvas
 
     def on_draw(self, drawing_area, cr, width, height, data):
         """Draws the minimap content on the drawing area.
@@ -67,6 +72,9 @@ class MiniMap(Gtk.DrawingArea):
         """
         cr.set_source_rgb(0.1, 0.1, 0.1)
         cr.paint()
+
+        if not self.logic_editor_canvas:
+            return
 
         active_graph = self.logic_editor_canvas.active_graph
         if not active_graph or not active_graph.nodes:
@@ -115,25 +123,18 @@ class DynamicNodeEditor(Adw.Bin):
 
     def __init__(
         self,
-        project_manager=None,
-        settings_manager=None,
-        on_update_callback=None,
         **kwargs,
     ):
         """Initializes a new DynamicNodeEditor instance.
 
         Args:
-            project_manager: The project manager instance.
-            settings_manager: The settings manager instance.
-            on_update_callback (callable, optional): A callback to be
-                invoked when the node is updated. Defaults to None.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
         self.node = None
-        self.project_manager = project_manager
-        self.settings_manager = settings_manager
-        self.on_update_callback = on_update_callback
+        self.project_manager = None
+        self.settings_manager = None
+        self.on_update_callback = None
         self.main_widgets = {}
         self.param_widgets = {}
 
@@ -142,6 +143,24 @@ class DynamicNodeEditor(Adw.Bin):
 
         self.main_group = None
         self.params_group = None
+
+    def set_managers(self, project_manager, settings_manager):
+        """Sets the project and settings managers.
+
+        Args:
+            project_manager: The project manager instance.
+            settings_manager: The settings manager instance.
+        """
+        self.project_manager = project_manager
+        self.settings_manager = settings_manager
+
+    def set_on_update_callback(self, on_update_callback):
+        """Sets the update callback.
+
+        Args:
+            on_update_callback (callable): The callback to be invoked.
+        """
+        self.on_update_callback = on_update_callback
 
     def set_node(self, node: LogicNode):
         """Sets the node to be edited and rebuilds the UI.
@@ -386,6 +405,7 @@ class DynamicNodeEditor(Adw.Bin):
         return values
 
 
+@Gtk.Template(filename="logic_editor.ui")
 class LogicEditor(Adw.Bin):
     """The main logic editor widget.
 
@@ -401,9 +421,19 @@ class LogicEditor(Adw.Bin):
             nodes.
     """
 
+    __gtype_name__ = "LogicEditor"
+
     EDITOR_NAME = "Logic"
     VIEW_NAME = "logic_editor"
     ORDER = 1
+
+    canvas = Gtk.Template.Child()
+    canvas_stack = Gtk.Template.Child()
+    minimap = Gtk.Template.Child()
+    props_panel = Gtk.Template.Child()
+    add_dialogue_node_button = Gtk.Template.Child()
+    add_condition_node_button = Gtk.Template.Child()
+    add_action_node_button = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         """Initializes a new LogicEditor instance.
@@ -415,6 +445,8 @@ class LogicEditor(Adw.Bin):
         settings_manager = kwargs.pop("settings_manager")
 
         super().__init__(**kwargs)
+        self.init_template()
+
         self.project_manager = project_manager
         self.settings_manager = settings_manager
         self.active_graph = None
@@ -428,12 +460,24 @@ class LogicEditor(Adw.Bin):
         self.drag_offsets = {}
         self.initial_node_size = (0, 0)
 
-        root_widget = self._build_ui()
-        self.set_child(root_widget)
-
+        self.canvas.set_draw_func(self.on_canvas_draw, None)
         self._setup_canvas_controllers()
         self._create_context_menus()
         self.project_manager.register_project_loaded_callback(self.project_loaded)
+
+        self.minimap.set_canvas(self)
+        self.props_panel.set_managers(self.project_manager, self.settings_manager)
+        self.props_panel.set_on_update_callback(self.update_node_and_redraw)
+
+        self.add_dialogue_node_button.connect(
+            "clicked", lambda _: self.on_add_node(DialogueNode, "Dialogue")
+        )
+        self.add_condition_node_button.connect(
+            "clicked", lambda _: self.on_add_node(ConditionNode, "Condition")
+        )
+        self.add_action_node_button.connect(
+            "clicked", lambda _: self.on_add_node(ActionNode, "Action")
+        )
 
     def project_loaded(self):
         """Callback for when the project is loaded."""
@@ -442,86 +486,11 @@ class LogicEditor(Adw.Bin):
         else:
             self.active_graph = LogicGraph(id="default_graph", name="Default")
             self.project_manager.data.logic_graphs.append(self.active_graph)
+
+        # Always show the canvas, even if the graph is empty.
+        self.canvas_stack.set_visible_child_name("canvas")
         self.canvas.queue_draw()
-        if hasattr(self, "minimap"):
-            self.minimap.queue_draw()
-
-    def _build_ui(self):
-        """Builds the user interface for the editor.
-
-        Returns:
-            Adw.OverlaySplitView: The root widget for the editor.
-        """
-        split_view = Adw.OverlaySplitView()
-        split_view.set_sidebar_position(Gtk.PackType.START)
-        split_view.set_content(self._create_canvas_area())
-        split_view.set_sidebar(self._create_sidebar())
-        return split_view
-
-    def _create_canvas_area(self):
-        """Creates the main canvas area with a placeholder status page.
-
-        Returns:
-            Gtk.Stack: The stack containing the canvas and placeholder.
-        """
-        self.canvas_stack = Gtk.Stack()
-
-        self.canvas = Gtk.DrawingArea(hexpand=True, vexpand=True)
-        self.canvas.set_draw_func(self.on_canvas_draw, None)
-        self.canvas_stack.add_named(self.canvas, "canvas")
-
-        status_page = Adw.StatusPage(
-            title="Logic Editor",
-            description="This editor scripts the consequences of player actions. Use Action Nodes to perform commands, Condition Nodes to check game state, and Dialogue Nodes for simple character barks.",
-            icon_name="dialog-information-symbolic",
-        )
-        self.canvas_stack.add_named(status_page, "placeholder")
-
-        self.canvas_stack.set_visible_child_name("placeholder")
-
-        return self.canvas_stack
-
-    def _create_sidebar(self):
-        """Creates the sidebar containing the tool palette and properties panel.
-
-        Returns:
-            Gtk.Box: The sidebar widget.
-        """
-        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        sidebar.set_margin_top(12)
-        sidebar.set_margin_bottom(12)
-        sidebar.set_margin_start(12)
-        sidebar.set_margin_end(12)
-
-        palette = Adw.PreferencesGroup(title="Tool Palette")
-        sidebar.append(palette)
-
-        node_types = [
-            ("Add Dialogue Node", "Add Dialogue", DialogueNode, "Dialogue"),
-            ("Add Condition Node", "Add Condition", ConditionNode, "Condition"),
-            ("Add Action Node", "Add Action", ActionNode, "Action"),
-        ]
-        for title, label, node_class, node_type in node_types:
-            button = Gtk.Button(label=label)
-            button.connect(
-                "clicked",
-                lambda _, nc=node_class, nt=node_type: self.on_add_node(nc, nt),
-            )
-            row = Adw.ActionRow(title=title, activatable_widget=button)
-            row.add_suffix(button)
-            palette.add(row)
-
-        self.minimap = MiniMap(self)
-        sidebar.append(self.minimap)
-
-        self.props_panel = DynamicNodeEditor(
-            project_manager=self.project_manager,
-            settings_manager=self.settings_manager,
-            on_update_callback=self.update_node_and_redraw,
-        )
-        sidebar.append(self.props_panel)
-
-        return sidebar
+        self.minimap.queue_draw()
 
     def _setup_canvas_controllers(self):
         """Sets up the event controllers for the main canvas."""
@@ -568,14 +537,21 @@ class LogicEditor(Adw.Bin):
             h (int): The height of the drawing area.
             _: User data (unused).
         """
-        if self.active_graph and self.active_graph.nodes:
-            self.canvas_stack.set_visible_child_name("canvas")
-        else:
-            self.canvas_stack.set_visible_child_name("placeholder")
-
         cr.set_source_rgb(0.15, 0.15, 0.15)
         cr.paint()
         if self.active_graph:
+            if not self.active_graph.nodes:
+                # If there are no nodes, draw a helpful message on the canvas
+                layout = PangoCairo.create_layout(cr)
+                layout.set_width(w * Pango.SCALE)
+                layout.set_alignment(Pango.Alignment.CENTER)
+                cr.set_source_rgb(0.7, 0.7, 0.7)
+                layout.set_markup(
+                    "No nodes yet. Right-click or use the Tool Palette to add one."
+                )
+                cr.move_to(0, h / 2 - 50)
+                PangoCairo.show_layout(cr, layout)
+
             for node in self.active_graph.nodes:
                 self.draw_node(cr, node)
                 for output_node_id in node.outputs:
