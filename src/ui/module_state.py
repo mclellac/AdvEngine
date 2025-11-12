@@ -348,6 +348,7 @@ class GlobalStateEditor(Gtk.Box):
                 is_found, pos = self.model.find(var_gobject)
                 if is_found:
                     self.model.remove(pos)
+        dialog.destroy()
 
     def _on_selection_changed(self, selection_model, position, n_items):
         """Handles the selection-changed signal from the selection model.

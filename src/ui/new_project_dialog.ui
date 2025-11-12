@@ -4,7 +4,7 @@
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwDialog">
     <property name="title">Create a New Project</property>
-    <property name="content">
+    <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <property name="spacing">12</property>
@@ -27,7 +27,7 @@
           </object>
         </child>
       </object>
-    </property>
+    </child>
     <child type="titlebar">
       <object class="AdwHeaderBar">
         <child type="start">

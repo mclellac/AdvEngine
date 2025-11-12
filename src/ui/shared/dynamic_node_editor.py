@@ -10,7 +10,9 @@ from ...core.ue_exporter import get_command_definitions
 
 def pascal_to_snake(name):
     """Converts a PascalCase string to snake_case."""
-    return ''.join(['_' + i.lower() if i.isupper() else i for i in name]).lstrip('_')
+    import re
+    name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+    return 'var_name' if name == 'varname' else name
 
 class DynamicNodeEditor(Adw.Bin):
     """A dynamic property editor for a given node.

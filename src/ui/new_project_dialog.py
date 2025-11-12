@@ -30,7 +30,7 @@ class NewProjectDialog(Adw.Dialog):
             self.template_combo.set_selected(0)
 
     def on_cancel_clicked(self, button):
-        self.close()
+        self.response("cancel")
 
     def on_create_clicked(self, button):
         self.response("create")

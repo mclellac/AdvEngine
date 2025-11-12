@@ -446,12 +446,6 @@ class ProjectManager:
             target_list (list): The list to which the loaded objects will be appended.
         """
 
-        def pascal_to_snake(name):
-            import re
-
-            name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
-            return "var_name" if name == "varname" else name
-
         def graph_object_hook(data):
             nodes = []
             for node_data in data.get("nodes", []):
