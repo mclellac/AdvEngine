@@ -20,6 +20,8 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
 from .core.project_manager import ProjectManager
 from .core.settings_manager import SettingsManager
+from .ui.shared.minimap import MiniMap
+from .ui.shared.dynamic_node_editor import DynamicNodeEditor
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "ui/main_window.ui"))
@@ -538,7 +540,7 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog(transient_for=self.win)
+        dialog = NewProjectDialog()
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -558,6 +560,8 @@ class AdvEngine(Adw.Application):
                     self.win, None, self.on_new_project_folder_selected, name, template
                 )
 
+        dialog.set_modal(True)
+        dialog.set_transient_for(self.win)
         dialog.connect("response", on_response)
         dialog.present()
 

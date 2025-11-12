@@ -2,9 +2,8 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <template class="NewProjectDialog" parent="AdwAlertDialog">
-    <property name="heading">Create a New Project</property>
-    <property name="default_response">create</property>
+  <template class="NewProjectDialog" parent="AdwDialog">
+    <property name="title">Create a New Project</property>
     <property name="extra-child">
         <object class="GtkBox">
             <property name="orientation">vertical</property>

@@ -1,323 +1,208 @@
-"""A dynamic property editor for different types of logic nodes."""
+"""A dynamic property editor for logic nodes."""
 
 import gi
-import re
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib
 
-from ...core.schemas.logic import ActionNode, ConditionNode, DialogueNode, LogicNode
+from gi.repository import Gtk, Adw, GObject
 from ...core.ue_exporter import get_command_definitions
 
-
 def pascal_to_snake(name):
-    """Converts a PascalCase string to snake_case.
-
-    Args:
-        name (str): The PascalCase string to convert.
-
-    Returns:
-        str: The converted snake_case string.
-    """
-    name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
-
+    """Converts a PascalCase string to snake_case."""
+    return ''.join(['_' + i.lower() if i.isupper() else i for i in name]).lstrip('_')
 
 class DynamicNodeEditor(Adw.Bin):
-    """A dynamic property editor for different types of logic nodes.
+    """A dynamic property editor for a given node.
 
-    This widget generates a user interface on-the-fly based on the properties
-    of the currently selected logic node. It is used in both the LogicEditor
-    and the DialogueEditor.
+    This widget dynamically builds a UI to edit the properties of a LogicNode
+    based on the command definitions in ue_exporter.py.
 
     Attributes:
-        node (LogicNode): The currently selected node to be edited.
         project_manager: The main project manager instance.
         settings_manager: The main settings manager instance.
-        on_update_callback (callable): A function to call when a node's data
-            is updated.
+        active_node (LogicNode): The currently active node being edited.
     """
 
-    def __init__(
-        self,
-        **kwargs,
-    ):
+    def __init__(self, **kwargs):
         """Initializes a new DynamicNodeEditor instance.
 
         Args:
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.node = None
         self.project_manager = None
         self.settings_manager = None
+        self.active_node = None
         self.on_update_callback = None
-        self.main_widgets = {}
-        self.param_widgets = {}
-
-        self.container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.set_child(self.container_box)
-
-        self.main_group = None
-        self.params_group = None
+        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.set_child(self.vbox)
 
     def set_managers(self, project_manager, settings_manager):
         """Sets the project and settings managers.
 
         Args:
-            project_manager: The project manager instance.
-            settings_manager: The settings manager instance.
+            project_manager: The main project manager instance.
+            settings_manager: The main settings manager instance.
         """
         self.project_manager = project_manager
         self.settings_manager = settings_manager
 
-    def set_on_update_callback(self, on_update_callback):
-        """Sets the update callback.
+    def set_on_update_callback(self, callback):
+        """Sets the callback function to be called when a value is updated.
 
         Args:
-            on_update_callback (callable): The callback to be invoked.
+            callback: The function to call.
         """
-        self.on_update_callback = on_update_callback
+        self.on_update_callback = callback
 
-    def set_node(self, node: LogicNode):
-        """Sets the node to be edited and rebuilds the UI.
+    def set_node(self, node):
+        """Sets the active node and rebuilds the editor UI.
 
         Args:
             node (LogicNode): The node to edit.
         """
-        self.node = node
-        GLib.idle_add(self.build_ui)
+        self.active_node = node
+        self._rebuild_ui()
 
-    def build_ui(self) -> bool:
-        """Builds the editor UI based on the current node's properties.
+    def _rebuild_ui(self):
+        """Removes the old UI and creates a new one for the active node."""
+        for child in self.vbox.get_children():
+            self.vbox.remove(child)
 
-        Returns:
-            bool: Always returns False to ensure the idle handler is removed.
-        """
-        if self.main_group:
-            self.container_box.remove(self.main_group)
-        if self.params_group:
-            self.container_box.remove(self.params_group)
-
-        self.main_widgets.clear()
-        self.param_widgets.clear()
-
-        self.main_group = Adw.PreferencesGroup()
-        self.params_group = Adw.PreferencesGroup()
-        self.container_box.append(self.main_group)
-        self.container_box.append(self.params_group)
-
-        if not self.node:
-            self.params_group.set_visible(False)
-            self.main_group.set_visible(False)
-            return False
-
-        self.main_group.set_visible(True)
-
-        if isinstance(self.node, DialogueNode):
-            self.add_entry(
-                self.main_group, "character_id", "Character ID", self.node.character_id
-            )
-            self.add_entry(
-                self.main_group,
-                "dialogue_text",
-                "Dialogue Text",
-                self.node.dialogue_text,
-            )
-        elif isinstance(self.node, (ConditionNode, ActionNode)):
-            defs = get_command_definitions()
-            command_key = (
-                "conditions" if isinstance(self.node, ConditionNode) else "actions"
-            )
-            command_type_key = (
-                "condition_type"
-                if isinstance(self.node, ConditionNode)
-                else "action_command"
-            )
-            command_types = list(defs[command_key].keys())
-            self.add_dropdown(
-                self.main_group,
-                command_type_key,
-                "Type",
-                command_types,
-                getattr(self.node, command_type_key),
-            )
-            self.update_params_ui()
-        return False
-
-    def add_entry(self, group, key, title, default_value):
-        """Adds an Adw.EntryRow to a preferences group.
-
-        Args:
-            group (Adw.PreferencesGroup): The group to add the row to.
-            key (str): The property key associated with the entry.
-            title (str): The display title for the entry row.
-            default_value: The initial value for the entry.
-        """
-        entry = Adw.EntryRow(title=title)
-        entry.set_text(str(default_value))
-        entry.connect("notify::text", self.on_value_changed)
-        self.main_widgets[key] = entry
-        group.add(entry)
-
-    def add_dropdown(self, group, key, title, options, default_value):
-        """Adds an Adw.ComboRow to a preferences group.
-
-        Args:
-            group (Adw.PreferencesGroup): The group to add the row to.
-            key (str): The property key associated with the dropdown.
-            title (str): The display title for the combo row.
-            options (list[str]): The list of options for the dropdown.
-            default_value: The initial selected value.
-        """
-        combo = Adw.ComboRow(title=title, model=Gtk.StringList.new(options))
-        if default_value in options:
-            combo.set_selected(options.index(default_value))
-        combo.connect("notify::selected-item", self.on_combo_changed)
-        self.main_widgets[key] = combo
-        group.add(combo)
-
-    def update_params_ui(self, *args):
-        """Updates the parameters UI section based on the selected command."""
-        if self.params_group:
-            self.container_box.remove(self.params_group)
-        self.param_widgets.clear()
-
-        self.params_group = Adw.PreferencesGroup()
-        self.container_box.append(self.params_group)
-
-        if not isinstance(self.node, (ConditionNode, ActionNode)):
-            self.params_group.set_visible(False)
+        if not self.active_node:
             return
 
-        self.params_group.set_visible(True)
-        command_key = (
-            "conditions" if isinstance(self.node, ConditionNode) else "actions"
-        )
-        command_type_key = (
-            "condition_type"
-            if isinstance(self.node, ConditionNode)
-            else "action_command"
-        )
-        selected_command = (
-            self.main_widgets[command_type_key].get_selected_item().get_string()
-        )
+        group = Adw.PreferencesGroup()
+        group.set_title(f"Properties: {self.active_node.id}")
+        self.vbox.append(group)
 
-        if selected_command:
-            defs = get_command_definitions()[command_key][selected_command]
-            self.params_group.set_title(f"Parameters for {selected_command}")
-            for param, p_type in defs["params"].items():
-                self.add_param_widget(
-                    param, p_type, getattr(self.node, pascal_to_snake(param), "")
-                )
+        # Common properties
+        id_row = Adw.EntryRow(title="ID", text=self.active_node.id)
+        id_row.connect("notify::text", self.on_value_changed, "id")
+        group.add(id_row)
 
-    def add_param_widget(self, key, param_type, default_value):
-        """Adds a widget for a command parameter.
+        # Type-specific properties
+        if self.active_node.node_type == "Dialogue":
+            self._build_dialogue_ui(group)
+        elif self.active_node.node_type == "Condition":
+            self._build_condition_ui(group)
+        elif self.active_node.node_type == "Action":
+            self._build_action_ui(group)
+
+    def _build_dialogue_ui(self, group):
+        """Builds the UI for editing a DialogueNode.
 
         Args:
-            key (str): The parameter key.
-            param_type (str or list): The type of the parameter.
-            default_value: The initial value for the parameter.
+            group (Adw.PreferencesGroup): The group to add the UI to.
         """
-        snake_key = pascal_to_snake(key)
-        title = key.replace("_", " ").title()
+        char_row = Adw.EntryRow(title="Character ID", text=self.active_node.character_id)
+        char_row.connect("notify::text", self.on_value_changed, "character_id")
+        group.add(char_row)
 
-        if isinstance(param_type, list):
-            widget = Adw.ComboRow(title=title, model=Gtk.StringList.new(param_type))
-            if default_value in param_type:
-                widget.set_selected(param_type.index(default_value))
-            widget.connect("notify::selected-item", self.on_value_changed)
-        elif param_type == "bool":
-            widget = Gtk.CheckButton(label=title)
-            widget.set_active(bool(default_value))
-            widget.connect("toggled", self.on_value_changed)
-        elif param_type == "int":
-            widget = Gtk.SpinButton(
-                adjustment=Gtk.Adjustment(lower=0, upper=999999, step_increment=1)
-            )
-            widget.set_value(int(default_value or 0))
-            widget.connect("value-changed", self.on_value_changed)
-        else:
-            widget = Adw.EntryRow(title=title)
-            widget.set_text(str(default_value))
-            widget.connect("notify::text", self.on_value_changed)
+        text_row = Adw.EntryRow(title="Dialogue Text", text=self.active_node.dialogue_text)
+        text_row.connect("notify::text", self.on_value_changed, "dialogue_text")
+        group.add(text_row)
 
-        self.param_widgets[snake_key] = widget
-        if not isinstance(widget, Gtk.CheckButton):
-            self.params_group.add(widget)
-        else:
-            row = Adw.ActionRow(title=title, activatable_widget=widget)
-            row.add_suffix(widget)
-            self.params_group.add(row)
-
-    def on_combo_changed(self, combo, _):
-        """Handles the changed signal from a combo box.
+    def _build_condition_ui(self, group):
+        """Builds the UI for editing a ConditionNode.
 
         Args:
-            combo (Adw.ComboRow): The combo row that emitted the signal.
-            _: Unused parameter.
+            group (Adw.PreferencesGroup): The group to add the UI to.
         """
-        self.on_value_changed(combo)
-        self.update_params_ui()
+        defs = get_command_definitions()["conditions"]
+        condition_types = list(defs.keys())
 
-    def on_value_changed(self, widget, *args):
-        """Handles value changes from any widget in the editor.
+        type_row = Adw.ComboRow(title="Condition Type", model=Gtk.StringList.new(condition_types))
+        type_row.set_selected(condition_types.index(self.active_node.condition_type))
+        type_row.connect("notify::selected", self.on_condition_type_changed)
+        group.add(type_row)
+
+        self._build_params_ui(group, defs[self.active_node.condition_type]["params"])
+
+    def _build_action_ui(self, group):
+        """Builds the UI for editing an ActionNode.
+
+        Args:
+            group (Adw.PreferencesGroup): The group to add the UI to.
+        """
+        defs = get_command_definitions()["actions"]
+        action_commands = list(defs.keys())
+
+        command_row = Adw.ComboRow(title="Action Command", model=Gtk.StringList.new(action_commands))
+        command_row.set_selected(action_commands.index(self.active_node.action_command))
+        command_row.connect("notify::selected", self.on_action_command_changed)
+        group.add(command_row)
+
+        self._build_params_ui(group, defs[self.active_node.action_command]["params"])
+
+    def _build_params_ui(self, group, params):
+        """Builds the UI for a set of parameters.
+
+        Args:
+            group (Adw.PreferencesGroup): The group to add the UI to.
+            params (dict): A dictionary of parameter names and their types.
+        """
+        for param, p_type in params.items():
+            param_snake_case = pascal_to_snake(param)
+            value = getattr(self.active_node, param_snake_case, "")
+
+            if p_type == "str":
+                row = Adw.EntryRow(title=param, text=str(value))
+                row.connect("notify::text", self.on_value_changed, param_snake_case)
+            elif p_type == "int":
+                adjustment = Gtk.Adjustment(value=int(value), lower=0, upper=1000, step_increment=1)
+                row = Adw.SpinRow(title=param, adjustment=adjustment)
+                row.connect("notify::value", self.on_value_changed, param_snake_case)
+            elif p_type == "bool":
+                row = Adw.SwitchRow(title=param, active=bool(value))
+                row.connect("notify::active", self.on_value_changed, param_snake_case)
+            else:
+                row = Adw.EntryRow(title=param, text=str(value))
+                row.connect("notify::text", self.on_value_changed, param_snake_case)
+
+            group.add(row)
+
+    def on_value_changed(self, widget, prop, param_name):
+        """Handles a value change in a property editor widget.
 
         Args:
             widget: The widget that emitted the signal.
-            *args: Additional arguments from the signal.
+            prop: The property that changed.
+            param_name (str): The name of the parameter to update.
         """
-        if not self.node:
+        if isinstance(widget, Adw.EntryRow):
+            new_value = widget.get_text()
+        elif isinstance(widget, Adw.SpinRow):
+            new_value = widget.get_value()
+        elif isinstance(widget, Adw.SwitchRow):
+            new_value = widget.get_active()
+        else:
             return
 
-        values = self.get_values()
-        for key, value in values.items():
-            if hasattr(self.node, key):
-                field_type = getattr(self.node.__class__, "__annotations__", {}).get(
-                    key, "any"
-                )
-
-                coerced_value = value
-                if field_type == int:
-                    try:
-                        coerced_value = int(value)
-                    except (ValueError, TypeError):
-                        coerced_value = 0
-                elif field_type == bool:
-                    coerced_value = str(value).lower() in ["true", "1", "yes"]
-                elif field_type == str:
-                    coerced_value = str(value)
-
-                setattr(self.node, key, coerced_value)
-
-        if self.project_manager:
-            self.project_manager.set_dirty(True)
+        setattr(self.active_node, param_name, new_value)
+        self.project_manager.set_dirty(True)
         if self.on_update_callback:
             self.on_update_callback()
 
-    def get_values(self) -> dict:
-        """Gets all values from the editor widgets.
+    def on_condition_type_changed(self, combo_row, prop):
+        """Handles a change in the condition type.
 
-        Returns:
-            dict: A dictionary of property keys and their current values.
+        Args:
+            combo_row (Adw.ComboRow): The combo row for the condition type.
+            prop: The property that changed.
         """
-        values = {}
-        all_widgets = {**self.main_widgets, **self.param_widgets}
+        self.active_node.condition_type = combo_row.get_selected_item().get_string()
+        self._rebuild_ui()
+        self.project_manager.set_dirty(True)
 
-        for key, widget in all_widgets.items():
-            value = None
-            if isinstance(widget, Adw.EntryRow):
-                value = widget.get_text()
-            elif isinstance(widget, Adw.ComboRow):
-                selected_item = widget.get_selected_item()
-                if selected_item:
-                    value = selected_item.get_string()
-            elif isinstance(widget, Gtk.CheckButton):
-                value = widget.get_active()
-            elif isinstance(widget, Gtk.SpinButton):
-                value = widget.get_value_as_int()
+    def on_action_command_changed(self, combo_row, prop):
+        """Handles a change in the action command.
 
-            if value is not None:
-                values[key] = value
-        return values
+        Args:
+            combo_row (Adw.ComboRow): The combo row for the action command.
+            prop: The property that changed.
+        """
+        self.active_node.action_command = combo_row.get_selected_item().get_string()
+        self._rebuild_ui()
+        self.project_manager.set_dirty(True)

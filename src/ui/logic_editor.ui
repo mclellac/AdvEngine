@@ -77,10 +77,21 @@
               </object>
             </child>
             <child>
-              <object class="MiniMap" id="minimap" />
+              <object class="GtkBox">
+                <child>
+                  <object class="MiniMap" id="minimap">
+                    <property name="width-request">200</property>
+                    <property name="height-request">150</property>
+                  </object>
+                </child>
+              </object>
             </child>
             <child>
-              <object class="DynamicNodeEditor" id="props_panel" />
+              <object class="GtkBox">
+                <child>
+                  <object class="DynamicNodeEditor" id="props_panel" />
+                </child>
+              </object>
             </child>
           </object>
         </property>
