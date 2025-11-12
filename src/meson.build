@@ -9,10 +9,10 @@ gnome.compile_resources('advengine',
   install_dir: pkgdatadir,
 )
 
-python = import('python')
+python3 = find_program('python3')
 
 conf = configuration_data()
-conf.set('PYTHON', python.find_installation('python3').path())
+conf.set('PYTHON', python3.path())
 conf.set('VERSION', meson.project_version())
 conf.set('localedir', get_option('prefix') / get_option('localedir'))
 conf.set('pkgdatadir', pkgdatadir)

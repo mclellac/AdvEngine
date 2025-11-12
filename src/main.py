@@ -221,10 +221,15 @@ class EditorWindow(Adw.ApplicationWindow):
     def on_error(self, title: str, message: str):
         """Displays an error dialog to the user.
 
+        If the application is in debug mode, the error is also printed to the
+        console.
+
         Args:
             title (str): The title of the error dialog.
             message (str): The body text of the error dialog.
         """
+        if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+            print(f"ERROR DIALOG: {title} - {message}", file=sys.stderr)
         dialog = Adw.MessageDialog(
             transient_for=self,
             heading=title,
@@ -243,36 +248,21 @@ class EditorWindow(Adw.ApplicationWindow):
         self.get_application().save_project()
         ue_path = self.get_application().settings_manager.get("ue_path")
         if not ue_path:
-            dialog = Adw.MessageDialog(
-                transient_for=self,
-                heading="Unreal Engine Path Not Set",
-                body="Please set the path to the Unreal Engine editor in the preferences.",
+            self.on_error(
+                "Unreal Engine Path Not Set",
+                "Please set the path to the Unreal Engine editor in the preferences.",
             )
-            dialog.add_response("ok", "OK")
-            dialog.connect("response", lambda d, r: d.close())
-            dialog.present()
             return
         project_file = f"{self.project_manager.project_path}/AdvEngine.uproject"
         try:
             subprocess.Popen([ue_path, project_file])
         except FileNotFoundError:
-            dialog = Adw.MessageDialog(
-                transient_for=self,
-                heading="Unreal Engine Not Found",
-                body=f"Could not find the Unreal Engine editor at the specified path: {ue_path}",
+            self.on_error(
+                "Unreal Engine Not Found",
+                f"Could not find the Unreal Engine editor at the specified path: {ue_path}",
             )
-            dialog.add_response("ok", "OK")
-            dialog.connect("response", lambda d, r: d.close())
-            dialog.present()
         except Exception as e:
-            dialog = Adw.MessageDialog(
-                transient_for=self,
-                heading="Error Launching Engine",
-                body=f"An unexpected error occurred: {e}",
-            )
-            dialog.add_response("ok", "OK")
-            dialog.connect("response", lambda d, r: d.close())
-            dialog.present()
+            self.on_error("Error Launching Engine", f"An unexpected error occurred: {e}")
 
 
 class AdvEngine(Adw.Application):
@@ -556,23 +546,20 @@ class AdvEngine(Adw.Application):
                 template = dialog.get_selected_template()
 
                 if not name or not template:
-                    error_dialog = Adw.MessageDialog(
-                        transient_for=self.win,
-                        heading="Error",
-                        body="Project name and template are required.",
+                    self.win.on_error(
+                        "Error", "Project name and template are required."
                     )
-                    error_dialog.add_response("ok", "OK")
-                    error_dialog.connect("response", lambda dlg, resp: dlg.close())
-                    error_dialog.present()
                     return
 
                 file_dialog = Gtk.FileDialog.new()
                 file_dialog.set_title("Select Project Location")
+                file_dialog.set_modal(True)
                 file_dialog.select_folder(
                     self.win, None, self.on_new_project_folder_selected, name, template
                 )
 
         dialog.connect("response", on_response)
+        dialog.set_transient_for(self.win)
         dialog.present()
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
