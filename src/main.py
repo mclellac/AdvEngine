@@ -540,7 +540,9 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog(transient_for=self.win, modal=True)
+        dialog = NewProjectDialog()
+        dialog.set_transient_for(self.win)
+        dialog.set_modal(True)
         dialog.connect("response", self.on_new_project_dialog_response)
         dialog.present()
 
