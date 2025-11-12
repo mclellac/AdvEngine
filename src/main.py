@@ -236,7 +236,7 @@ class EditorWindow(Adw.ApplicationWindow):
             body=message,
         )
         dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.close())
+        dialog.connect("response", lambda d, r: d.destroy())
         dialog.present()
 
     def _on_play_clicked(self, button: Gtk.Button):
