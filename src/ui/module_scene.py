@@ -263,7 +263,7 @@ class SceneEditor(Gtk.Box):
                     self.project_manager.add_data_item("scenes", new_scene)
                     self._update_scene_list()
                     self._update_visibility()
-            d.close()
+            d.destroy()
 
         dialog.connect("response", on_response)
         dialog.present()
@@ -301,7 +301,7 @@ class SceneEditor(Gtk.Box):
             )
             self._update_scene_list()
             self._update_visibility()
-        dialog.close()
+        dialog.destroy()
 
     def _on_set_background(self, button):
         """Handles the 'Set Background' button click event.

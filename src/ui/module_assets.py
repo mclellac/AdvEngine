@@ -413,5 +413,5 @@ class AssetEditor(Gtk.Box):
             body=message,
         )
         dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.close())
+        dialog.connect("response", lambda d, r: d.destroy())
         dialog.present()
