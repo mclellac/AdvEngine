@@ -17,7 +17,7 @@ from ..core.schemas.logic import (
     LogicGraph,
     LogicNode,
 )
-from ..core.ue_exporter import get_command_definitions, pascal_to_snake
+from ..core.ue_exporter import get_command_definitions
 from .shared.dynamic_node_editor import DynamicNodeEditor
 from .shared.minimap import MiniMap
 
