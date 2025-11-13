@@ -4,7 +4,6 @@
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwDialog">
     <property name="title">Create a New Project</property>
-    <property name="modal">true</property>
     <property name="content">
       <object class="AdwPreferencesPage">
         <child>
