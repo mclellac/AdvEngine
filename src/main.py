@@ -538,9 +538,7 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog()
-        dialog.set_transient_for(self.win)
-        dialog.set_modal(True)
+        dialog = NewProjectDialog(transient_for=self.win, modal=True)
 
         def on_response(d, response_id):
             if response_id == "create":
