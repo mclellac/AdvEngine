@@ -19,8 +19,8 @@ class NewProjectDialog(Adw.Dialog):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.create_button.connect("clicked", self.on_create_clicked)
-        self.cancel_button.connect("clicked", self.on_cancel_clicked)
+        self.create_button.connect("clicked", lambda w: self.response("create"))
+        self.cancel_button.connect("clicked", lambda w: self.response("cancel"))
         self._populate_templates()
 
     def _populate_templates(self):
@@ -29,11 +29,9 @@ class NewProjectDialog(Adw.Dialog):
         if templates:
             self.template_combo.set_selected(0)
 
-    def on_cancel_clicked(self, button):
-        self.response("cancel")
-
-    def on_create_clicked(self, button):
-        self.response("create")
+    def on_response(self, dialog, response_id):
+        # This will be handled by the caller in main.py
+        pass
 
     def get_project_name(self):
         return self.project_name_entry.get_text()

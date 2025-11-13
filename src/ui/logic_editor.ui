@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <requires lib="adw" version="1.0"/>
+  <requires lib="adw" version="1"/>
   <template class="LogicEditor" parent="AdwBin">
     <property name="child">
       <object class="AdwOverlaySplitView" id="split_view">
@@ -77,21 +77,10 @@
               </object>
             </child>
             <child>
-              <object class="GtkBox">
-                <child>
-                  <object class="MiniMap" id="minimap">
-                    <property name="width-request">200</property>
-                    <property name="height-request">150</property>
-                  </object>
-                </child>
-              </object>
+              <object class="MiniMap" id="minimap" />
             </child>
             <child>
-              <object class="GtkBox">
-                <child>
-                  <object class="DynamicNodeEditor" id="props_panel" />
-                </child>
-              </object>
+              <object class="DynamicNodeEditor" id="props_panel" />
             </child>
           </object>
         </property>
