@@ -17,10 +17,8 @@ class NewProjectDialog(Adw.Dialog):
     create_button = Gtk.Template.Child()
     cancel_button = Gtk.Template.Child()
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_transient_for(parent)
-        self.set_modal(True)
         self.create_button.connect("clicked", lambda w: self.response("create"))
         self.cancel_button.connect("clicked", lambda w: self.response("cancel"))
         self._populate_templates()

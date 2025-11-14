@@ -538,7 +538,7 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog(self.win)
+        dialog = NewProjectDialog()
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -553,14 +553,13 @@ class AdvEngine(Adw.Application):
 
                 file_dialog = Gtk.FileDialog.new()
                 file_dialog.set_title("Select Project Location")
-                file_dialog.set_modal(True)
                 file_dialog.select_folder(
                     self.win, None, self.on_new_project_folder_selected, name, template
                 )
             dialog.destroy()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(self.win)
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
         """Handles the response from the new project folder selection dialog.
