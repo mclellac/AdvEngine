@@ -46,6 +46,6 @@
           </object>
         </child>
       </object>
-    </child>
+    </property>
   </template>
 </interface>

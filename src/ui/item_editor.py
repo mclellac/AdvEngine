@@ -257,8 +257,6 @@ class ItemEditor(Gtk.Box):
             return
 
         dialog = Adw.MessageDialog(
-            transient_for=self.get_root(),
-            modal=True,
             heading="Delete Item?",
             body=f"Are you sure you want to delete '{selected_item.name}'?",
         )
@@ -266,7 +264,7 @@ class ItemEditor(Gtk.Box):
         dialog.add_response("delete", "_Delete")
         dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_delete_dialog_response, selected_item)
-        dialog.present()
+        dialog.present(self.get_root())
 
     def _on_delete_dialog_response(self, dialog, response, item_gobject):
         """Handles the response from the delete confirmation dialog.

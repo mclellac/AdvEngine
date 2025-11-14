@@ -240,7 +240,6 @@ class AssetEditor(Gtk.Box):
         """
         dialog = Gtk.FileDialog.new()
         dialog.set_title("Import Asset")
-        dialog.set_modal(True)
 
         file_filter = Gtk.FileFilter()
         file_filter.set_name("Image Files")
@@ -407,11 +406,9 @@ class AssetEditor(Gtk.Box):
             message (str): The error message to display.
         """
         dialog = Adw.MessageDialog(
-            transient_for=self.get_native(),
-            modal=True,
             heading="Error",
             body=message,
         )
         dialog.add_response("ok", "OK")
         dialog.connect("response", lambda d, r: d.destroy())
-        dialog.present()
+        dialog.present(self.get_native())
