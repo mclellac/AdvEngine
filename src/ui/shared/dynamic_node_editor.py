@@ -39,6 +39,8 @@ class DynamicNodeEditor(Adw.Bin):
             is updated.
     """
 
+    __gtype_name__ = "DynamicNodeEditor"
+
     def __init__(
         self,
         **kwargs,
