@@ -235,10 +235,11 @@ class EditorWindow(Adw.ApplicationWindow):
         dialog = Adw.MessageDialog(
             heading=title,
             body=message,
+            transient_for=self
         )
         dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.destroy())
-        dialog.present(self)
+        dialog.connect("response", lambda d, r: d.close())
+        dialog.present()
 
     def _on_play_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the play button.
@@ -538,7 +539,7 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog()
+        dialog = NewProjectDialog(transient_for=self.win)
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -549,6 +550,7 @@ class AdvEngine(Adw.Application):
                     self.win.on_error(
                         "Error", "Project name and template are required."
                     )
+                    dialog.close()
                     return
 
                 file_dialog = Gtk.FileDialog.new()
@@ -559,7 +561,7 @@ class AdvEngine(Adw.Application):
             dialog.close()
 
         dialog.connect("response", on_response)
-        dialog.present(self.win)
+        dialog.present()
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
         """Handles the response from the new project folder selection dialog.

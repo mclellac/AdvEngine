@@ -3,12 +3,16 @@
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwDialog">
-    <property name="title">Create a New Project</property>
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <child>
           <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Create a New Project</property>
+              </object>
+            </property>
             <child type="start">
               <object class="GtkButton" id="cancel_button">
                 <property name="label">_Cancel</property>
