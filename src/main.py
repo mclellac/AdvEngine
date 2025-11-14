@@ -556,7 +556,7 @@ class AdvEngine(Adw.Application):
                 file_dialog.select_folder(
                     self.win, None, self.on_new_project_folder_selected, name, template
                 )
-            dialog.destroy()
+            dialog.close()
 
         dialog.connect("response", on_response)
         dialog.present(self.win)

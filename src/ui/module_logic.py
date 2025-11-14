@@ -22,6 +22,7 @@ from .shared.dynamic_node_editor import DynamicNodeEditor, pascal_to_snake
 
 
 class MiniMap(Gtk.DrawingArea):
+    __gtype_name__ = "MiniMap"
     """A minimap widget that displays a scaled-down view of the logic canvas.
 
     Attributes:
