@@ -162,7 +162,9 @@ class EditorWindow(Adw.ApplicationWindow):
         an editor class, and then adds each discovered editor to the main
         window.
         """
-        logging.debug("EditorWindow.discover_and_add_editors: Starting editor discovery.")
+        logging.debug(
+            "EditorWindow.discover_and_add_editors: Starting editor discovery."
+        )
         editors = []
         discovered_view_names = set()
         ui_dir = os.path.join(os.path.dirname(__file__), "ui")
@@ -261,7 +263,9 @@ class EditorWindow(Adw.ApplicationWindow):
                 f"Could not find the Unreal Engine editor at the specified path: {ue_path}",
             )
         except Exception as e:
-            self.on_error("Error Launching Engine", f"An unexpected error occurred: {e}")
+            self.on_error(
+                "Error Launching Engine", f"An unexpected error occurred: {e}"
+            )
 
 
 class AdvEngine(Adw.Application):
@@ -501,9 +505,7 @@ class AdvEngine(Adw.Application):
         if self.project_manager and self.project_manager.is_dirty:
             self.project_manager.save_project()
 
-    def load_project(
-        self, project_path: str, project_manager: ProjectManager = None
-    ):
+    def load_project(self, project_path: str, project_manager: ProjectManager = None):
         """Loads a project and displays it in a new EditorWindow.
 
         This method closes the current window (if any) and opens a new
@@ -537,7 +539,6 @@ class AdvEngine(Adw.Application):
         from .ui.new_project_dialog import NewProjectDialog
 
         dialog = NewProjectDialog()
-        dialog.set_modal(True)
 
         def on_response(d, response_id):
             if response_id == "create":
