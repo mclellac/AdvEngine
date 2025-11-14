@@ -12,6 +12,10 @@ from ..core.project_manager import ProjectManager
 class NewProjectDialog(Adw.Dialog):
     __gtype_name__ = "NewProjectDialog"
 
+    __gsignals__ = {
+        'response': (GObject.SIGNAL_RUN_FIRST, None, (str,)),
+    }
+
     project_name_entry = Gtk.Template.Child()
     template_combo = Gtk.Template.Child()
     create_button = Gtk.Template.Child()
@@ -19,19 +23,21 @@ class NewProjectDialog(Adw.Dialog):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.create_button.connect("clicked", lambda w: self.response("create"))
-        self.cancel_button.connect("clicked", lambda w: self.response("cancel"))
+        self.create_button.connect("clicked", self.on_create_clicked)
+        self.cancel_button.connect("clicked", self.on_cancel_clicked)
         self._populate_templates()
+
+    def on_create_clicked(self, button):
+        self.emit("response", "create")
+
+    def on_cancel_clicked(self, button):
+        self.emit("response", "cancel")
 
     def _populate_templates(self):
         templates = ProjectManager.get_templates()
         self.template_combo.set_model(Gtk.StringList.new(templates))
         if templates:
             self.template_combo.set_selected(0)
-
-    def on_response(self, dialog, response_id):
-        # This will be handled by the caller in main.py
-        pass
 
     def get_project_name(self):
         return self.project_name_entry.get_text()
