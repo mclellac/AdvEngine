@@ -4,7 +4,7 @@
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwDialog">
     <property name="title">Create a New Project</property>
-    <child>
+    <property name="content">
       <object class="AdwPreferencesPage">
         <child>
           <object class="AdwPreferencesGroup">
@@ -21,26 +21,20 @@
           </object>
         </child>
       </object>
-    </child>
-    <child type="titlebar">
+    </property>
+    <property name="titlebar">
       <object class="AdwHeaderBar">
         <child type="start">
           <object class="GtkButton" id="cancel_button">
             <property name="label">_Cancel</property>
-            <style>
-              <class name="destructive-action"/>
-            </style>
           </object>
         </child>
         <child type="end">
           <object class="GtkButton" id="create_button">
             <property name="label">_Create</property>
-            <style>
-              <class name="suggested-action"/>
-            </style>
           </object>
         </child>
       </object>
-    </child>
+    </property>
   </template>
 </interface>
