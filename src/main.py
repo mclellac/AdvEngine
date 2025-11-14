@@ -469,11 +469,10 @@ class AdvEngine(Adw.Application):
         from .ui import preferences
 
         dialog = preferences.PreferencesDialog(
-            transient_for=self.win,
             project_manager=self.project_manager,
             settings_manager=self.settings_manager,
         )
-        dialog.present()
+        dialog.present(self.win)
 
     def on_shortcuts_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the shortcuts action.
@@ -484,8 +483,8 @@ class AdvEngine(Adw.Application):
         """
         from .ui import shortcuts
 
-        dialog = shortcuts.ShortcutsDialog(transient_for=self.win)
-        dialog.present()
+        dialog = shortcuts.ShortcutsDialog()
+        dialog.present(self.win)
 
     def on_about_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the about action.
@@ -539,7 +538,7 @@ class AdvEngine(Adw.Application):
         """
         from .ui.new_project_dialog import NewProjectDialog
 
-        dialog = NewProjectDialog(transient_for=self.win)
+        dialog = NewProjectDialog()
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -561,7 +560,7 @@ class AdvEngine(Adw.Application):
             dialog.close()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(self.win)
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
         """Handles the response from the new project folder selection dialog.
