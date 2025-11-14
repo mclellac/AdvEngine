@@ -4,7 +4,7 @@
   <requires lib="adw" version="1.0"/>
   <template class="NewProjectDialog" parent="AdwDialog">
     <property name="title">Create a New Project</property>
-    <property name="content">
+    <child>
       <object class="AdwPreferencesPage">
         <child>
           <object class="AdwPreferencesGroup">
@@ -21,7 +21,7 @@
           </object>
         </child>
       </object>
-    </property>
+    </child>
     <property name="titlebar">
       <object class="AdwHeaderBar">
         <child type="start">
