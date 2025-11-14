@@ -162,7 +162,9 @@ class EditorWindow(Adw.ApplicationWindow):
         an editor class, and then adds each discovered editor to the main
         window.
         """
-        logging.debug("EditorWindow.discover_and_add_editors: Starting editor discovery.")
+        logging.debug(
+            "EditorWindow.discover_and_add_editors: Starting editor discovery."
+        )
         editors = []
         discovered_view_names = set()
         ui_dir = os.path.join(os.path.dirname(__file__), "ui")
@@ -231,13 +233,12 @@ class EditorWindow(Adw.ApplicationWindow):
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             print(f"ERROR DIALOG: {title} - {message}", file=sys.stderr)
         dialog = Adw.MessageDialog(
-            transient_for=self,
             heading=title,
             body=message,
         )
         dialog.add_response("ok", "OK")
         dialog.connect("response", lambda d, r: d.destroy())
-        dialog.present()
+        dialog.present(self)
 
     def _on_play_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the play button.
@@ -262,7 +263,9 @@ class EditorWindow(Adw.ApplicationWindow):
                 f"Could not find the Unreal Engine editor at the specified path: {ue_path}",
             )
         except Exception as e:
-            self.on_error("Error Launching Engine", f"An unexpected error occurred: {e}")
+            self.on_error(
+                "Error Launching Engine", f"An unexpected error occurred: {e}"
+            )
 
 
 class AdvEngine(Adw.Application):
@@ -465,7 +468,7 @@ class AdvEngine(Adw.Application):
         from .ui import preferences
 
         dialog = preferences.PreferencesDialog(
-            parent=self.win,
+            transient_for=self.win,
             project_manager=self.project_manager,
             settings_manager=self.settings_manager,
         )
@@ -491,21 +494,18 @@ class AdvEngine(Adw.Application):
             param: The parameter passed to the action (unused).
         """
         dialog = Adw.AboutWindow(
-            transient_for=self.win,
             application_name="AdvEngine",
             developer_name="Carey McLelland",
             version="0.1.0",
         )
-        dialog.present()
+        dialog.present(self.win)
 
     def save_project(self):
         """Saves the currently open project if it has unsaved changes."""
         if self.project_manager and self.project_manager.is_dirty:
             self.project_manager.save_project()
 
-    def load_project(
-        self, project_path: str, project_manager: ProjectManager = None
-    ):
+    def load_project(self, project_path: str, project_manager: ProjectManager = None):
         """Loads a project and displays it in a new EditorWindow.
 
         This method closes the current window (if any) and opens a new
@@ -539,8 +539,6 @@ class AdvEngine(Adw.Application):
         from .ui.new_project_dialog import NewProjectDialog
 
         dialog = NewProjectDialog()
-        dialog.set_transient_for(self.win)
-        dialog.set_modal(True)
 
         def on_response(d, response_id):
             if response_id == "create":
@@ -555,14 +553,13 @@ class AdvEngine(Adw.Application):
 
                 file_dialog = Gtk.FileDialog.new()
                 file_dialog.set_title("Select Project Location")
-                file_dialog.set_modal(True)
                 file_dialog.select_folder(
                     self.win, None, self.on_new_project_folder_selected, name, template
                 )
-            dialog.destroy()
+            dialog.close()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(self.win)
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
         """Handles the response from the new project folder selection dialog.

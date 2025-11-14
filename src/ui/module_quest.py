@@ -295,8 +295,6 @@ class QuestEditor(Adw.Bin):
         selected_quest_gobject = self.selection.get_selected_item()
         if selected_quest_gobject:
             dialog = Adw.MessageDialog(
-                transient_for=self.get_root(),
-                modal=True,
                 heading="Delete Quest?",
                 body=f"Are you sure you want to delete '{selected_quest_gobject.name}'?",
             )
@@ -308,7 +306,7 @@ class QuestEditor(Adw.Bin):
                 self._on_delete_quest_dialog_response,
                 selected_quest_gobject,
             )
-            dialog.present()
+            dialog.present(self.get_root())
 
     def _on_delete_quest_dialog_response(self, dialog, response, quest_gobject):
         """Handles the response from the delete quest confirmation dialog.
@@ -350,8 +348,6 @@ class QuestEditor(Adw.Bin):
         selected_objective_gobject = self.objective_selection.get_selected_item()
         if selected_objective_gobject:
             dialog = Adw.MessageDialog(
-                transient_for=self.get_root(),
-                modal=True,
                 heading="Delete Objective?",
                 body=f"Are you sure you want to delete '{selected_objective_gobject.name}'?",
             )
@@ -364,7 +360,7 @@ class QuestEditor(Adw.Bin):
                 quest,
                 selected_objective_gobject,
             )
-            dialog.present()
+            dialog.present(self.get_root())
 
     def _on_delete_objective_dialog_response(
         self, dialog, response, quest, objective_gobject

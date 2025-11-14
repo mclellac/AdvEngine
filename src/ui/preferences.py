@@ -18,15 +18,15 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
     __gtype_name__ = "PreferencesDialog"
 
-    def __init__(self, parent, project_manager=None, settings_manager=None):
+    def __init__(self, transient_for, project_manager=None, settings_manager=None):
         """Initializes a new PreferencesDialog instance.
 
         Args:
-            parent: The parent window.
+            transient_for: The parent window.
             project_manager: The project manager instance.
             settings_manager: The settings manager instance.
         """
-        super().__init__(transient_for=parent, modal=True)
+        super().__init__(transient_for=transient_for)
         self.project_manager = project_manager
         self.settings_manager = settings_manager
 
