@@ -16,10 +16,9 @@ class ShortcutsDialog(Gtk.ShortcutsWindow):
 
     __gtype_name__ = "ShortcutsDialog"
 
-    def __init__(self, **kwargs):
+    def __init__(self, transient_for=None, **kwargs):
         """Initializes a new ShortcutsDialog instance."""
-        super().__init__(**kwargs)
-        self.set_modal(True)
+        super().__init__(transient_for=transient_for, **kwargs)
         self.set_title("Keyboard Shortcuts")
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

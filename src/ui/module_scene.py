@@ -246,11 +246,9 @@ class SceneEditor(Gtk.Box):
         Args:
             button (Gtk.Button): The button that was clicked.
         """
-        dialog = Adw.MessageDialog(
-            transient_for=self.get_root(), modal=True, heading="Create New Scene"
-        )
+        dialog = Adw.MessageDialog(heading="Create New Scene")
         entry = Adw.EntryRow(title="Scene Name")
-        dialog.set_extra_child(entry)
+        dialog.set_child(entry)
         dialog.add_response("cancel", "_Cancel")
         dialog.add_response("create", "_Create")
         dialog.set_default_response("create")
@@ -266,7 +264,7 @@ class SceneEditor(Gtk.Box):
             d.destroy()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(self.get_root())
 
     def _on_remove_scene(self, button):
         """Handles the 'Remove Scene' button click event.
@@ -277,8 +275,6 @@ class SceneEditor(Gtk.Box):
         if not self.selected_scene_gobject:
             return
         dialog = Adw.MessageDialog(
-            transient_for=self.get_root(),
-            modal=True,
             heading="Delete Scene?",
             body=f"Are you sure you want to delete '{self.selected_scene_gobject.name}'?",
         )
@@ -286,7 +282,7 @@ class SceneEditor(Gtk.Box):
         dialog.add_response("delete", "_Delete")
         dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_delete_scene_response)
-        dialog.present()
+        dialog.present(self.get_root())
 
     def _on_delete_scene_response(self, dialog, response):
         """Handles the response from the delete scene confirmation dialog.

@@ -73,7 +73,7 @@ class DialogueEditor(Adw.Bin):
     add_dialogue_button: Gtk.Button = Gtk.Template.Child()
     add_action_button: Gtk.Button = Gtk.Template.Child()
     delete_button: Gtk.Button = Gtk.Template.Child()
-    dialogue_tree_view: Gtk.ColumnView = Gtk.Template.Child()
+    dialogue_tree_view: Gtk.ListView = Gtk.Template.Child()
     properties_stack: Gtk.Stack = Gtk.Template.Child()
     dialogue_node_editor_placeholder: Gtk.Box = Gtk.Template.Child()
 
@@ -134,12 +134,11 @@ class DialogueEditor(Adw.Bin):
         self.delete_button.connect("clicked", self._on_delete_node)
         self.selection.connect("selection-changed", self._on_selection_changed)
 
-    def _get_children(self, item, *args):
+    def _get_children(self, item):
         """Gets the children of a node for the tree model.
 
         Args:
             item (DialogueNodeGObject): The parent item.
-            *args: Additional arguments (unused).
 
         Returns:
             Gio.ListStore or None: A list store containing the children, or

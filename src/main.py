@@ -231,13 +231,12 @@ class EditorWindow(Adw.ApplicationWindow):
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             print(f"ERROR DIALOG: {title} - {message}", file=sys.stderr)
         dialog = Adw.MessageDialog(
-            transient_for=self,
             heading=title,
             body=message,
         )
         dialog.add_response("ok", "OK")
         dialog.connect("response", lambda d, r: d.destroy())
-        dialog.present()
+        dialog.present(self)
 
     def _on_play_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the play button.
@@ -465,7 +464,7 @@ class AdvEngine(Adw.Application):
         from .ui import preferences
 
         dialog = preferences.PreferencesDialog(
-            parent=self.win,
+            transient_for=self.win,
             project_manager=self.project_manager,
             settings_manager=self.settings_manager,
         )
@@ -491,12 +490,11 @@ class AdvEngine(Adw.Application):
             param: The parameter passed to the action (unused).
         """
         dialog = Adw.AboutWindow(
-            transient_for=self.win,
             application_name="AdvEngine",
             developer_name="Carey McLelland",
             version="0.1.0",
         )
-        dialog.present()
+        dialog.present(self.win)
 
     def save_project(self):
         """Saves the currently open project if it has unsaved changes."""
