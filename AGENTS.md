@@ -64,3 +64,4 @@ Failure to adhere to these standards will result in the rejection of your work. 
     *   **Correct Pattern**: Use the `close()` method to dismiss the dialog. For custom dialogs with custom response signals, call `close()` within the `response` signal handler after processing the result.
 - **CRITICAL: Custom Widgets in GtkBuilder Templates**: If a custom widget is defined in Python and used within a GtkBuilder `.ui` file (referenced via the `<object>` or `<template>` tag), the custom class **must** be registered with the GObject type system. Failure to do so will result in a `Gtk-CRITICAL` error: "Invalid object type..." when the template is parsed. This often leads to a subsequent `AttributeError` if the code attempts to access the widget, as it will be `None`.
     *   **Correct Pattern**: For any custom widget class used in a `.ui` file, add the `__gtype_name__ = "YourWidgetName"` class attribute. This ensures GtkBuilder can find and instantiate the class.
+
