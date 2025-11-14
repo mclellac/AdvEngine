@@ -53,3 +53,5 @@ Failure to adhere to these standards will result in the rejection of your work. 
         2.  The dialog is instantiated with no arguments (`dialog = MyDialog()`) and then shown by calling `dialog.present(parent_window)`. The `present()` method handles both showing the dialog and setting its parent.
     *   **DO NOT** attempt to pass `transient_for` to the constructor.
     *   **DO NOT** attempt to call `set_transient_for()` on the dialog object.
+- **CRITICAL: `Adw.Dialog` Action Handling**: `Adw.Dialog` does **not** have a `response` signal like `Gtk.Dialog`. Connecting to it will cause a `TypeError`.
+    *   **Correct Pattern**: To handle actions from a custom `Adw.Dialog`, you must define a custom signal in the dialog's class (e.g., `__gsignals__ = {'response': ...}`). Then, in the dialog's `__init__`, connect to the `clicked` signal of the action buttons (e.g., a "Create" button). The handler for the `clicked` signal must then emit your custom `response` signal (e.g., `self.emit("response", "create")`). The calling code can then connect to this custom `response` signal to handle the dialog's result.

@@ -540,7 +540,7 @@ class AdvEngine(Adw.Application):
 
         dialog = NewProjectDialog()
 
-        def on_response(d, response_id):
+        def on_dialog_response(d, response_id):
             if response_id == "create":
                 name = dialog.get_project_name()
                 template = dialog.get_selected_template()
@@ -549,6 +549,7 @@ class AdvEngine(Adw.Application):
                     self.win.on_error(
                         "Error", "Project name and template are required."
                     )
+                    # Don't destroy the dialog, so the user can correct the mistake
                     return
 
                 file_dialog = Gtk.FileDialog.new()
@@ -558,7 +559,7 @@ class AdvEngine(Adw.Application):
                 )
             dialog.destroy()
 
-        dialog.connect("response", on_response)
+        dialog.connect("response", on_dialog_response)
         dialog.present(self.win)
 
     def on_new_project_folder_selected(self, dialog, result, name, template):
