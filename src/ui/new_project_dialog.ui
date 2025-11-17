@@ -2,54 +2,28 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
-  <template class="NewProjectDialog" parent="AdwDialog">
-    <child>
-      <object class="GtkBox">
-        <property name="orientation">vertical</property>
-        <child>
-          <object class="AdwHeaderBar">
-            <property name="title-widget">
-              <object class="AdwWindowTitle">
-                <property name="title">Create a New Project</property>
-              </object>
-            </property>
-            <child type="start">
-              <object class="GtkButton" id="cancel_button">
-                <property name="label">_Cancel</property>
-                <style>
-                  <class name="destructive-action"/>
-                </style>
-              </object>
-            </child>
-            <child type="end">
-              <object class="GtkButton" id="create_button">
-                <property name="label">_Create</property>
-                <style>
-                  <class name="suggested-action"/>
-                </style>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwPreferencesPage">
+  <template class="NewProjectDialog" parent="AdwAlertDialog">
+    <property name="heading">Create a New Project</property>
+    <property name="default-response">create</property>
+    <response id="cancel" label="_Cancel" appearance="destructive"/>
+    <response id="create" label="_Create" appearance="suggested" default="true"/>
+    <property name="extra-child">
+        <object class="AdwPreferencesPage">
             <child>
-              <object class="AdwPreferencesGroup">
+                <object class="AdwPreferencesGroup">
                 <child>
-                  <object class="AdwEntryRow" id="project_name_entry">
+                    <object class="AdwEntryRow" id="project_name_entry">
                     <property name="title">Project Name</property>
-                  </object>
+                    </object>
                 </child>
                 <child>
-                  <object class="AdwComboRow" id="template_combo">
+                    <object class="AdwComboRow" id="template_combo">
                     <property name="title">Template</property>
-                  </object>
+                    </object>
                 </child>
-              </object>
+                </object>
             </child>
-          </object>
-        </child>
-      </object>
-    </child>
+        </object>
+    </property>
   </template>
 </interface>

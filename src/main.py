@@ -20,7 +20,6 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
 from .core.project_manager import ProjectManager
 from .core.settings_manager import SettingsManager
-from .ui.shared.dynamic_node_editor import DynamicNodeEditor
 
 
 @Gtk.Template(filename=os.path.join(os.path.dirname(__file__), "ui/main_window.ui"))
@@ -236,11 +235,10 @@ class EditorWindow(Adw.ApplicationWindow):
         dialog = Adw.MessageDialog(
             heading=title,
             body=message,
-            transient_for=self
         )
         dialog.add_response("ok", "OK")
-        dialog.connect("response", lambda d, r: d.close())
-        dialog.present()
+        dialog.connect("response", lambda d, r: d.destroy())
+        dialog.present(self)
 
     def _on_play_clicked(self, button: Gtk.Button):
         """Handles the clicked signal from the play button.
@@ -470,10 +468,11 @@ class AdvEngine(Adw.Application):
         from .ui import preferences
 
         dialog = preferences.PreferencesDialog(
+            transient_for=self.win,
             project_manager=self.project_manager,
             settings_manager=self.settings_manager,
         )
-        dialog.present(self.win)
+        dialog.present()
 
     def on_shortcuts_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the shortcuts action.
@@ -484,8 +483,8 @@ class AdvEngine(Adw.Application):
         """
         from .ui import shortcuts
 
-        dialog = shortcuts.ShortcutsDialog()
-        dialog.present(self.win)
+        dialog = shortcuts.ShortcutsDialog(transient_for=self.win)
+        dialog.present()
 
     def on_about_activate(self, action: Gio.SimpleAction, param: None):
         """Handles the about action.
@@ -550,7 +549,6 @@ class AdvEngine(Adw.Application):
                     self.win.on_error(
                         "Error", "Project name and template are required."
                     )
-                    dialog.close()
                     return
 
                 file_dialog = Gtk.FileDialog.new()
