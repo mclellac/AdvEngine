@@ -50,11 +50,16 @@ class DynamicNodeEditor(Adw.Bin):
         Args:
             **kwargs: Additional keyword arguments.
         """
+        project_manager = kwargs.pop('project_manager', None)
+        settings_manager = kwargs.pop('settings_manager', None)
+        on_update_callback = kwargs.pop('on_update_callback', None)
+
         super().__init__(**kwargs)
+
         self.node = None
-        self.project_manager = None
-        self.settings_manager = None
-        self.on_update_callback = None
+        self.project_manager = project_manager
+        self.settings_manager = settings_manager
+        self.on_update_callback = on_update_callback
         self.main_widgets = {}
         self.param_widgets = {}
 
